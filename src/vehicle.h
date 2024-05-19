@@ -7,11 +7,12 @@
 #include "common/logging.h"
 
 typedef struct {
-    u64 magic; // == VEHICLE_MAGIC
+    u64 magic; // VEHICLE_MAGIC
     u16 part_count;
     u8 is_one_piece;
-    u8 pad;
-    // This struct is very incomplete, there's lots of other data here.
+    u8 unk[0x1D]; // This is very incomplete, there's lots of other data here.
+    wchar_t name[0x20];
+    u8 unk2[0x18];
 }vehicle_header;
 
 enum {
@@ -31,6 +32,11 @@ typedef struct {
     u32 pad3;
 }part_entry;
 
+typedef struct {
+    vehicle_header head;
+    part_entry parts[];
+}vehicle;
+
 static void check_part_entry() {
     if (sizeof(part_entry) != 0x24) {
         LOG_MSG(error, "sizeof(part_entry) == 0x%x, expected 0x24\n", sizeof(part_entry));
@@ -44,5 +50,7 @@ part_entry part_read(FILE* f);
 void part_byteswap(part_entry* part);
 
 void vehicle_header_byteswap(vehicle_header* v);
+
+vehicle* vehicle_load(const char* path);
 
 #endif // VEHICLE_H
