@@ -1,0 +1,49 @@
+//------------------------------------------------
+//--- 010 Editor v14.0 Binary Template
+//
+//      File: 
+//   Authors: 
+//   Version: 
+//   Purpose: 
+//  Category: 
+// File Mask: 
+//  ID Bytes: 
+//   History: 
+//------------------------------------------------
+
+BigEndian();
+typedef struct {
+    char x;
+    char y;
+    char z;
+}vec3u8;
+
+typedef struct {
+    char r;
+    char g;
+    char b;
+    char a;
+}rgba8;
+
+typedef struct {
+    float x;
+    float y;
+    float z;
+}vec3f;
+
+int magic[2];
+short part_count;
+char header[0x76];
+
+struct {
+    int pad<bgcolor=cGray>;
+    vec3u8 pos<bgcolor=cLtRed>;
+    char pad2;
+    
+    int flags<bgcolor=cYellow>;
+    int part_id<bgcolor=cGreen>;
+    vec3f rot<bgcolor=cLtBlue>;
+    
+    rgba8 color<bgcolor=cLtGray>;
+    int pad;
+}part[part_count];
