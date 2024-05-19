@@ -1,0 +1,10 @@
+# IDEs
+.idea/
+.vs/
+.vscode/
+
+# Build output
+out/
+cmake-*/
+cmake_*/
+
