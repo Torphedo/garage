@@ -13,6 +13,11 @@ add_executable(garage
     src/common/logging.c
     src/common/sha1.c
 
+    src/gui/gl_debug.c
+    src/gui/gl_setup.c
+    src/gui/input.c
+    src/gui/shader.c
+
     src/main.c
     src/vehicle.c
     src/part_ids.c

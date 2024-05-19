@@ -15,6 +15,11 @@ typedef struct {
     u8 z;
 }vec3u8;
 
+typedef struct {
+    float x;
+    float y;
+}vec2f;
+
 // 8-bit RGBA color
 typedef struct {
     u8 r;
