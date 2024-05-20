@@ -3,6 +3,9 @@
 #include "common/int.h"
 #include "common/logging.h"
 
+#include "gui/gl_setup.h"
+#include "gui/render_garage.h"
+
 #include "vehicle.h"
 #include "part_ids.h"
 
@@ -11,7 +14,7 @@ int main(int argc, char** argv) {
     check_part_entry(); // Sanity check for padding bugs
     if (argc != 2) {
         LOG_MSG(error, "No input files.\n");
-        LOG_MSG(info, "Usage: vtweak [vehicle file]");
+        LOG_MSG(info, "Usage: garage [vehicle file]");
         return 1;
     }
     char* path = argv[1];
@@ -21,8 +24,21 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    GLFWwindow* window = setup_opengl(680, 480, "Garage Opener", ENABLE_DEBUG, GLFW_CURSOR_NORMAL);
+    if (window == NULL) {
+        return 1;
     }
+
+    void* garage_ctx = garage.init(v);
+
+    while (!glfwWindowShouldClose(window)) {
+        garage.render(garage_ctx);
+
+        glfwSwapBuffers(window);
+        glfwPollEvents();
     }
+    garage.destroy(garage_ctx);
+    glfwTerminate();
 
     LOG_MSG(info, "\"%ls\" has %d parts\n", v->head.name, v->head.part_count);
     for (u16 i = 0; i < v->head.part_count; i++) {
