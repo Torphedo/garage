@@ -8,3 +8,5 @@ out/
 cmake-*/
 cmake_*/
 
+# Auto-generated GLSL headers
+src/gui/shader/*.h
