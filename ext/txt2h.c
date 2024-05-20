@@ -76,9 +76,9 @@ int main(int argc, char** argv) {
         write_line(out_file, buff);
     }
 
+    /*
     // End the file
     fprintf(out_file, ";");
-    /*
     fprintf(in_file, "\n\n");
     fprintf(out_file, "#endif  // #ifdef SHADER_%s_H\n", array_name);
      */
