@@ -11,7 +11,7 @@ typedef struct {
     u16 part_count;
     u8 is_one_piece;
     u8 unk[0x1D]; // This is very incomplete, there's lots of other data here.
-    wchar_t name[0x20];
+    c16 name[0x20];
     u8 unk2[0x18];
 }vehicle_header;
 

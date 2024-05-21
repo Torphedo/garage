@@ -1,4 +1,5 @@
 #include <memory.h>
+#include <stdio.h>
 
 #include "int.h"
 
@@ -27,4 +28,11 @@ u32 exponent(u32 val, u8 pow) {
         out *= val;
     }
     return out;
+}
+
+void print_c16s(const c16* str) {
+    while (*str != 0) {
+        printf("%lc", *str);
+        str++;
+    }
 }

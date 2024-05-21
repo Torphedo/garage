@@ -3,7 +3,8 @@
 #include <common/int.h>
 #include <common/vector.h>
 
-typedef u32 gl_obj;
+// Making this the same type as GLuint removes lots of conversion linter warnings
+typedef unsigned int gl_obj;
 
 typedef struct {
     vec3f position;

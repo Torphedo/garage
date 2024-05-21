@@ -9,7 +9,7 @@
 typedef struct {
     // For initial setup, like compiling shaders or loading assets. Pass the
     // returned pointer to render() and destroy(), they use it to store data.
-    void* (* init)(vehicle* v);
+    void* (*init)(vehicle* v);
 
     // For taking over the rendering pipeline (binding shaders, etc.), then
     // rendering on top and updating internal state (checking for input, etc.)

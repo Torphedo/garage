@@ -44,7 +44,9 @@ int main(int argc, char** argv) {
     garage.destroy(garage_ctx);
     glfwTerminate();
 
-    LOG_MSG(info, "\"%ls\" has %d parts\n", v->head.name, v->head.part_count);
+    LOG_MSG(info, "\"");
+    print_c16s(v->head.name); // We need a special function to portably print UTF-16
+    printf("\" has %d parts\n", v->head.part_count);
     for (u16 i = 0; i < v->head.part_count; i++) {
         LOG_MSG(info, "Part %d: 0x%x [%s] ", i, v->parts[i].id, part_get_name(v->parts[i].id));
         printf("@ (%d, %d, %d) ", v->parts[i].pos.x, v->parts[i].pos.y, v->parts[i].pos.z);

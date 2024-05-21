@@ -1,7 +1,16 @@
 #include <stdio.h>
 #include <malloc.h>
 #include <string.h>
+
 #include <sys/stat.h>
+
+// MSVC doesn't define S_ISREG() or S_ISDIR() in stat.h, so we have to do it.
+#if !defined(S_ISREG) && defined(S_IFMT) && defined(S_IFREG)
+    #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
+#endif
+#if !defined(S_ISDIR) && defined(S_IFMT) && defined(S_IFDIR)
+    #define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#endif
 
 #include "logging.h"
 #include "file.h"

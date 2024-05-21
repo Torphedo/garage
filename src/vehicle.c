@@ -17,7 +17,7 @@ void vehicle_header_byteswap(vehicle_header* v) {
     ENDIAN_FLIP(u64, v->magic);
     ENDIAN_FLIP(u16, v->part_count);
     for (u32 i = 0; i < 0x20; i++) {
-        ENDIAN_FLIP(wchar_t, v->name[i]);
+        ENDIAN_FLIP(c16, v->name[i]);
     }
 }
 

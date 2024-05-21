@@ -41,7 +41,7 @@ bool SHA1_blank(sha1_digest x) {
 
 void SHA1_print(sha1_digest x) {
     for (u32 i = 0; i < SHA1_HASH_SIZE; i++) {
-        printf("%hx", x.bytes[i]);
+        printf("%02x", x.bytes[i]);
     }
 }
 
