@@ -20,7 +20,6 @@ void glfw_error(int err_code, const char* msg) {
     LOG_MSG(error, "[code %d] %s\n", err_code, msg);
 }
 
-
 GLFWwindow* setup_opengl(s32 width, s32 height, const char* window_name, bool enable_debug, int mouse_mode) {
     glfwSetErrorCallback(glfw_error);
 
@@ -49,6 +48,7 @@ GLFWwindow* setup_opengl(s32 width, s32 height, const char* window_name, bool en
     glfwSetKeyCallback(window, input_update);
     glfwSetCursorPosCallback(window, cursor_update);
     glfwSetScrollCallback(window, scroll_update);
+    glfwSetMouseButtonCallback(window, mouse_button_update);
 
     if (mouse_mode == 0) {
         mouse_mode = GLFW_CURSOR_DISABLED;
@@ -86,4 +86,3 @@ GLFWwindow* setup_opengl(s32 width, s32 height, const char* window_name, bool en
 
     return window;
 }
-

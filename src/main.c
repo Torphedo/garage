@@ -10,6 +10,7 @@
 
 #include "vehicle.h"
 #include "part_ids.h"
+#include "gui/input.h"
 
 int main(int argc, char** argv) {
     enable_win_ansi();
@@ -33,7 +34,26 @@ int main(int argc, char** argv) {
 
     void* garage_ctx = garage.init(v);
 
+    bool cursor_lock = false;
     while (!glfwWindowShouldClose(window)) {
+        // Allow infinite cursor movement when clicking to pan the camera
+        if (input.click_left) {
+            if (!cursor_lock) {
+                glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+                // Get non-accelerated input if possible
+                if (glfwRawMouseMotionSupported()) {
+                    glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+                }
+            }
+            cursor_lock = true;
+        }
+        else if (cursor_lock) {
+            glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+            glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
+            cursor_lock = false;
+        }
+
         glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         garage.render(garage_ctx);

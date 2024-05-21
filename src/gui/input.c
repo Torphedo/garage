@@ -298,7 +298,6 @@ void set_input_by_glfw_code(int key, bool state, int mods) {
     input.super = (mods & GLFW_MOD_SUPER);
     input.caps_lock = (mods & GLFW_MOD_CAPS_LOCK);
     input.num_lock = (mods & GLFW_MOD_NUM_LOCK);
-
 }
 
 void input_update(GLFWwindow* window, int key, int scancode, int action, int mods) {
@@ -317,3 +316,10 @@ void cursor_update(GLFWwindow* window, double x, double y) {
     input.cursor.y = y;
 }
 
+void mouse_button_update(GLFWwindow* window, int button, int action, int mods) {
+    input.click_left = action * (button == GLFW_MOUSE_BUTTON_LEFT);
+    input.click_right = action * (button == GLFW_MOUSE_BUTTON_RIGHT);
+    input.click_middle = action * (button == GLFW_MOUSE_BUTTON_MIDDLE);
+    input.mouse_button_4 = action * (button == GLFW_MOUSE_BUTTON_4);
+    input.mouse_button_5 = action * (button == GLFW_MOUSE_BUTTON_5);
+}

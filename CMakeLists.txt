@@ -24,7 +24,7 @@ foreach(glsl_src ${GLSL_SOURCES})
 
     add_custom_command(
         OUTPUT  ${CMAKE_SOURCE_DIR}/${file_h}
-        COMMAND txt2h ${CMAKE_SOURCE_DIR}/${glsl_src}
+        COMMAND txt2h ${glsl_src}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
 endforeach()
@@ -39,6 +39,7 @@ add_executable(garage
     src/gui/gl_debug.c
     src/gui/gl_setup.c
     src/gui/input.c
+    src/gui/camera.c
     src/gui/shader.c
     src/gui/render_garage.c
 
@@ -52,5 +53,5 @@ add_executable(garage
 
 )
 
-target_include_directories(garage PRIVATE "src" "ext/glfw/include" "ext/glad/include")
+target_include_directories(garage PRIVATE "src" "ext/glfw/include" "ext/glad/include" "ext/cglm/include")
 target_link_libraries(garage PRIVATE glfw glad)

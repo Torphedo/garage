@@ -147,7 +147,13 @@ typedef struct {
     bool control: 1;
     bool alt: 1;
     bool super: 1;
-    
+
+    bool click_left: 1;
+    bool click_right: 1;
+    bool click_middle: 1;
+    bool mouse_button_4: 1;
+    bool mouse_button_5: 1;
+
     vec2f cursor;
     vec2f scroll;
 }input_internal;
@@ -158,5 +164,6 @@ extern input_internal input;
 void input_update(GLFWwindow* window, int key, int scancode, int actions, int mods);
 void cursor_update(GLFWwindow* window, double xpos, double ypos);
 void scroll_update(GLFWwindow* window, double x, double y);
+void mouse_button_update(GLFWwindow* window, int button, int action, int mods);
 
 #endif // INPUT_H

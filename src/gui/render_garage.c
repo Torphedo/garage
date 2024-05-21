@@ -1,11 +1,15 @@
+#include <stddef.h>
 #include <malloc.h>
 
 #include <glad/glad.h>
+#include <cglm/cglm.h>
 
 #include "render_garage.h"
 #include "shader.h"
+#include "input.h"
+#include "camera.h"
 #include "gl_types.h"
-
+#include "GLFW/glfw3.h"
 
 vertex quad_vertices[] = {
     { .position = {0.5f, 0.5f, 0.0f},
@@ -39,15 +43,6 @@ typedef enum {
     STATE_DESTROYED,
 }renderer_state;
 
-typedef struct {
-     vehicle* v;
-     gl_obj shader_prog;
-     gl_obj vertex_array;
-     gl_obj vertex_buffer;
-
-     renderer_state status;
-}garage_state;
-
 const char* frag = {
 #include "shader/fragment.h"
 };
@@ -55,6 +50,20 @@ const char* frag = {
 const char* vert = {
 #include "shader/vertex.h"
 };
+
+typedef struct {
+     vehicle* v;
+     gl_obj shader_prog;
+     gl_obj vertex_array;
+     gl_obj vertex_buffer;
+
+     // Uniforms
+     gl_obj u_model;
+     gl_obj u_view;
+     gl_obj u_proj;
+
+     renderer_state status;
+}garage_state;
 
 void* garage_init(vehicle* v) {
     garage_state* state = calloc(1, sizeof(*state));
@@ -103,6 +112,11 @@ void* garage_init(vehicle* v) {
     glDeleteShader(vertex_shader);
     glDeleteShader(fragment_shader);
 
+    // Get our uniform locations
+    state->u_model = glGetUniformLocation(state->shader_prog, "model");
+    state->u_view = glGetUniformLocation(state->shader_prog, "view");
+    state->u_proj = glGetUniformLocation(state->shader_prog, "projection");
+
     // Unbind VAO to avoid other renderers messing our state up
     glBindVertexArray(0);
 
@@ -123,10 +137,36 @@ void garage_render(void* ctx) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
 
-    glBindBuffer(GL_ARRAY_BUFFER, state->vertex_buffer);
+    // We need to se the shader program before uploading uniforms
     glUseProgram(state->shader_prog);
+
+    // Upload projection matrix
+    const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    mat4 projection = {0};
+    glm_perspective_rh_no(glm_rad(45), (float)mode->width / (float)mode->height, 0.1f, 1000.0f, projection);
+    state->u_proj = glGetUniformLocation(state->shader_prog, "projection");
+    glUniformMatrix4fv(state->u_proj, 1, GL_FALSE, (const float*)&projection);
+
+    // Upload camera matrix
+    mat4 view = {0};
+    glm_mat4_identity(view);
+
+    camera_update(&view);
+    state->u_view = glGetUniformLocation(state->shader_prog, "view");
+    glUniformMatrix4fv(state->u_view, 1, GL_FALSE, (const float*)&view);
+
+    // Default model matrix
+    mat4 model = {0};
+    glm_mat4_identity(model); // Create identity matrix
+    glUniformMatrix4fv(state->u_model, 1, GL_FALSE, (const float*)&model);
+
+    // Draw
+    glBindBuffer(GL_ARRAY_BUFFER, state->vertex_buffer);
     glBindVertexArray(state->vertex_array);
     glDrawArrays(GL_TRIANGLES, 0, sizeof(quad_vertices) / sizeof(*quad_vertices));
+
+    // Unbind VAO
+    glBindVertexArray(0);
 }
 
 void garage_destroy(void* ctx) {
