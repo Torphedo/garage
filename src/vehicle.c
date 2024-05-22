@@ -9,7 +9,7 @@
 void part_byteswap(part_entry* part) {
     ENDIAN_FLIP(u32, part->unknown);
     ENDIAN_FLIP(u32, part->id);
-    part->rot = vec3f_byteswap(part->rot);
+    vec3_byteswap(&part->rot);
     ENDIAN_FLIP(u32, part->pad3);
 }
 

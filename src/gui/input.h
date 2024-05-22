@@ -154,8 +154,8 @@ typedef struct {
     bool mouse_button_4: 1;
     bool mouse_button_5: 1;
 
-    vec2f cursor;
-    vec2f scroll;
+    vec2s cursor;
+    vec2s scroll;
 }input_internal;
 
 // The global input struct our callback will update

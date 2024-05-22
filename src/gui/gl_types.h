@@ -7,8 +7,8 @@
 typedef unsigned int gl_obj;
 
 typedef struct {
-    vec3f position;
-    vec2f tex_coord;
+    vec3 position;
+    vec4 color;
 }vertex;
 
 

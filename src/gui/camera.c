@@ -70,8 +70,8 @@ vec3s orbit_pos_by_angles(vec2s angles, float orbit_radius) {
     return camera_pos;
 }
 
-vec2s get_cursor_delta(vec2f cursor_pos) {
-    static vec2f last_cursor = {0};
+vec2s get_cursor_delta(vec2s cursor_pos) {
+    static vec2s last_cursor = {0};
 
     // Nullify movement unles click is held
     if (!input.click_left) {
@@ -99,11 +99,11 @@ vec2s get_cursor_delta(vec2f cursor_pos) {
 
 void camera_update(mat4* view) {
     vec3s camera_pos = {0};
-    static vec2f last_scroll = {0};
+    static vec2s last_scroll = {0};
 
     const vec2s cursor_delta = get_cursor_delta(input.cursor);
 
-    const vec2f scroll_delta = {
+    const vec2s scroll_delta = {
         .x = input.scroll.x - last_scroll.x,
         .y = input.scroll.y - last_scroll.y
     };

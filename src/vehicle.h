@@ -27,7 +27,7 @@ typedef struct {
     u8 modifier; // Used for part settings, if applicable (e.g. wheel steering mode)
     u8 pad2;
     u32 id; // part_id enum
-    vec3f rot; // Measured in radians
+    vec3 rot; // Measured in radians
     rgba8 color; // Game stores arbitrary colors, but only the preset colors are allowed
     u32 pad3;
 }part_entry;
