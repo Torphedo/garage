@@ -20,6 +20,10 @@ void glfw_error(int err_code, const char* msg) {
     LOG_MSG(error, "[code %d] %s\n", err_code, msg);
 }
 
+void set_vsync(bool interval) {
+    glfwSwapInterval(interval);
+}
+
 GLFWwindow* setup_opengl(s32 width, s32 height, const char* window_name, bool enable_debug, int mouse_mode) {
     glfwSetErrorCallback(glfw_error);
 
@@ -83,6 +87,7 @@ GLFWwindow* setup_opengl(s32 width, s32 height, const char* window_name, bool en
     // Set OpenGL viewport to size of window, handle resizing
     glViewport(0, 0, width, height);
     glfwSetFramebufferSizeCallback(window, frame_resize_callback);
+    set_vsync(true);
 
     return window;
 }
