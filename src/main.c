@@ -32,6 +32,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     void* garage_ctx = garage.init(v);
 
     bool cursor_lock = false;
@@ -54,7 +55,11 @@ int main(int argc, char** argv) {
             cursor_lock = false;
         }
 
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        // Quit when q is pressed
+        if (input.q) {
+            break;
+        }
+
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         garage.render(garage_ctx);
 
