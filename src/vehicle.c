@@ -21,6 +21,27 @@ void vehicle_header_byteswap(vehicle_header* v) {
     }
 }
 
+vec3s vehicle_find_center(vehicle* v) {
+    vec3u8 max_horizontal = {0};
+    u8 top = 0;
+    for (u16 i = 0; i < v->head.part_count; i++) {
+        vec3u8 pos = v->parts[i].pos;
+        if (pos.x > max_horizontal.x || pos.z > max_horizontal.z) {
+            max_horizontal = pos;
+        }
+        if (pos.y > top) {
+            top = pos.y;
+        }
+    }
+
+    // Return the centerpoint
+    return (vec3s) {
+        .x = (float)max_horizontal.x / 2,
+        .y = (float)top / 2,
+        .z = (float)max_horizontal.z / 2,
+    };
+}
+
 part_entry part_read(FILE* f) {
     part_entry part = {0};
     fread(&part, sizeof(part), 1, f);

@@ -73,7 +73,7 @@ vec3s orbit_pos_by_angles(vec2s angles, float orbit_radius) {
 vec2s get_cursor_delta(vec2s cursor_pos) {
     static vec2s last_cursor = {0};
 
-    // Nullify movement unles click is held
+    // Nullify movement unless click is held
     if (!input.click_left) {
         last_cursor = input.cursor;
     }
@@ -107,6 +107,7 @@ void camera_update(mat4* view) {
         .x = input.scroll.x - last_scroll.x,
         .y = input.scroll.y - last_scroll.y
     };
+
     const vec3s pos_delta = {
         .x = (input.w - input.s) * orbit_speed,
         .y = 0.0f,
@@ -119,6 +120,7 @@ void camera_update(mat4* view) {
     // Update angles & zoom from mouse input
     camera_orbit_angles = glms_vec2_add(camera_orbit_angles, cursor_delta);
     radius -= scroll_delta.y;
+    radius = clampf(radius, 0.0f, 128.0f);
 
     // Update with keyboard input.
     camera_target = glms_vec3_add(camera_target, pos_delta);

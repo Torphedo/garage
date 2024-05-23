@@ -256,6 +256,7 @@ void garage_render(void* ctx) {
 
 
     vehicle* v = state->gui->v;
+    vec3s center = vehicle_find_center(v);
     for (u16 i = 0; i < v->head.part_count; i++) {
         glBindBuffer(GL_ARRAY_BUFFER, state->cube_vbuf);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->cube_ibuf);
@@ -263,8 +264,12 @@ void garage_render(void* ctx) {
 
         // Move the part
         mat4 part_mat = {0};
-        vec3s pos_float = vec3_from_vec3u8(v->parts[i].pos, 5.0f);
-        glm_translate_to(model, (float*)&pos_float, part_mat);
+        vec3s pos = {
+            .x = ((float)v->parts[i].pos.x - center.x) * 5,
+            .y = ((float)v->parts[i].pos.y) * 5,
+            .z = ((float)v->parts[i].pos.z - center.z) * 5,
+        };
+        glm_translate_to(model, (float*)&pos, part_mat);
         glUniformMatrix4fv(state->u_model, 1, GL_FALSE, (const float*)&part_mat);
 
         // Upload paint color & draw

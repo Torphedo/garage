@@ -22,4 +22,6 @@ typedef struct {
 }rgba8;
 vec4s vec4_from_rgba8(rgba8 c);
 
+#define LERP(a, b, t) ((a * (1 - t)) + (b * t))
+
 #endif // VECTOR_H

@@ -53,4 +53,6 @@ void vehicle_header_byteswap(vehicle_header* v);
 
 vehicle* vehicle_load(const char* path);
 
+vec3s vehicle_find_center(vehicle* v);
+
 #endif // VEHICLE_H
