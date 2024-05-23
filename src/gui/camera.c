@@ -2,16 +2,20 @@
 
 #include <common/logging.h>
 #include "input.h"
+#include "camera.h"
+#include "gui_common.h"
 
 // Up axis for our camera
-static vec3 camera_up = {0.0f, 1.0f, 0.0f};
+vec3s camera_up = {0.0f, 1.0f, 0.0f};
 
-static vec3s camera_target = {0};
-static vec2s camera_orbit_angles = {0};
+vec3s camera_target = {0};
+vec2s camera_orbit_angles = {0};
+vec3s camera_pos = {0};
 
-static float radius = 4.0f;
-static const float orbit_speed = 0.025f;
-static const float mouse_sens = 0.015f;
+float radius = 4.0f;
+const float orbit_speed = 0.025f;
+const float move_speed = 0.5f;
+const float mouse_sens = 0.015f;
 
 bool invert_mouse_x = true;
 bool invert_mouse_y = false;
@@ -43,7 +47,7 @@ vec2s vec2_addmag(vec2s v, float amount) {
 // rotation angle
 vec3s orbit_pos_by_angles(vec2s angles, float orbit_radius) {
     // Get XYZ positions using trig on our angles
-    vec3s camera_pos = {
+    camera_pos = (vec3s){
         .x = sinf(camera_orbit_angles.x),
         .z = cosf(camera_orbit_angles.x),
         .y = sinf(camera_orbit_angles.y)
@@ -97,8 +101,7 @@ vec2s get_cursor_delta(vec2s cursor_pos) {
     return cursor_delta;
 }
 
-void camera_update(mat4* view) {
-    vec3s camera_pos = {0};
+void camera_update(gui_state* gui, mat4* view) {
     static vec2s last_scroll = {0};
 
     const vec2s cursor_delta = get_cursor_delta(input.cursor);
@@ -108,11 +111,22 @@ void camera_update(mat4* view) {
         .y = input.scroll.y - last_scroll.y
     };
 
-    const vec3s pos_delta = {
-        .x = (input.w - input.s) * orbit_speed,
-        .y = 0.0f,
-        .z = (input.d - input.a) * orbit_speed
-    };
+    vec3s cam_dir = glms_normalize(camera_facing());
+    float forward  = (gui->mode == MODE_MOVCAM) * move_speed * (input.w - input.s);
+    float side     = (gui->mode == MODE_MOVCAM) * move_speed * (input.a - input.d);
+    float vertical = (gui->mode == MODE_MOVCAM) * move_speed * (input.space - input.shift);
+    vec3s pos_delta = glms_vec3_scale(cam_dir, forward); // [Camera dir] * forward movement
+
+    // Add [Camera dir rotated by 90 degrees] * side movement to get net movement
+    vec3s cam_side = glms_vec3_rotate(cam_dir, glm_rad(90), camera_up);
+    cam_side.y = 0;
+    pos_delta = glms_vec3_add(pos_delta, glms_vec3_scale(cam_side, side));
+
+    // Use this for "freecam"-style movement
+    // pos_delta.y = (cam_dir.y * forward) * (gui->mode == MODE_POV);
+
+    // Nullify vertical movement unless enabled
+    pos_delta.y = vertical;
 
     // Save state so we can find the delta next time we're called
     last_scroll = input.scroll;
@@ -120,9 +134,9 @@ void camera_update(mat4* view) {
     // Update angles & zoom from mouse input
     camera_orbit_angles = glms_vec2_add(camera_orbit_angles, cursor_delta);
     radius -= scroll_delta.y;
-    radius = clampf(radius, 0.0f, 128.0f);
+    radius = clampf(radius, 0.05f, 128.0f); // Don't allow <= 0 or really high zoom
 
-    // Update with keyboard input.
+    // Update target pos using delta from user input
     camera_target = glms_vec3_add(camera_target, pos_delta);
 
     // Rendering breaks at exactly 90 and we don't want to be upside-down
@@ -131,7 +145,10 @@ void camera_update(mat4* view) {
     // Add target position to relative orbit position
     camera_pos = glms_vec3_add(camera_target, orbit_pos_by_angles(camera_orbit_angles, radius));
     
-    // TODO: Implement flying freecam-style camera [low priority]
-    glm_lookat((float*)&camera_pos, (float*)&camera_target, camera_up, *view);
+    glm_lookat((float*)&camera_pos, (float*)&camera_target, (float*)&camera_up, *view);
+}
+
+vec3s camera_facing() {
+    return glms_vec3_sub(camera_target, camera_pos);
 }
 

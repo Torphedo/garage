@@ -8,6 +8,7 @@
 #include "gui/gl_setup.h"
 #include "gui/render_garage.h"
 #include "gui/input.h"
+#include "gui/camera.h"
 
 #include "vehicle.h"
 #include "part_ids.h"
@@ -39,7 +40,6 @@ int main(int argc, char** argv) {
     bool cursor_lock = false;
     double one_frame_ago = glfwGetTime();
     double two_frames_ago = glfwGetTime();
-    input_internal held_last_frame = {0};
     while (!glfwWindowShouldClose(window)) {
         // Update delta time and our last 2 frame times
         gui.delta_time = one_frame_ago - two_frames_ago;
@@ -48,6 +48,7 @@ int main(int argc, char** argv) {
 
         // Poll for input & handle input data
         glfwPollEvents();
+        update_mods(window);
 
         // Quit when q is pressed
         if (input.q) {
@@ -71,18 +72,28 @@ int main(int argc, char** argv) {
             glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
             cursor_lock = false;
         }
-        gui.sel_box.y += (input.space && !held_last_frame.space);
-        gui.sel_box.y -= (input.shift && !held_last_frame.shift);
+
+        gui.sel_box.y += (gui.mode == MODE_EDIT) * (input.space && !gui.prev_input.space);
+        gui.sel_box.y -= (gui.mode == MODE_EDIT) * (input.shift && !gui.prev_input.shift);
+        if (input.v && !gui.prev_input.v) {
+            gui.cam_allow_vertical = !gui.cam_allow_vertical;
+        }
+        if (input.tab && !gui.prev_input.tab) {
+            // Cycle through modes. Shift-Tab goes backwards.
+            gui.mode = (gui.mode + (input.control ? -1 : 1)) % MODE_ENUM_MAX;
+        }
 
         LOG_MSG(debug, "Last frame: %.3lfms\n", gui.delta_time * 1000.0);
         LOG_MSG(debug, "FPS: %.1f\n", 1.0 / gui.delta_time);
         printf("\033[1F\033[K\033[1F\033[K");
-        held_last_frame = input;
 
         // Render
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         garage.render(garage_ctx);
         glfwSwapBuffers(window);
+
+        // Reset input
+        gui.prev_input = input;
     }
     garage.destroy(garage_ctx);
     glfwTerminate();

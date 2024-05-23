@@ -165,5 +165,6 @@ void input_update(GLFWwindow* window, int key, int scancode, int actions, int mo
 void cursor_update(GLFWwindow* window, double xpos, double ypos);
 void scroll_update(GLFWwindow* window, double x, double y);
 void mouse_button_update(GLFWwindow* window, int button, int action, int mods);
+void update_mods(GLFWwindow* window);
 
 #endif // INPUT_H

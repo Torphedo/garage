@@ -243,7 +243,7 @@ void garage_render(void* ctx) {
     mat4 view = {0};
     glm_mat4_identity(view);
 
-    camera_update(&view);
+    camera_update(state->gui, &view);
     glUniformMatrix4fv(state->u_view, 1, GL_FALSE, (const float*)&view);
 
     // Default model matrix

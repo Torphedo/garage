@@ -3,6 +3,7 @@
 #include <common/int.h>
 #include <common/vector.h>
 #include <vehicle.h>
+#include "input.h"
 
 // Making this the same type as GLuint removes lots of conversion linter warnings
 typedef unsigned int gl_obj;
@@ -12,10 +13,20 @@ typedef struct {
     vec4 color;
 }vertex;
 
+typedef enum {
+    MODE_MOVCAM,
+    MODE_EDIT,
+    MODE_MENU,
+    MODE_ENUM_MAX,
+}editor_mode;
+
 typedef struct {
     vehicle* v;
     double delta_time; // Measured in seconds
     vec3s16 sel_box; // Selection box position
+    input_internal prev_input;
+    bool cam_allow_vertical;
+    editor_mode mode;
 }gui_state;
 
 // Standard interface to facilitate multiple renderers per frame. For example, a

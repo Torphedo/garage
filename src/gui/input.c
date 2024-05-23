@@ -323,3 +323,13 @@ void mouse_button_update(GLFWwindow* window, int button, int action, int mods) {
     input.mouse_button_4 = action * (button == GLFW_MOUSE_BUTTON_4);
     input.mouse_button_5 = action * (button == GLFW_MOUSE_BUTTON_5);
 }
+
+void update_mods(GLFWwindow* window) {
+    input.left_shift = glfwGetKey(window, GLFW_KEY_LEFT_SHIFT);
+    input.right_shift = glfwGetKey(window, GLFW_KEY_RIGHT_SHIFT);
+    input.shift = input.left_shift | input.right_shift;
+    input.left_control = glfwGetKey(window, GLFW_KEY_LEFT_CONTROL);
+    input.right_control = glfwGetKey(window, GLFW_KEY_RIGHT_CONTROL);
+    input.control = input.left_control | input.right_control;
+
+}
