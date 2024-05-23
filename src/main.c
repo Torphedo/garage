@@ -7,10 +7,10 @@
 
 #include "gui/gl_setup.h"
 #include "gui/render_garage.h"
+#include "gui/input.h"
 
 #include "vehicle.h"
 #include "part_ids.h"
-#include "gui/input.h"
 
 int main(int argc, char** argv) {
     enable_win_ansi();
@@ -26,6 +26,7 @@ int main(int argc, char** argv) {
         // Loader function will print the error message for us
         return 1;
     }
+    gui_state gui = { v, 0.0 };
 
     GLFWwindow* window = setup_opengl(680, 480, "Garage Opener", ENABLE_DEBUG, GLFW_CURSOR_NORMAL);
     if (window == NULL) {
@@ -33,10 +34,30 @@ int main(int argc, char** argv) {
     }
 
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    void* garage_ctx = garage.init(v);
+    void* garage_ctx = garage.init(&gui);
 
     bool cursor_lock = false;
+    double one_frame_ago = glfwGetTime();
+    double two_frames_ago = glfwGetTime();
     while (!glfwWindowShouldClose(window)) {
+        // Update delta time and our last 2 frame times
+        gui.delta_time = one_frame_ago - two_frames_ago;
+        two_frames_ago = one_frame_ago;
+        one_frame_ago = glfwGetTime();
+
+        // Render
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        garage.render(garage_ctx);
+        glfwSwapBuffers(window);
+
+        // Poll for input & handle input data
+        glfwPollEvents();
+
+        // Quit when q is pressed
+        if (input.q) {
+            break;
+        }
+
         // Allow infinite cursor movement when clicking to pan the camera
         if (input.click_left) {
             if (!cursor_lock) {
@@ -55,16 +76,9 @@ int main(int argc, char** argv) {
             cursor_lock = false;
         }
 
-        // Quit when q is pressed
-        if (input.q) {
-            break;
-        }
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        garage.render(garage_ctx);
-
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        LOG_MSG(debug, "Last frame: %.3lfms\n", gui.delta_time * 1000.0);
+        LOG_MSG(debug, "FPS: %.1f\n", 1.0 / gui.delta_time);
+        printf("\033[1F\033[K\033[1F\033[K");
     }
     garage.destroy(garage_ctx);
     glfwTerminate();

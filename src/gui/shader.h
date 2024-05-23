@@ -3,7 +3,7 @@
 
 #include <glad/glad.h>
 
-#include "gl_types.h"
+#include "gui_common.h"
 
 // Make sure the shader program linked correctly, printing error messages if
 // needed.

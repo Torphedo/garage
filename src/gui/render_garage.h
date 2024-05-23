@@ -1,6 +1,6 @@
 #ifndef RENDER_GARAGE_H
 #define RENDER_GARAGE_H
-#include "renderer.h"
+#include "gui_common.h"
 
 extern renderer garage;
 

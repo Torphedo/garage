@@ -7,37 +7,38 @@
 #include "render_garage.h"
 #include "shader.h"
 #include "camera.h"
-#include "gl_types.h"
+#include "gui_common.h"
 #include "GLFW/glfw3.h"
 
 #define QUAD_SIZE (32.0f)
-vertex quad_vertices[] = {
+vec4 quad_paint = {1.0f, 0.5f, 0.2f, 1.0f};
+const vertex quad_vertices[] = {
     {
         .position = {QUAD_SIZE, -1.5f, QUAD_SIZE},
-        .color = {1.0f, 0.5f, 0.2f, 1.0f}
+        .color = {1.0f, 1.0f, 1.0f, 1.0f}
     },
     {
         .position = {QUAD_SIZE, -1.5f, -QUAD_SIZE},
-        .color = {1.0f, 0.5f, 0.2f, 1.0f}
+        .color = {1.0f, 1.0f, 1.0f, 1.0f}
     },
     {
         .position = {-QUAD_SIZE, -1.5f, -QUAD_SIZE},
-        .color = {1.0f, 0.5f, 0.2f, 1.0f}
+        .color = {1.0f, 1.0f, 1.0f, 1.0f}
     },
     {
         .position = {-QUAD_SIZE,  -1.5f, QUAD_SIZE},
-        .color = {1.0f, 0.5f, 0.2f, 1.0f}
+        .color = {1.0f, 1.0f, 1.0f, 1.0f}
     }
 };
 
-u8 quad_indices[] = {
+const u16 quad_indices[] = {
     0, 1, 2,
     3, 0, 2,
 };
 
 #define CUBE_SIZE (1.0f)
 #define CUBE_COLOR {1.0f, 1.0f, 1.0f, 1.0f}
-vertex cube_vertices[] = {
+const vertex cube_vertices[] = {
     {
         .position = {CUBE_SIZE, CUBE_SIZE, CUBE_SIZE},
         .color = CUBE_COLOR
@@ -72,7 +73,7 @@ vertex cube_vertices[] = {
     }
 };
 
-u8 cube_indices[] = {
+const u16 cube_indices[] = {
         0, 2, 1,
         0, 2, 3,
         4, 6, 5,
@@ -105,7 +106,7 @@ const char* vert = {
 };
 
 typedef struct {
-     vehicle* v;
+     gui_state* gui;
      gl_obj shader_prog;
      gl_obj quad_vao;
      gl_obj quad_vbuf;
@@ -124,13 +125,13 @@ typedef struct {
      renderer_state status;
 }garage_state;
 
-void* garage_init(vehicle* v) {
+void* garage_init(gui_state* gui) {
     garage_state* state = calloc(1, sizeof(*state));
     if (state == NULL) {
         LOG_MSG(info, "Couldn't allocate for renderer state!\n");
         return NULL;
     }
-    state->v = v;
+    state->gui = gui;
 
     // Compile shaders
     gl_obj vertex_shader = shader_compile_src(vert, GL_VERTEX_SHADER);
@@ -244,32 +245,38 @@ void garage_render(void* ctx) {
     glm_mat4_identity(model); // Create identity matrix
     glUniformMatrix4fv(state->u_model, 1, GL_FALSE, (const float*)&model);
 
+    // "Paint" the floor the right color
+    glUniform4fv(state->u_paint, 1, (const float*)&quad_paint);
+
     // Draw
     glBindBuffer(GL_ARRAY_BUFFER, state->quad_vbuf);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->quad_ibuf);
     glBindVertexArray(state->quad_vao);
-    glDrawElements(GL_TRIANGLES, sizeof(quad_indices) / sizeof(*quad_indices), GL_UNSIGNED_BYTE, NULL);
+    glDrawElements(GL_TRIANGLES, sizeof(quad_indices) / sizeof(*quad_indices), GL_UNSIGNED_SHORT, NULL);
 
 
-    for (u16 i = 0; i < state->v->head.part_count; i++) {
+    vehicle* v = state->gui->v;
+    for (u16 i = 0; i < v->head.part_count; i++) {
         glBindBuffer(GL_ARRAY_BUFFER, state->cube_vbuf);
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->cube_ibuf);
         glBindVertexArray(state->cube_vao);
 
         // Move the part
         mat4 part_mat = {0};
-        vec3s pos_float = vec3_from_vec3u8(state->v->parts[i].pos, 5.0f);
+        vec3s pos_float = vec3_from_vec3u8(v->parts[i].pos, 5.0f);
         glm_translate_to(model, (float*)&pos_float, part_mat);
         glUniformMatrix4fv(state->u_model, 1, GL_FALSE, (const float*)&part_mat);
 
         // Upload paint color & draw
-        vec4s paint_col = vec4_from_rgba8(state->v->parts[i].color);
-        glUniform4fv(state->u_paint, 1, &paint_col);
-        glDrawElements(GL_TRIANGLES, sizeof(cube_indices) / sizeof(*cube_indices), GL_UNSIGNED_BYTE, NULL);
+        vec4s paint_col = vec4_from_rgba8(v->parts[i].color);
+        glUniform4fv(state->u_paint, 1, (const float*)&paint_col);
+        glDrawElements(GL_TRIANGLES, sizeof(cube_indices) / sizeof(*cube_indices), GL_UNSIGNED_SHORT, NULL);
     }
 
     // Unbind VAO
     glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void garage_destroy(void* ctx) {
@@ -282,6 +289,11 @@ void garage_destroy(void* ctx) {
     glDeleteProgram(state->shader_prog);
     glDeleteVertexArrays(1, &state->quad_vao);
     glDeleteBuffers(1, &state->quad_vbuf);
+    glDeleteBuffers(1, &state->quad_ibuf);
+
+    glDeleteVertexArrays(1, &state->cube_vao);
+    glDeleteBuffers(1, &state->cube_vbuf);
+    glDeleteBuffers(1, &state->cube_ibuf);
 
     // On the off chance we get called again and don't crash while trying to
     // read this already-freed status value, render() will exit early.
