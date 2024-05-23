@@ -125,6 +125,12 @@ typedef struct {
      renderer_state status;
 }garage_state;
 
+enum {
+    PART_SCALE = 1,
+    PART_POS_SCALE = 5,
+    SEL_BOX_SIZE = (PART_POS_SCALE * 2),
+};
+
 void* garage_init(gui_state* gui) {
     garage_state* state = calloc(1, sizeof(*state));
     if (state == NULL) {
@@ -255,33 +261,51 @@ void garage_render(void* ctx) {
     glDrawElements(GL_TRIANGLES, sizeof(quad_indices) / sizeof(*quad_indices), GL_UNSIGNED_SHORT, NULL);
 
 
+    // Draw all our parts
+    glBindBuffer(GL_ARRAY_BUFFER, state->cube_vbuf);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->cube_ibuf);
+    glBindVertexArray(state->cube_vao);
+
     vehicle* v = state->gui->v;
     vec3s center = vehicle_find_center(v);
     for (u16 i = 0; i < v->head.part_count; i++) {
-        glBindBuffer(GL_ARRAY_BUFFER, state->cube_vbuf);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->cube_ibuf);
-        glBindVertexArray(state->cube_vao);
-
         // Move the part
-        mat4 part_mat = {0};
         vec3s pos = {
-            .x = ((float)v->parts[i].pos.x - center.x) * 5,
-            .y = ((float)v->parts[i].pos.y) * 5,
-            .z = ((float)v->parts[i].pos.z - center.z) * 5,
+            .x = ((float)v->parts[i].pos.x - center.x) * PART_POS_SCALE,
+            .y = ((float)v->parts[i].pos.y) * PART_POS_SCALE,
+            .z = ((float)v->parts[i].pos.z - center.z) * PART_POS_SCALE,
         };
-        glm_translate_to(model, (float*)&pos, part_mat);
-        glUniformMatrix4fv(state->u_model, 1, GL_FALSE, (const float*)&part_mat);
+        glm_translate(model, (float*)&pos);
+        glUniformMatrix4fv(state->u_model, 1, GL_FALSE, (const float*)&model);
 
         // Upload paint color & draw
         vec4s paint_col = vec4_from_rgba8(v->parts[i].color);
         glUniform4fv(state->u_paint, 1, (const float*)&paint_col);
         glDrawElements(GL_TRIANGLES, sizeof(cube_indices) / sizeof(*cube_indices), GL_UNSIGNED_SHORT, NULL);
+        glm_mat4_identity(model);
     }
 
-    // Unbind VAO
+    // Move the part
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    vec3s pos = {
+            .x = ((float)state->gui->sel_box.x - center.x) * PART_POS_SCALE,
+            .y = ((float)state->gui->sel_box.y) * PART_POS_SCALE,
+            .z = ((float)state->gui->sel_box.z - center.z) * PART_POS_SCALE,
+    };
+    glm_translate(model, (float*)&pos);
+    glm_scale_uni(model, 1.2f);
+    glUniformMatrix4fv(state->u_model, 1, GL_FALSE, (const float*)&model);
+
+    // Upload paint color & draw
+    vec4s paint_col = { .a = 1.0f};
+    glUniform4fv(state->u_paint, 1, (const float*)&paint_col);
+    glDrawElements(GL_TRIANGLES, sizeof(cube_indices) / sizeof(*cube_indices), GL_UNSIGNED_SHORT, NULL);
+
+    // Reset state
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
 void garage_destroy(void* ctx) {

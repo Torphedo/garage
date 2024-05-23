@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
         // Loader function will print the error message for us
         return 1;
     }
-    gui_state gui = { v, 0.0 };
+    gui_state gui = {.v = v};
 
     GLFWwindow* window = setup_opengl(680, 480, "Garage Opener", ENABLE_DEBUG, GLFW_CURSOR_NORMAL);
     if (window == NULL) {
@@ -39,16 +39,12 @@ int main(int argc, char** argv) {
     bool cursor_lock = false;
     double one_frame_ago = glfwGetTime();
     double two_frames_ago = glfwGetTime();
+    input_internal held_last_frame = {0};
     while (!glfwWindowShouldClose(window)) {
         // Update delta time and our last 2 frame times
         gui.delta_time = one_frame_ago - two_frames_ago;
         two_frames_ago = one_frame_ago;
         one_frame_ago = glfwGetTime();
-
-        // Render
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        garage.render(garage_ctx);
-        glfwSwapBuffers(window);
 
         // Poll for input & handle input data
         glfwPollEvents();
@@ -75,10 +71,18 @@ int main(int argc, char** argv) {
             glfwSetInputMode(window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
             cursor_lock = false;
         }
+        gui.sel_box.y += (input.space && !held_last_frame.space);
+        gui.sel_box.y -= (input.shift && !held_last_frame.shift);
 
         LOG_MSG(debug, "Last frame: %.3lfms\n", gui.delta_time * 1000.0);
         LOG_MSG(debug, "FPS: %.1f\n", 1.0 / gui.delta_time);
         printf("\033[1F\033[K\033[1F\033[K");
+        held_last_frame = input;
+
+        // Render
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        garage.render(garage_ctx);
+        glfwSwapBuffers(window);
     }
     garage.destroy(garage_ctx);
     glfwTerminate();

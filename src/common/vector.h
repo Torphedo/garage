@@ -13,6 +13,12 @@ typedef struct {
 }vec3u8;
 vec3s vec3_from_vec3u8(vec3u8 vu8, float scale);
 
+typedef struct {
+    s16 x;
+    s16 y; // Height
+    s16 z;
+}vec3s16;
+
 // 8-bit RGBA color
 typedef struct {
     u8 r;

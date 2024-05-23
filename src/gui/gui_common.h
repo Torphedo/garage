@@ -15,6 +15,7 @@ typedef struct {
 typedef struct {
     vehicle* v;
     double delta_time; // Measured in seconds
+    vec3s16 sel_box; // Selection box position
 }gui_state;
 
 // Standard interface to facilitate multiple renderers per frame. For example, a

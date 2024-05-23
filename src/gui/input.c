@@ -291,13 +291,13 @@ void set_input_by_glfw_code(int key, bool state, int mods) {
             break;
     }
 
-    // Update modifier keys
-    input.shift = (mods & GLFW_MOD_SHIFT);
-    input.control = (mods & GLFW_MOD_CONTROL);
-    input.alt = (mods & GLFW_MOD_ALT);
-    input.super = (mods & GLFW_MOD_SUPER);
-    input.caps_lock = (mods & GLFW_MOD_CAPS_LOCK);
-    input.num_lock = (mods & GLFW_MOD_NUM_LOCK);
+    // Toggle the modifier keys if they're being held
+    input.shift     = (!input.shift & (mods & GLFW_MOD_SHIFT));
+    input.control   = (!input.control & (mods & GLFW_MOD_CONTROL));
+    input.alt       = (!input.alt & (mods & GLFW_MOD_ALT));
+    input.super     = (!input.super & (mods & GLFW_MOD_SUPER));
+    input.caps_lock = (!input.caps_lock & (mods & GLFW_MOD_CAPS_LOCK));
+    input.num_lock  = (!input.num_lock & (mods & GLFW_MOD_NUM_LOCK));
 }
 
 void input_update(GLFWwindow* window, int key, int scancode, int action, int mods) {
