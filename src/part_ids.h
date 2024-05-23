@@ -10,6 +10,7 @@ typedef enum {
     SEAT_PASSENGER_LARGE = 0x1FFF3B45,
     SEAT_STRONG          = 0x1FD1984E,
     SEAT_SCUBA           = 0x1F123ED4,
+    SEAT_SUPER           = 0x1FF03006,
 
     // <== Wheels ==>
     WHEEL_STANDARD  = 0x1F09D39A,
@@ -88,6 +89,12 @@ typedef enum {
     GYROSCOPE       = 0x1F74119D,
     SPOTLIGHT       = 0x1F72D497,
     SELF_DESTRUCT   = 0x1F583430,
+    SPEC_O_SPY      = 0x1F0002C7,
+    /* Don't know these IDs yet
+    CHAMELEON       =
+    ROBO_FIX        =
+    STICKY_BALL     =
+     */
     LIQUID_SQUIRTER = 0x1F41AAC0,
     SPOILER         = 0x1FB56B94,
     SUCK_N_BLOW     = 0x1F6EFC34,

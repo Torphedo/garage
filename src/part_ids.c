@@ -12,6 +12,8 @@ char* part_get_name(part_id id) {
         return "Strong Seat";
     case SEAT_SCUBA:
         return "Scuba Seat";
+    case SEAT_SUPER:
+        return "Super Seat";
 
     case WHEEL_STANDARD:
         return "Standard Wheel";
@@ -125,12 +127,15 @@ char* part_get_name(part_id id) {
 
     case AERIAL:
         return "Aerial";
+
     case GYROSCOPE:
         return "Gyroscope";
     case SPOTLIGHT:
         return "Spotlight";
     case SELF_DESTRUCT:
         return "Self-Destruct";
+    case SPEC_O_SPY:
+        return "Spec-O-Spy";
     case LIQUID_SQUIRTER:
         return "Liquid Squirter";
     case SPOILER:
