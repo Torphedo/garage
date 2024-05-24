@@ -288,10 +288,13 @@ void garage_render(void* ctx) {
     // Move the part
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     vec3s pos = {
-            .x = ((float)state->gui->sel_box.x - center.x) * PART_POS_SCALE,
-            .y = ((float)state->gui->sel_box.y) * PART_POS_SCALE,
-            .z = ((float)state->gui->sel_box.z - center.z) * PART_POS_SCALE,
+        .x = ((float)state->gui->sel_box.x - center.x) * PART_POS_SCALE,
+        .y = ((float)state->gui->sel_box.y) * PART_POS_SCALE,
+        .z = ((float)state->gui->sel_box.z - center.z) * PART_POS_SCALE,
     };
+    if (state->gui->mode == MODE_EDIT) {
+        camera_set_target(pos);
+    }
     glm_translate(model, (float*)&pos);
     glm_scale_uni(model, 1.2f);
     glUniformMatrix4fv(state->u_model, 1, GL_FALSE, (const float*)&model);

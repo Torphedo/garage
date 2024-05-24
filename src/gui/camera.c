@@ -113,6 +113,8 @@ void camera_update(gui_state* gui, mat4* view) {
     vec3s cam_dir = glms_normalize(camera_facing());
     float forward  = (gui->mode == MODE_MOVCAM) * move_speed * (input.w - input.s);
     float side     = (gui->mode == MODE_MOVCAM) * move_speed * (input.a - input.d);
+
+    // Nullify vertical movement unless enabled
     float vertical = (gui->mode == MODE_MOVCAM) * move_speed * (input.space - input.shift);
     vec3s pos_delta = glms_vec3_scale(cam_dir, forward); // [Camera dir] * forward movement
 
@@ -124,7 +126,6 @@ void camera_update(gui_state* gui, mat4* view) {
     // Use this for "freecam"-style movement
     // pos_delta.y = (cam_dir.y * forward) * (gui->mode == MODE_POV);
 
-    // Nullify vertical movement unless enabled
     pos_delta.y = vertical;
 
     // Save state so we can find the delta next time we're called
@@ -151,3 +152,10 @@ vec3s camera_facing() {
     return glms_vec3_sub(camera_target, camera_pos);
 }
 
+void camera_set_target(vec3s pos) {
+    camera_target = (vec3s){
+        .x = pos.x,
+        .y = pos.y,
+        .z = pos.z,
+    };
+}

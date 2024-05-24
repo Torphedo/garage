@@ -78,7 +78,10 @@ int main(int argc, char** argv) {
         }
         if (input.tab && !gui.prev_input.tab) {
             // Cycle through modes. Shift-Tab goes backwards.
-            gui.mode = (gui.mode + (input.control ? -1 : 1)) % MODE_ENUM_MAX;
+            gui.mode = (gui.mode + (input.control ? -1 : 1)) % 2;
+        }
+        if (input.escape && !gui.prev_input.escape) {
+            gui.mode = MODE_MENU;
         }
 
         // Handle moving the selector box
