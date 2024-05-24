@@ -1,4 +1,6 @@
-#pragma once
+#ifndef SHADER_H
+#define SHADER_H
+
 #include <stdbool.h>
 
 #include <glad/glad.h>
@@ -16,3 +18,6 @@ gl_obj shader_compile_src(const char* src, GLenum shader_type);
 // Load a GLSL source file from disk, then compile it with shader_compile_src()
 // shader_type is GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, or GL_GEOMETRY_SHADER
 gl_obj shader_compile(const char* path, GLenum shader_type);
+
+#endif // #ifndef SHADER_H
+
