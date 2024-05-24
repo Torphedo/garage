@@ -1,6 +1,5 @@
 #include <cglm/struct.h>
 
-#include <common/logging.h>
 #include "input.h"
 #include "camera.h"
 #include "gui_common.h"

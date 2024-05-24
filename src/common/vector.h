@@ -6,18 +6,28 @@
 
 void vec3_byteswap(vec3* v);
 
-typedef struct {
-    u8 x;
-    u8 y; // Height
-    u8 z;
+// This isn't standard until C11, but a lot of compilers support it in C99.
+// cglm also uses anonymous structs like this for its vector struct types.
+typedef union {
+    struct {
+        u8 x;
+        u8 y; // Height
+        u8 z;
+    };
+    u8 raw[3];
 }vec3u8;
 vec3s vec3_from_vec3u8(vec3u8 vu8, float scale);
+bool vec3u8_eq(vec3u8 a, vec3u8 b);
 
-typedef struct {
-    s16 x;
-    s16 y; // Height
-    s16 z;
+typedef union {
+    struct {
+        s16 x;
+        s16 y; // Height
+        s16 z;
+    };
+    s16 raw[3];
 }vec3s16;
+bool vec3u8_eq_vec3s16(vec3u8 a, vec3s16 b);
 
 // 8-bit RGBA color
 typedef struct {

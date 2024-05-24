@@ -1,4 +1,6 @@
+#include <stdbool.h>
 #include <malloc.h>
+
 #include "common/endian.h"
 #include "common/file.h"
 
@@ -88,4 +90,52 @@ vehicle* vehicle_load(const char* path) {
     }
 
     return v;
+}
+
+bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
+    if (idx > v->head.part_count) {
+        return false;
+    }
+    part_entry* p = &v->parts[idx];
+    bool need_readjust = false;
+
+    // We loop over the 3 axes here
+    for (u8 i = 0; i < 3; i++) {
+        // Find position of this axis after the move
+        s16 new_pos = (s16)p->pos.raw[i] + diff.raw[i];
+        if (new_pos >= 0) {
+            // Everything's fine, update pos
+            p->pos.raw[i] += diff.raw[i];
+            continue;
+        }
+
+        // Make this the new 0, and adjust the rest of the parts
+        need_readjust = true;
+        p->pos.raw[i] = 0;
+        for (u16 j = 0; j < v->head.part_count; j++) {
+            if (j == idx) {
+                continue;
+            }
+
+            if (v->parts[i].pos.raw[i] >= UINT8_MAX - new_pos) {
+                // Integer overflow
+                return false;
+            }
+
+            // Pull each part back on this axis by however much we're out of bounds
+            v->parts[j].pos.raw[i] -= new_pos;
+        }
+    }
+
+    return true;
+}
+
+s32 part_idx_by_pos(vehicle* v, vec3u8 pos) {
+    for (u16 i = 0; i < v->head.part_count; i++) {
+        part_entry* p = &v->parts[i];
+        if (vec3u8_eq(p->pos, pos)) {
+            return i;
+        }
+    }
+    return -1;
 }

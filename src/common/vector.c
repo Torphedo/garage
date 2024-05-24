@@ -16,6 +16,14 @@ vec3s vec3_from_vec3u8(vec3u8 vu8, float scale) {
     };
 }
 
+bool vec3u8_eq(vec3u8 a, vec3u8 b) {
+    return (a.x == b.x) && (a.y == b.y) && (a.z == b.z);
+}
+
+bool vec3u8_eq_vec3s16(vec3u8 a, vec3s16 b) {
+    return (a.x == b.x) && (a.y == b.y) && (a.z == b.z);
+}
+
 vec4s vec4_from_rgba8(rgba8 c) {
     return (vec4s) {
         (float)c.r / 255,

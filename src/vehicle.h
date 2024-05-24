@@ -55,4 +55,8 @@ vehicle* vehicle_load(const char* path);
 
 vec3s vehicle_find_center(vehicle* v);
 
+bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff);
+
+s32 part_idx_by_pos(vehicle* v, vec3u8 pos);
+
 #endif // VEHICLE_H
