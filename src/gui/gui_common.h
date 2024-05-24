@@ -40,6 +40,9 @@ typedef struct {
     u16 sel_idx; // Currently selected part. Will have to refactor for multi-select
 }gui_state;
 
+// Update the GUI state according to new user input.
+bool gui_update_with_input(gui_state* gui, GLFWwindow* window);
+
 // Standard interface to facilitate multiple renderers per frame. For example, a
 // UI renderer would render on top of the scene renderer and have separate code.
 // This also allows multiple copies of a renderer at once.

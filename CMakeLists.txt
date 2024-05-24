@@ -42,6 +42,7 @@ add_executable(garage
     src/gui/camera.c
     src/gui/shader.c
     src/gui/render_garage.c
+    src/gui/gui_common.c
 
     # Adding the GLSL headers here auto-generates them during the build
     ${glsl_headers}
