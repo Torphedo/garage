@@ -1,13 +1,13 @@
 //------------------------------------------------
 //--- 010 Editor v14.0 Binary Template
 //
-//      File: 
-//   Authors: 
-//   Version: 
-//   Purpose: 
+//      File: vehicle.btt
+// Author(s): Torphedo
+//   Version: 1.1.0
+//   Purpose: Vehicle save file format for Banjo-Kazooie: Nuts & Bolts
 //  Category: 
-// File Mask: 
-//  ID Bytes: 
+// File Mask: N/A
+//  ID Bytes: E1 7A 54 40 48 E1 9A 3F
 //   History: 
 //------------------------------------------------
 
@@ -33,17 +33,18 @@ typedef struct {
 
 int magic[2];
 short part_count;
-char header[0x76];
+char is_one_piece;
+char header[0x75];
 
 struct {
-    int pad<bgcolor=cGray>;
+    int unknown<bgcolor=cGray>;
     vec3u8 pos<bgcolor=cLtRed>;
+    short pad;
+    char modifier;
     char pad2;
     
-    int flags<bgcolor=cYellow>;
-    int part_id<bgcolor=cGreen>;
+    int id<bgcolor=cGreen>;
     vec3f rot<bgcolor=cLtBlue>;
-    
     rgba8 color<bgcolor=cLtGray>;
-    int pad;
+    int pad3;
 }part[part_count];
