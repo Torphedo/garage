@@ -230,7 +230,7 @@ void garage_render(void* ctx) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
 
-    // We need to se the shader program before uploading uniforms
+    // We need to bind the shader program before uploading uniforms
     glUseProgram(state->shader_prog);
 
     // Upload projection matrix
@@ -254,18 +254,19 @@ void garage_render(void* ctx) {
     // "Paint" the floor the right color
     glUniform4fv(state->u_paint, 1, (const float*)&quad_paint);
 
-    // Draw
+    // Draw the floor
     glBindBuffer(GL_ARRAY_BUFFER, state->quad_vbuf);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->quad_ibuf);
     glBindVertexArray(state->quad_vao);
     glDrawElements(GL_TRIANGLES, sizeof(quad_indices) / sizeof(*quad_indices), GL_UNSIGNED_SHORT, NULL);
 
 
-    // Draw all our parts
+    // Bind cube model
     glBindBuffer(GL_ARRAY_BUFFER, state->cube_vbuf);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->cube_ibuf);
     glBindVertexArray(state->cube_vao);
 
+    // Draw all our parts
     vehicle* v = state->gui->v;
     vec3s center = vehicle_find_center(v);
     for (u16 i = 0; i < v->head.part_count; i++) {
@@ -285,8 +286,9 @@ void garage_render(void* ctx) {
         glm_mat4_identity(model);
     }
 
-    // Move the part
+    // Draw the selection box in wireframe mode
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    // Move the selection box
     vec3s pos = {
         .x = ((float)state->gui->sel_box.x - center.x) * PART_POS_SCALE,
         .y = ((float)state->gui->sel_box.y) * PART_POS_SCALE,
@@ -296,12 +298,12 @@ void garage_render(void* ctx) {
         camera_set_target(pos);
     }
     glm_translate(model, (float*)&pos);
-    glm_scale_uni(model, 1.2f);
+    glm_scale_uni(model, 1.2f); // Draw the box a little larger than the part cubes
     glUniformMatrix4fv(state->u_model, 1, GL_FALSE, (const float*)&model);
 
     // Upload paint color & draw
-    vec4s paint_col = { .a = 1.0f};
-    glUniform4fv(state->u_paint, 1, (const float*)&paint_col);
+    vec4s black = { .a = 1.0f};
+    glUniform4fv(state->u_paint, 1, (const float*)&black);
     glDrawElements(GL_TRIANGLES, sizeof(cube_indices) / sizeof(*cube_indices), GL_UNSIGNED_SHORT, NULL);
 
     // Reset state

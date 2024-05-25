@@ -7,6 +7,13 @@
 
 #include "gui_common.h"
 
+// Shader code is specific to each GPU, so we have to store the GLSL source
+// code as a string and compile it at runtime. Loading the shaders from a file
+// breaks if the files get moved/deleted, so it's better to store them as a
+// hardcoded string in the program. We use CMake to automatically generate
+// header files in the src/gui/shader folder with the contents of each shader
+// enclosed in quotes. The generator code is at ext/txt2h.c.
+
 // Make sure the shader program linked correctly, printing error messages if
 // needed.
 bool shader_link_check(gl_obj shader);

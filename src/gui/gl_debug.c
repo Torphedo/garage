@@ -99,6 +99,8 @@ void gl_debug_setup() {
         if (flags & GL_CONTEXT_FLAG_DEBUG_BIT) {
             glEnable(GL_DEBUG_OUTPUT);
             // Debug callbacks will be on the same thread
+            // See this page for info on this flag:
+            // https://www.khronos.org/opengl/wiki/Debug_Output#Getting_messages
             glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
             glDebugMessageCallbackARB(gl_debug_msg, NULL);
 

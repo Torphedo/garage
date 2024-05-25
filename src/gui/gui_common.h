@@ -5,19 +5,11 @@
 #include <vehicle.h>
 #include "input.h"
 
-// Making this the same type as GLuint removes lots of conversion linter warnings
-typedef unsigned int gl_obj;
-
-typedef struct {
-    vec3 position;
-    vec4 color;
-}vertex;
-
 typedef enum {
-    MODE_MOVCAM,
-    MODE_EDIT,
-    MODE_MENU,
-    MODE_ENUM_MAX,
+    MODE_MOVCAM, // Selection box locked, camera unlocked (freecam)
+    MODE_EDIT, // Camera locked, WASD moves the selection box
+    MODE_MENU, // Camera and selection box locked, some menu is enabled
+    MODE_ENUM_MAX, // Increment mode and modulo by this to cycle through modes
 }editor_mode;
 
 typedef enum {
@@ -26,18 +18,19 @@ typedef enum {
     SEL_BAD, // Overlapping parts
 }selection_state;
 
+// Current state of the vehicle editor & GUI in general
 typedef struct {
-    vehicle* v;
+    vehicle* v; // All vehicle data
     double delta_time; // Measured in seconds
     vec3s16 sel_box; // Selection box position
-    input_internal prev_input;
-    bool cam_allow_vertical;
+    input_internal prev_input; // Input from last frame
+    bool cam_allow_vertical; // Whether to allow vertical movement with WASD in freecam
     editor_mode mode;
 
     selection_state sel_mode;
     // TODO: Maybe we could abuse a padding field in the part to store whether
     // it's selected, instead of keeping our own separate list.
-    u16 sel_idx; // Currently selected part. Will have to refactor for multi-select
+    u16 sel_idx; // Currently selected part. Will have to refactor for multi-select later.
 }gui_state;
 
 // Update the GUI state according to new user input.
@@ -58,5 +51,13 @@ typedef struct {
     // Free all buffers, unload all shaders, etc.
     void (*destroy)(void* ctx);
 }renderer;
+
+// Making this the same type as GLuint removes lots of conversion linter warnings
+typedef unsigned int gl_obj;
+
+typedef struct {
+    vec3 position;
+    vec4 color;
+}vertex;
 
 #endif // GL_TYPES_H

@@ -19,7 +19,7 @@
 // it's considered held. To avoid this we keep track of key state ourselves, so
 // that the key appears held the entire time.
 
-// Using bitfield saves some space.
+// Using a bitfield takes it from 145 bytes to around 36 bytes
 typedef struct {
     bool space: 1;
     bool apostrophe: 1;
@@ -161,6 +161,7 @@ typedef struct {
 // The global input struct our callback will update
 extern input_internal input;
 
+// GLFW callbacks for all kinds of input
 void input_update(GLFWwindow* window, int key, int scancode, int actions, int mods);
 void cursor_update(GLFWwindow* window, double xpos, double ypos);
 void scroll_update(GLFWwindow* window, double x, double y);

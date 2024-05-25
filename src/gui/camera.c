@@ -19,6 +19,7 @@ const float mouse_sens = 0.015f;
 bool invert_mouse_x = true;
 bool invert_mouse_y = false;
 
+// Restrict a number to a certain range
 float clampf(float x, float min, float max) {
     if (x > max) {
         return max;
@@ -43,7 +44,7 @@ vec2s vec2_addmag(vec2s v, float amount) {
 }
 
 // Get the camera position relative to an orbit center-point based on the
-// rotation angle
+// rotation angles
 vec3s orbit_pos_by_angles(vec2s angles, float orbit_radius) {
     // Get XYZ positions using trig on our angles
     camera_pos = (vec3s){
@@ -100,6 +101,13 @@ vec2s get_cursor_delta(vec2s cursor_pos) {
     return cursor_delta;
 }
 
+// Don't use this. Kinda sucks.
+void update_roll(gui_state* gui, float angle_diff) {
+    static const vec3s axis_forward = {0.0f, 0.0f, 1.0f};
+    float roll = angle_diff * 5.0f * gui->delta_time;
+    camera_up = glms_vec3_rotate(camera_up, roll, axis_forward);
+}
+
 void camera_update(gui_state* gui, mat4* view) {
     static vec2s last_scroll = {0};
 
@@ -120,9 +128,9 @@ void camera_update(gui_state* gui, mat4* view) {
 
     // Add [Camera dir rotated by 90 degrees] * side movement to get net movement
     vec3s cam_side = glms_vec3_rotate(cam_dir, glm_rad(90), camera_up);
-    cam_side.y = 0;
     pos_delta = glms_vec3_add(pos_delta, glms_vec3_scale(cam_side, side));
 
+    // TODO: Implement a real POV flying freecam
     // Use this for "freecam"-style movement
     // pos_delta.y = (cam_dir.y * forward) * (gui->mode == MODE_POV);
 
@@ -145,6 +153,7 @@ void camera_update(gui_state* gui, mat4* view) {
     // Add target position to relative orbit position
     camera_pos = glms_vec3_add(camera_target, orbit_pos_by_angles(camera_orbit_angles, radius));
     
+    // Update view matrix
     glm_lookat((float*)&camera_pos, (float*)&camera_target, (float*)&camera_up, *view);
 }
 
