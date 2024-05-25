@@ -15,30 +15,32 @@
 
 int main(int argc, char** argv) {
     enable_win_ansi(); // Enable color & extra terminal features on Windows
-    check_part_entry(); // Sanity check for padding bugs
+    // TODO: Write separate function to check all our struct sizes
     if (argc != 2) {
         LOG_MSG(error, "No input files.\n");
         LOG_MSG(info, "Usage: garage [vehicle file]");
         return 1;
     }
-    char* path = argv[1];
+    char* path = argv[1]; // Give our first argument a convenient name
     vehicle* v = vehicle_load(path);
     if (v == NULL) {
-        // Loader function will print the error message for us
+        // Loader function will print the error message for us, so just exit
         return 1;
     }
-    gui_state gui = {.v = v};
+    gui_state gui = {.v = v}; // Initial gui state only has the vehicle ptr
 
     GLFWwindow* window = setup_opengl(680, 480, "Garage Opener", ENABLE_DEBUG, GLFW_CURSOR_NORMAL);
     if (window == NULL) {
         return 1;
     }
 
+    // Prepare for rendering
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     void* garage_ctx = garage.init(&gui);
-
-    double one_frame_ago = glfwGetTime();
+    double one_frame_ago = glfwGetTime(); // Used to calculate delta time
     double two_frames_ago = glfwGetTime();
+
+    // Main loop for rendering, UI, etc.
     while (!glfwWindowShouldClose(window)) {
         // Update delta time and our last 2 frame times
         gui.delta_time = one_frame_ago - two_frames_ago;
@@ -50,16 +52,17 @@ int main(int argc, char** argv) {
 
         // All UI/navigation/keybinds are implemented here
         if (!gui_update_with_input(&gui, window)) {
-            // Returns false for the Quit keybind
+            // Returns false when the program should exit (for quit keybind)
             break;
         }
 
         // Render
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         garage.render(garage_ctx);
-        glfwSwapBuffers(window);
+        glfwSwapBuffers(window); // Framebuffer swap won't happen until vsync
+        glFinish(); // Wait for vsync before going to the next line
 
-        // Reset input
+        // Update the last frame's input to this frame's input
         gui.prev_input = input;
 
         // Print debug info about this frame
@@ -67,10 +70,11 @@ int main(int argc, char** argv) {
         LOG_MSG(debug, "FPS: %.1f\n", 1.0 / gui.delta_time);
         // Erase the last 2 lines, so we can make it look like they constantly update in-place.
         printf("\033[1F\033[K\033[1F\033[K");
+        // End frame
     }
     // Cleanup
     garage.destroy(garage_ctx);
-    glfwTerminate();
+    glfwTerminate(); // Auto-closes the window if we exited via the quit button
 
     // Print vehicle details (mostly a leftover from old versions of this program)
     LOG_MSG(info, "\"");

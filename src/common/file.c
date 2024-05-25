@@ -62,17 +62,19 @@ u8* file_load(const char* path) {
     }
     u32 size = file_size(path);
     u8* buffer = calloc(1, size);
-    FILE* resource = fopen(path, "rb");
-
-    if (resource != NULL && buffer != NULL) {
-        fread(buffer, size, 1, resource);
-        fclose(resource);
-        return buffer;
+    if (buffer == NULL) {
+        return NULL;
     }
-    return NULL;
+
+    file_load_existing(path, buffer, size);
+    return buffer;
 }
 
 bool file_load_existing(const char* path, u8* buf, u32 size) {
+    if (buf == NULL) {
+        LOG_MSG(error, "Caller provided NULL buffer. Check your allocations!\n");
+        return false;
+    }
     if (!file_exists(path)) {
         LOG_MSG(error, "Requested file %s does not exist.\n", path);
         return false;

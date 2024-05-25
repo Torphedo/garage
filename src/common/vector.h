@@ -1,7 +1,6 @@
 #ifndef VECTOR_H
 #define VECTOR_H
 #include "int.h"
-#include <cglm/cglm.h>
 #include <cglm/struct.h>
 
 void vec3_byteswap(vec3* v);
@@ -36,6 +35,8 @@ typedef struct {
     u8 b;
     u8 a;
 }rgba8;
+
+// Useful to pass colors to a shader from a 32-bit color.
 vec4s vec4_from_rgba8(rgba8 c);
 
 #define LERP(a, b, t) ((a * (1 - t)) + (b * t))

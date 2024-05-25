@@ -13,10 +13,10 @@ typedef struct {
     u8 unk[0x1D]; // This is very incomplete, there's lots of other data here.
     c16 name[0x20];
     u8 unk2[0x18];
+    // If you add new fields, make sure to update vehicle_header_byteswap().
 }vehicle_header;
 
 enum {
-    PART_ENTRIES_OFFSET = 0x80,
     VEHICLE_MAGIC = 0x3F9AE14840547AE1,
 };
 
@@ -32,31 +32,46 @@ typedef struct {
     u32 pad3;
 }part_entry;
 
-typedef struct {
-    vehicle_header head;
-    part_entry parts[];
-}vehicle;
-
+// Sanity check to make sure our part structure has correct padding & size.
 static void check_part_entry() {
     if (sizeof(part_entry) != 0x24) {
         LOG_MSG(error, "sizeof(part_entry) == 0x%x, expected 0x24\n", sizeof(part_entry));
     }
 }
 
-// Automatically handles byte-swapping the big-endian fields
-part_entry part_read(FILE* f);
+// The flexible array member causes sizeof(vehicle) == sizeof(vehicle_header)!
+// Be careful!
+typedef struct {
+    vehicle_header head;
+    part_entry parts[];
+}vehicle;
+
+// Load a vehicle into a newly allocated buffer. Automatically handles STFS if
+// needed (it's assumed that the vehicle is stored as the first file entry, and
+// is under 680KiB).
+// Returns NULL on failure, caller must free the buffer.
+vehicle* vehicle_load(const char* path);
+
+// Uses part data to find the centerpoint of a vehicle.
+// (returns float vector for convenience)
+vec3s vehicle_find_center(vehicle* v);
+
+// Move a part by a 3D vector. If the new position is out of bounds (< 0), that
+// position will be the new zero and the other parts are adjusted accordingly.
+bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff);
+
+// Look up the index of a part by its position.
+// Returns -1 if no part is found, so always check the result!
+s32 part_idx_by_pos(vehicle* v, vec3u8 pos);
+
+
+// NOTE: See common/endian.h for details on endian-ness.
 
 // Byte-swap an existing part entry
 void part_byteswap(part_entry* part);
 
+// Byte-swap an existing vehicle header
 void vehicle_header_byteswap(vehicle_header* v);
 
-vehicle* vehicle_load(const char* path);
-
-vec3s vehicle_find_center(vehicle* v);
-
-bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff);
-
-s32 part_idx_by_pos(vehicle* v, vec3u8 pos);
 
 #endif // VEHICLE_H

@@ -32,3 +32,4 @@ vec4s vec4_from_rgba8(rgba8 c) {
         (float)c.a / 255,
     };
 }
+

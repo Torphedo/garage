@@ -1,8 +1,7 @@
 #ifndef PART_IDS_H
 #define PART_IDS_H
-
-// Part IDs are written are as they appear in the hex editor, and in the order
-// of the in-game menu.
+// Part IDs are written are as they appear in the hex editor, in the order of
+// the in-game menu. Use part_get_name() to get a string for a part ID.
 typedef enum {
     // <== Seats ==>
     SEAT_STANDARD        = 0x1FEA444A,

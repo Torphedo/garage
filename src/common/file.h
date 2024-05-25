@@ -8,6 +8,9 @@
 bool file_exists(const char* path);
 bool path_is_file(const char* path);
 bool path_is_dir(const char* path);
+
+// Check if a path has a file extension (like ".zip"):
+// path_has_extension("data/file.zip", ".zip") == true
 bool path_has_extension(const char* path, const char* extension);
 
 u32 file_size(const char* path);
@@ -16,7 +19,6 @@ u32 file_size(const char* path);
 /// \param path Filepath
 /// \return Pointer to buffer, or NULL on failure.
 u8* file_load(const char* path);
-
 
 /// Read an entire file into an existing buffer.
 /// \param path Filepath

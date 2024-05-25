@@ -24,7 +24,6 @@ void stfs_header_byteswap(stfs_header* h) {
     ENDIAN_FLIP(u32, h->meta.title_id);
     ENDIAN_FLIP(u32, h->meta.savegame_id);
 
-    // ENDIAN_FLIP(s16, h->meta.vol_desc.file_block_count);
     ENDIAN_FLIP_24(h->meta.vol_desc.file_block_num);
     ENDIAN_FLIP(s32, h->meta.vol_desc.allocated_block_count);
     ENDIAN_FLIP(s32, h->meta.vol_desc.unallocated_block_count);
@@ -39,6 +38,8 @@ void stfs_header_byteswap(stfs_header* h) {
 }
 
 void stfs_filetable_byteswap(stfs_filetable* f) {
+    // DON'T BYTESWAP THE LITTLE ENDIAN FIELDS!
+    // blocks, blocks2, and start_block are all little endian s24.
     ENDIAN_FLIP(s16, f->path);
     ENDIAN_FLIP(u32, f->size);
     ENDIAN_FLIP(s32, f->modtime);
@@ -53,7 +54,7 @@ u32 stfs_file_block(stfs_header* h, u32 block) {
     u32 out = stfs_data_block_num(h, block);
     u32 ftable_block = s24_to_s32((u8*)&h->meta.vol_desc.file_block_num);
     if (out == ftable_block) {
-        out++;
+        out += h->meta.vol_desc.file_block_count;
     }
 
     return out;
@@ -61,10 +62,10 @@ u32 stfs_file_block(stfs_header* h, u32 block) {
 
 // Round up header size to the next 0x1000 boundary
 u32 stfs_first_block_off(stfs_header* header) {
-    // We need to subtract 1 so a multiple of 0x1000 isn't rounded up
-    return ((header->meta.header_size - 1) & 0xF000) + 0x1000;
+    return ALIGN_UP(header->meta.header_size, 0x1000);
 }
 
+// Taken from Free60's C# example code @ https://free60.org/System-Software/Formats/STFS
 u32 stfs_block_shift(stfs_header* header) {
     u32 block_shift = 0;
     if (stfs_first_block_off(header) == 0xB000) {
@@ -112,7 +113,10 @@ u32 stfs_data_block_num(stfs_header* header, u32 block) {
 }
 
 // Get the next block for a file, given the last block's hash and the hashtable
+// NOTE: This only accounts for 1 hashtable, which assumes there's
+// < (0xAA * STFS_BLOCK_SIZE) bytes (or ~680KiB) of data in the STFS file.
 s32 stfs_next_by_hash(stfs_hash_table* table, sha1_digest prev) {
+    // Table ends with a NULL entry, so just loop until we hit a blank one
     while (!SHA1_blank(table->sha1)) {
         if (SHA1_equal(prev, table->sha1)) {
             return s24_to_s32((u8*)&table->next_block_num);
@@ -142,6 +146,7 @@ u8* stfs_get_vehicle(const char* path) {
         return NULL;
     }
 
+    // Read the hashtable
     u32 hash_count = header.meta.vol_desc.allocated_block_count + 1; // Add 1 to include null entry
     stfs_hash_table* hashtable = calloc(hash_count, sizeof(*hashtable));
     if (hashtable == NULL) {
@@ -165,8 +170,9 @@ u8* stfs_get_vehicle(const char* path) {
     fread(&entry, sizeof(entry), 1, f);
     stfs_filetable_byteswap(&entry);
 
-    // We round up to the block size to make reading simpler
-    u8* buf = calloc(1, ((entry.size - 1) & 0xF000) + STFS_BLOCK_SIZE);
+    // We round up to the block size to make reading simpler, at the cost of up
+    // to ~4KiB extra memory usage for the file.
+    u8* buf = calloc(1, ALIGN_UP(entry.size, STFS_BLOCK_SIZE));
     u32 bytes_read = 0;
     s32 next_block = s24_to_s32((u8*)&entry.start_block);
     next_block = stfs_file_block(&header, next_block);
@@ -180,6 +186,8 @@ u8* stfs_get_vehicle(const char* path) {
         SHA1_print(sha1);
         printf("\n");
 
+        // Get the next block, then adjust for filetable/hashtable blocks to
+        // get the actual index
         next_block = stfs_next_by_hash(hashtable, sha1);
         next_block = stfs_data_block_num(&header, next_block);
 
@@ -188,3 +196,4 @@ u8* stfs_get_vehicle(const char* path) {
 
     return buf;
 }
+

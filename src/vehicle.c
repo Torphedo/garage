@@ -5,6 +5,7 @@
 #include "common/file.h"
 
 #include "vehicle.h"
+#include "common/logging.h"
 #include "stfs.h"
 
 // TODO: Make this a no-op when compiling for a big endian system
@@ -12,6 +13,9 @@ void part_byteswap(part_entry* part) {
     ENDIAN_FLIP(u32, part->unknown);
     ENDIAN_FLIP(u32, part->id);
     vec3_byteswap(&part->rot);
+
+    // Byte-swap the padding just in case :P
+    ENDIAN_FLIP(u16, part->pad);
     ENDIAN_FLIP(u32, part->pad3);
 }
 
@@ -24,31 +28,25 @@ void vehicle_header_byteswap(vehicle_header* v) {
 }
 
 vec3s vehicle_find_center(vehicle* v) {
-    vec3u8 max_horizontal = {0};
-    u8 top = 0;
+    vec3u8 max = {0}; // Max XYZ position found in the vehicle
     for (u16 i = 0; i < v->head.part_count; i++) {
         vec3u8 pos = v->parts[i].pos;
-        if (pos.x > max_horizontal.x || pos.z > max_horizontal.z) {
-            max_horizontal = pos;
-        }
-        if (pos.y > top) {
-            top = pos.y;
-        }
+
+        // Update the max position if the part's position is larger on any axis
+        max = (vec3u8) {
+            MAX(max.x, pos.x),
+            MAX(max.y, pos.y),
+            MAX(max.z, pos.z),
+        };
     }
 
-    // Return the centerpoint
+    // Return the centerpoint. Since all coordinates are u8, we don't need to
+    // find the min point (it's just [0, 0, 0], we can divide by 2 instead).
     return (vec3s) {
-        .x = (float)max_horizontal.x / 2,
-        .y = (float)top / 2,
-        .z = (float)max_horizontal.z / 2,
+        .x = (float)max.x / 2,
+        .y = (float)max.y / 2,
+        .z = (float)max.z / 2,
     };
-}
-
-part_entry part_read(FILE* f) {
-    part_entry part = {0};
-    fread(&part, sizeof(part), 1, f);
-    part_byteswap(&part);
-    return part;
 }
 
 vehicle* vehicle_load(const char* path) {
@@ -58,67 +56,64 @@ vehicle* vehicle_load(const char* path) {
         return NULL;
     }
 
-    vehicle* v = NULL;
     vehicle_header head = {0};
     fread(&head, sizeof(head), 1, f);
+    fclose(f);
     vehicle_header_byteswap(&head);
+
+    vehicle* v = NULL;
     if (head.magic == VEHICLE_MAGIC) {
-        u32 size = file_size(path);
-        v = calloc(1, size);
-        if (v == NULL) {
-            LOG_MSG(error, "Couldn't alloc %d bytes for raw vehicle file\n", size);
-            return NULL;
-        }
-        fseek(f, 0, SEEK_SET);
-        fread(v, size, 1, f);
-        LOG_MSG(debug, "Vehicle loaded from raw save file\n");
-        fclose(f);
+        // Header claims it's a vehicle file, just load it directly
+        LOG_MSG(debug, "Loading vehicle from raw save file %s\n", path);
+        v = (vehicle*)file_load(path); // Reads file into a buffer for us
     }
     else {
-        fclose(f);
+        // Not a vehicle file, try to load it as an STFS save file.
+        LOG_MSG(debug, "Loading vehicle from STFS save entry\n");
         v = (vehicle*)stfs_get_vehicle(path);
-        if (v == NULL) {
-            LOG_MSG(error, "Failed to extract vehicle from STFS save.\n");
-            return NULL;
-        }
-        LOG_MSG(debug, "Vehicle loaded from STFS save entry\n");
     }
 
+    if (v == NULL) {
+        LOG_MSG(error, "Failed to load vehicle\n");
+        return NULL;
+    }
+
+    // Byte-swap everything & return result
     vehicle_header_byteswap(&v->head);
     for (u16 i = 0; i < v->head.part_count; i++) {
         part_byteswap(&v->parts[i]);
     }
-
     return v;
 }
 
 bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
-    if (idx > v->head.part_count) {
+    if (idx > v->head.part_count - 1) {
+        // We can't move a part that doesn't exist.
+        LOG_MSG(error, "Cant move part %d, there are only %d parts!\n", idx, v->head.part_count);
         return false;
     }
     part_entry* p = &v->parts[idx];
-    bool need_readjust = false;
 
     // We loop over the 3 axes here
     for (u8 i = 0; i < 3; i++) {
         // Find position of this axis after the move
         s16 new_pos = (s16)p->pos.raw[i] + diff.raw[i];
         if (new_pos >= 0) {
-            // Everything's fine, update pos
+            // Everything's fine, update pos and move on
             p->pos.raw[i] += diff.raw[i];
             continue;
         }
 
         // Make this the new 0, and adjust the rest of the parts
-        need_readjust = true;
         p->pos.raw[i] = 0;
         for (u16 j = 0; j < v->head.part_count; j++) {
             if (j == idx) {
+                // This is the part we just made the new 0, skip.
                 continue;
             }
 
             if (v->parts[i].pos.raw[i] >= UINT8_MAX - new_pos) {
-                // Integer overflow
+                // Integer overflow, we can't move this part any further.
                 return false;
             }
 
@@ -131,8 +126,9 @@ bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
 }
 
 s32 part_idx_by_pos(vehicle* v, vec3u8 pos) {
+    // Linearly search for the part
     for (u16 i = 0; i < v->head.part_count; i++) {
-        part_entry* p = &v->parts[i];
+        part_entry* p = &v->parts[i]; // Just a shortcut
         if (vec3u8_eq(p->pos, pos)) {
             return i;
         }

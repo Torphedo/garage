@@ -1,5 +1,8 @@
 // Modified from the sha1.c in RFC 3171.
 // SHA-1 produces a 20-byte message digest for any byte stream.
+//
+// The context-based API has been replaced with a simple API taking a buffer to
+// hash, since the context isn't useful for our use case.
 
 #include <stdbool.h>
 #include <stdio.h>

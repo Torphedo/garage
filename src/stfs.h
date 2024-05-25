@@ -1,9 +1,16 @@
 #ifndef STFS_H
 #define STFS_H
-// Structures come from:
-//     - https://www.arkem.org/xbox360-file-reference.pdf
-//     - https://free60.org/System-Software/Formats/STFS
-//     - DJ Shepard's C# X360 library source code
+/* (Partially) implements the STFS filesystem for Xbox 360. The main focus is
+ * the CON variant used for console-signed data like save files.
+ *
+ * Structures come from:
+ *     - https://www.arkem.org/xbox360-file-reference.pdf
+ *     - https://free60.org/System-Software/Formats/STFS
+ *     - Source code of DJ Shepard's X360 library (C#):
+ *       https://cdn.discordapp.com/attachments/425101066938482718/1239776230090346576/X360.zip
+ *
+ *  Arrays of 3 u8's or s8's are representing 24-bit integers.
+ */
 
 #include "common/int.h"
 #include "common/file.h"
@@ -15,6 +22,7 @@ typedef enum {
     STFS_PIRS = MAGIC('P', 'I', 'R', 'S'), // "PIRS" (signed data not from LIVE, e.g. system updates)
 }stfs_magic;
 
+// Indicates what type of data this STFS file will have
 typedef enum {
     PACKAGE_NONE             = 0,
     PACKAGE_SAVEDGAME,
@@ -60,9 +68,10 @@ typedef enum {
 
 typedef enum {
     DESC_STFS = 0,
-    DESC_SVOD = 1,
+    DESC_SVOD = 1, // Used for installed game discs & digital games
 }stfs_descriptor_type;
 
+// Manages how/where the data can be copied to/from(?)
 typedef enum {
     TRANSFER_NONE           = 1 << 0,
     TRANSFER_NONE2          = 1 << 1,
@@ -74,6 +83,7 @@ typedef enum {
     PROFILE_ID_TRANSFER     = 1 << 7,
 }stfs_transfer_flags;
 
+// Status of an STFS block
 typedef enum {
     STATUS_UNUSED = 0x00,
     STATUS_FREED = 0x40,
@@ -81,14 +91,16 @@ typedef enum {
     STATUS_NEW_ALLOC = 0xC0,
 }stfs_status;
 
+// Disable struct padding
 #pragma pack(push, r1, 1)
 
+// There's an array of this structure, 1 per file/directory
 typedef struct {
     unsigned char filename[40];
 
     // These 3 fields pack into 1 byte
-    u8 consecutive : 1;
-    u8 directory : 1;
+    u8 consecutive : 1; // All the blocks making up this file are consecutive
+    u8 directory : 1; // This is a directory, not a file
     u8 name_len : 6;
 
     s8 blocks[3]; // This is a little endian s24
@@ -100,6 +112,7 @@ typedef struct {
     s32 access_time; // FAT timestamp of last access
 }stfs_filetable;
 
+// There's an array of this structure, 1 per block
 typedef struct {
     sha1_digest sha1;
     u8 status;
@@ -118,15 +131,15 @@ typedef struct {
     u8 reserved;
     u8 block_separation; // ???
     s16 file_block_count;
-    s8 file_block_num[3]; // TODO: Make an s24 type. Somehow.
-    u8 first_hashtable_hash[20]; // Hash of the first hash table. Confusing to read, sorry :(
+    s8 file_block_num[3]; // Block number of the filetable's first block
+    sha1_digest first_hashtable_hash; // Hash of the first hash table. Confusing to read, sorry :(
     s32 allocated_block_count;
     s32 unallocated_block_count;
 }stfs_vol_desc;
 
 typedef struct {
     stfs_license licenses[0x10];
-    u8 id_or_sha1[20]; // "Content ID / SHA1 Header Hash" ??
+    sha1_digest header_sha1; // "Content ID / SHA1 Header Hash" ??
     u32 header_size;
     s32 pkg_type; // stfs_package_type enum
     s32 meta_version; // This struct assumes v2, report an error for v1.
@@ -161,7 +174,7 @@ typedef struct {
     u8 pad[0x28];
     // Use this instead for a v1 struct:
     //      u8 pad[0x4C];
-    u8 device_id[20];
+    u8 device_id[20]; // Is this a SHA1?
 
     wchar_t names[0x40][18]; // 18 wide strings of 80 characters each, one per locale
     wchar_t descriptions[0x40][18];
@@ -173,9 +186,9 @@ typedef struct {
     u32 title_thumbnail_size;
 
     // == Begin v2 metadata fields. In v1, the PNG is allowed 0x4000 bytes. ==
-    u8 thumbnail[0x3D00];
+    u8 thumbnail[0x3D00]; // PNG image data
     wchar_t localized_names[0x40][6]; // Extra locales for the name
-    u8 title_thumbnail[0x3D00];
+    u8 title_thumbnail[0x3D00]; // PNG image data
     wchar_t localized_descs[0x40][6]; // Extra locales for the description
     // == End v2 metadata fields ==
     // Use this instead for a v1 struct:
@@ -207,10 +220,8 @@ enum {
     CON_DEVKIT = 1,
     CON_RETAIL = 2,
     STFS_BLOCK_SIZE = 1 << 12,
+    BKNB_TITLE_ID = 0x4D5307ED,
 };
-
-void stfs_header_byteswap(stfs_header* h);
-void stfs_filetable_byteswap(stfs_filetable* f);
 
 // Gets the real block number for a file block (skipping hash table and file table blocks)
 u32 stfs_file_block(stfs_header* h, u32 block);
@@ -227,5 +238,11 @@ u32 stfs_data_block_num(stfs_header* header, u32 block);
 // Returns a buffer with the first file in the STFS archive. In our use case,
 // we assume the first file is always a vehicle.
 u8* stfs_get_vehicle(const char* path);
+
+// NOTE: See common/endian.h for info on endian-ness
+
+void stfs_header_byteswap(stfs_header* h);
+void stfs_filetable_byteswap(stfs_filetable* f);
+void stfs_hashtable_byteswap(stfs_hash_table* table);
 
 #endif // STFS_H
