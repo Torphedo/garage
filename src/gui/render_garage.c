@@ -117,9 +117,7 @@ typedef struct {
      gl_obj cube_ibuf;
 
      // Uniforms
-     gl_obj u_model;
-     gl_obj u_view;
-     gl_obj u_proj;
+     gl_obj u_pvm; // PVM matrix uniform
      gl_obj u_paint;
 
      renderer_state status;
@@ -162,9 +160,7 @@ void* garage_init(gui_state* gui) {
     glDeleteShader(fragment_shader);
 
     // Get our uniform locations
-    state->u_model = glGetUniformLocation(state->shader_prog, "model");
-    state->u_view = glGetUniformLocation(state->shader_prog, "view");
-    state->u_proj = glGetUniformLocation(state->shader_prog, "projection");
+    state->u_pvm = glGetUniformLocation(state->shader_prog, "pvm");
     state->u_paint = glGetUniformLocation(state->shader_prog, "paint");
 
     // Setup VAO
@@ -233,23 +229,28 @@ void garage_render(void* ctx) {
     // We need to bind the shader program before uploading uniforms
     glUseProgram(state->shader_prog);
 
-    // Upload projection matrix
-    const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-    mat4 projection = {0};
-    glm_perspective_rh_no(glm_rad(45), (float)mode->width / (float)mode->height, 0.1f, 1000.0f, projection);
-    glUniformMatrix4fv(state->u_proj, 1, GL_FALSE, (const float*)&projection);
-
-    // Upload camera matrix
-    mat4 view = {0};
-    glm_mat4_identity(view);
-
-    camera_update(state->gui, &view);
-    glUniformMatrix4fv(state->u_view, 1, GL_FALSE, (const float*)&view);
-
-    // Default model matrix
+    // All our matrices for rendering, only PVM is uploaded to GPU
+    mat4 pvm = {0};
+    mat4 pv = {0};
     mat4 model = {0};
-    glm_mat4_identity(model); // Create identity matrix
-    glUniformMatrix4fv(state->u_model, 1, GL_FALSE, (const float*)&model);
+    glm_mat4_identity(model);
+
+    // Pre-multiply the projection & view components of the PVM matrix
+    {
+        // Projection matrix
+        mat4 projection = {0};
+        const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+        float aspect = (float)mode->width / (float)mode->height;
+        glm_perspective_rh_no(glm_rad(45), aspect, 0.1f, 1000.0f, projection);
+
+        // Camera matrix
+        mat4 view = {0};
+        camera_update(state->gui, &view);
+        glm_mat4_mul(projection, view, pv);
+    }
+
+    glm_mat4_mul(pv, model, pvm); // Compute pvm
+    glUniformMatrix4fv(state->u_pvm, 1, GL_FALSE, (const float*)&pvm);
 
     // "Paint" the floor the right color
     glUniform4fv(state->u_paint, 1, (const float*)&quad_paint);
@@ -277,7 +278,10 @@ void garage_render(void* ctx) {
             .z = ((float)v->parts[i].pos.z - center.z) * PART_POS_SCALE,
         };
         glm_translate(model, (float*)&pos);
-        glUniformMatrix4fv(state->u_model, 1, GL_FALSE, (const float*)&model);
+
+        // Compute & upload PVM matrix
+        glm_mat4_mul(pv, model, pvm);
+        glUniformMatrix4fv(state->u_pvm, 1, GL_FALSE, (const float*)&pvm);
 
         // Upload paint color & draw
         vec4s paint_col = vec4_from_rgba8(v->parts[i].color);
@@ -299,7 +303,8 @@ void garage_render(void* ctx) {
     }
     glm_translate(model, (float*)&pos);
     glm_scale_uni(model, 1.2f); // Draw the box a little larger than the part cubes
-    glUniformMatrix4fv(state->u_model, 1, GL_FALSE, (const float*)&model);
+    glm_mat4_mul(pv, model, pvm); // Compute pvm
+    glUniformMatrix4fv(state->u_pvm, 1, GL_FALSE, (const float*)&pvm);
 
     // Upload paint color & draw
     vec4s black = { .a = 1.0f};
