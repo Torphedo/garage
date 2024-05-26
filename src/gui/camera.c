@@ -13,7 +13,7 @@ vec3s camera_pos = {0};
 
 float radius = 4.0f;
 const float orbit_speed = 0.025f;
-const float move_speed = 0.5f;
+const float move_speed = 30.0f;
 const float mouse_sens = 0.015f;
 
 bool invert_mouse_x = true;
@@ -119,11 +119,12 @@ void camera_update(gui_state* gui, mat4* view) {
     };
 
     vec3s cam_dir = glms_normalize(camera_facing());
-    float forward  = (gui->mode == MODE_MOVCAM) * move_speed * (input.w - input.s);
-    float side     = (gui->mode == MODE_MOVCAM) * move_speed * (input.a - input.d);
+    float multiplier = (gui->mode == MODE_MOVCAM) * gui->delta_time * move_speed;
+    float forward  = multiplier * (input.w - input.s);
+    float side     = multiplier * (input.a - input.d);
 
     // Nullify vertical movement unless enabled
-    float vertical = (gui->mode == MODE_MOVCAM) * move_speed * (input.space - input.shift);
+    float vertical = multiplier * (input.space - input.shift);
     vec3s pos_delta = glms_vec3_scale(cam_dir, forward); // [Camera dir] * forward movement
 
     // Add [Camera dir rotated by 90 degrees] * side movement to get net movement

@@ -1,6 +1,7 @@
 #include <stdio.h>
 
 #include <glad/glad.h>
+#include <memory.h>
 
 #include "common/int.h"
 #include "common/logging.h"
@@ -39,6 +40,7 @@ int main(int argc, char** argv) {
     void* garage_ctx = garage.init(&gui);
     double one_frame_ago = glfwGetTime(); // Used to calculate delta time
     double two_frames_ago = glfwGetTime();
+    float frame_times[10] = {0};
 
     // Main loop for rendering, UI, etc.
     while (!glfwWindowShouldClose(window)) {
@@ -46,6 +48,10 @@ int main(int argc, char** argv) {
         gui.delta_time = one_frame_ago - two_frames_ago;
         two_frames_ago = one_frame_ago;
         one_frame_ago = glfwGetTime();
+
+        // Shift over all the frame times and add in the last one
+        memmove(&frame_times[1], frame_times, sizeof(frame_times) - sizeof(*frame_times));
+        frame_times[0] = gui.delta_time;
 
         // Poll for input
         glfwPollEvents();
@@ -65,9 +71,17 @@ int main(int argc, char** argv) {
         // Update the last frame's input to this frame's input
         gui.prev_input = input;
 
+
+        // Calculate framerate from average frame time
+        float avg_time = 0.0f;
+        for (u8 i = 0; i < ARRAY_SIZE(frame_times); i++) {
+            avg_time += frame_times[i];
+        }
+        avg_time /= ARRAY_SIZE(frame_times);
+
         // Print debug info about this frame
-        LOG_MSG(debug, "Last frame: %.3lfms\n", gui.delta_time * 1000.0);
-        LOG_MSG(debug, "FPS: %.1f\n", 1.0 / gui.delta_time);
+        LOG_MSG(debug, "Last frame: %.3lfms\n", avg_time * 1000.0);
+        LOG_MSG(debug, "FPS: %.1f\n", 1.0 / avg_time);
         // Erase the last 2 lines, so we can make it look like they constantly update in-place.
         printf("\033[1F\033[K\033[1F\033[K");
         // End frame
