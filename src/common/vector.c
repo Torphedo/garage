@@ -20,6 +20,10 @@ bool vec3u8_eq(vec3u8 a, vec3u8 b) {
     return (a.x == b.x) && (a.y == b.y) && (a.z == b.z);
 }
 
+bool vec3s16_eq(vec3s16 a, vec3s16 b) {
+    return (a.x == b.x) && (a.y == b.y) && (a.z == b.z);
+}
+
 bool vec3u8_eq_vec3s16(vec3u8 a, vec3s16 b) {
     return (a.x == b.x) && (a.y == b.y) && (a.z == b.z);
 }

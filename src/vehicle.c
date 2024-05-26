@@ -86,6 +86,12 @@ vehicle* vehicle_load(const char* path) {
     return v;
 }
 
+void vehicle_unselect_all(vehicle* v) {
+    for (u16 i = 0; i < v->head.part_count; i++) {
+        v->parts[i].selected = false;
+    }
+}
+
 bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
     if (idx > v->head.part_count - 1) {
         // We can't move a part that doesn't exist.
@@ -93,6 +99,7 @@ bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
         return false;
     }
     part_entry* p = &v->parts[idx];
+    bool needed_readjustment = false;
 
     // We loop over the 3 axes here
     for (u8 i = 0; i < 3; i++) {
@@ -104,6 +111,7 @@ bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
             continue;
         }
 
+        needed_readjustment = true;
         // Make this the new 0, and adjust the rest of the parts
         p->pos.raw[i] = 0;
         for (u16 j = 0; j < v->head.part_count; j++) {
@@ -114,7 +122,7 @@ bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
 
             if (v->parts[i].pos.raw[i] >= UINT8_MAX - new_pos) {
                 // Integer overflow, we can't move this part any further.
-                return false;
+                continue;
             }
 
             // Pull each part back on this axis by however much we're out of bounds
@@ -122,16 +130,17 @@ bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
         }
     }
 
-    return true;
+    // Return bool result on if the part moved out of bounds and had to be adjusted
+    return needed_readjustment;
 }
 
-s32 part_idx_by_pos(vehicle* v, vec3u8 pos) {
+part_entry* part_by_pos(vehicle* v, vec3u8 pos) {
     // Linearly search for the part
     for (u16 i = 0; i < v->head.part_count; i++) {
         part_entry* p = &v->parts[i]; // Just a shortcut
         if (vec3u8_eq(p->pos, pos)) {
-            return i;
+            return p;
         }
     }
-    return -1;
+    return NULL;
 }

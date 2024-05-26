@@ -27,6 +27,7 @@ typedef union {
     s16 raw[3];
 }vec3s16;
 bool vec3u8_eq_vec3s16(vec3u8 a, vec3s16 b);
+bool vec3s16_eq(vec3s16 a, vec3s16 b);
 
 // 8-bit RGBA color
 typedef struct {

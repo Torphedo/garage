@@ -1,7 +1,93 @@
 #include <stdbool.h>
 
+#include <common/int.h>
 #include "camera.h"
 #include "gui_common.h"
+
+void update_edit_mode(gui_state* gui) {
+    // Handle moving the selector box
+    vec3s cam_view = glms_normalize(camera_facing());
+    s8 forward_diff = ((input.w && !gui->prev_input.w) - (input.s && !gui->prev_input.s));
+    s8 side_diff = ((input.d && !gui->prev_input.d) - (input.a && !gui->prev_input.a));
+
+    vec3s16 sel_box_prev = gui->sel_box;
+
+    // This is kind of spaghetti. Sorry.
+    bool facing_z = fabsf(cam_view.z) > fabsf(cam_view.x);
+    // Indices of the X or Z axis, depending on how we're facing
+    u8 facing_axis = 2 * facing_z; // The axis we're facing
+    u8 other_axis = 2 * !facing_z; // The axis we're not facing
+
+    // Flip the sign of our forward/back movement as needed.
+    // [sign] is -1 or 1, matching the sign of the direction we face.
+    s8 sign = cam_view.raw[facing_axis] / fabsf(cam_view.raw[facing_axis]);
+    gui->sel_box.raw[facing_axis] += forward_diff * sign;
+
+    // Negate our sideways movement when facing Z.
+    side_diff -= (2 * side_diff) * facing_z;
+    gui->sel_box.raw[other_axis] += side_diff * sign;
+
+    // Handle vertical movement
+    gui->sel_box.y += (input.space && !gui->prev_input.space);
+    gui->sel_box.y -= (input.shift && !gui->prev_input.shift);
+
+    // Handle moving the selection, if applicable
+    if (gui->sel_mode == SEL_ACTIVE && !vec3s16_eq(gui->sel_box, sel_box_prev)) {
+        vec3s16 diff = {
+            .x = gui->sel_box.x - sel_box_prev.x,
+            .y = gui->sel_box.y - sel_box_prev.y,
+            .z = gui->sel_box.z - sel_box_prev.z,
+        };
+
+        bool vehicle_adjusted = false;
+        // Move all selected parts
+        for (u16 i = 0; i < gui->v->head.part_count; i++) {
+            if (gui->v->parts[i].selected) {
+                // vehicle_move_part() returns false when a part moves out of bounds
+                vehicle_adjusted |= vehicle_move_part(gui->v, i, diff);
+            }
+        }
+
+        // Move the selection box to the part's new location, if it moved out
+        // of bounds and forced the vehicle to be adjusted.
+        gui->sel_box.x -= diff.x * vehicle_adjusted;
+        gui->sel_box.y -= diff.y * vehicle_adjusted;
+        gui->sel_box.z -= diff.z * vehicle_adjusted;
+    }
+
+    // Handle user trying to select a part
+    if (input.e && !gui->prev_input.e) {
+        // If it's out of bounds, we can just ignore this.
+        if (gui->sel_box.x >= 0 && gui->sel_box.y >= 0 && gui->sel_box.z >= 0) {
+            // Convert to vec3u8
+            vec3u8 pos = {gui->sel_box.x, gui->sel_box.y, gui->sel_box.z};
+            part_entry *p = part_by_pos(gui->v, pos);
+            if (p == NULL) {
+                return;
+            }
+
+            if (p->selected) {
+                if (gui->sel_mode == SEL_ACTIVE) {
+                    // User pressed the button while moving parts, which means
+                    // we should put them down.
+                    vehicle_unselect_all(gui->v);
+                    gui->sel_mode = SEL_NONE; // Now you can start moving the parts
+                }
+                else {
+                    // User pressed the button while selecting parts on an
+                    // already-selected part, which means they want to start moving them.
+                    gui->sel_mode = SEL_ACTIVE;
+                }
+            } else {
+                // Select the part (if it exists)
+                if (p != NULL) {
+                    p->selected = true;
+                    gui->sel_mode = SEL_NONE;
+                }
+            }
+        }
+    }
+}
 
 // Update the GUI state according to new user input.
 bool gui_update_with_input(gui_state* gui, GLFWwindow* window) {
@@ -43,71 +129,8 @@ bool gui_update_with_input(gui_state* gui, GLFWwindow* window) {
         gui->mode = MODE_MENU;
     }
 
-    // Handle moving the selector box
     if (gui->mode == MODE_EDIT) {
-        vec3s cam_view = glms_normalize(camera_facing());
-        vec3s sel_mov_multiplier = {0};
-        s16 forward_diff = ((input.w && !gui->prev_input.w) - (input.s && !gui->prev_input.s));
-        s16 side_diff = ((input.d && !gui->prev_input.d) - (input.a && !gui->prev_input.a));
-
-        // This is kind of spaghetti. Sorry.
-        if (fabsf(cam_view.x) > fabsf(cam_view.z)) {
-            // We're facing along the X axis
-            sel_mov_multiplier.x = cam_view.x / fabsf(cam_view.x);
-            sel_mov_multiplier.z = sel_mov_multiplier.x;
-            gui->sel_box.x += forward_diff * sel_mov_multiplier.x;
-            gui->sel_box.z += side_diff * sel_mov_multiplier.z;
-        } else {
-            // We're facing along the Z axis
-            sel_mov_multiplier.z = cam_view.z / fabsf(cam_view.z);
-            sel_mov_multiplier.x = sel_mov_multiplier.z;
-            gui->sel_box.z += forward_diff * sel_mov_multiplier.z;
-            gui->sel_box.x += -side_diff * sel_mov_multiplier.x;
-        }
-
-        // Handle vertical movement
-        gui->sel_box.y += (input.space && !gui->prev_input.space);
-        gui->sel_box.y -= (input.shift && !gui->prev_input.shift);
-
-        // Handle moving the selection, if applicable
-        part_entry* p = &gui->v->parts[gui->sel_idx];
-        if (gui->sel_mode == SEL_ACTIVE && !vec3u8_eq_vec3s16(p->pos, gui->sel_box)) {
-            vec3s16 diff = {
-                .x = gui->sel_box.x - p->pos.x,
-                .y = gui->sel_box.y - p->pos.y,
-                .z = gui->sel_box.z - p->pos.z,
-            };
-            vehicle_move_part(gui->v, gui->sel_idx, diff);
-
-            // Move the selection box to the part's new location
-            gui->sel_box = (vec3s16){
-                .x = p->pos.x,
-                .y = p->pos.y,
-                .z = p->pos.z,
-            };
-        }
-
-        // Handle user trying to select a part
-        if (input.e && !gui->prev_input.e) {
-            if (gui->sel_mode == SEL_ACTIVE) {
-                gui->sel_idx = 0;
-                gui->sel_mode = SEL_NONE;
-            }
-            else {
-                // If it's out of bounds, we can just ignore this.
-                if (gui->sel_box.x >= 0 && gui->sel_box.y >= 0 && gui->sel_box.z >= 0) {
-                    // Convert to vec3u8
-                    vec3u8 pos = {gui->sel_box.x, gui->sel_box.y, gui->sel_box.z};
-
-                    // Find the part and select it (if it exists)
-                    s32 i = part_idx_by_pos(gui->v, pos);
-                    if (i >= 0) {
-                        gui->sel_idx = i;
-                        gui->sel_mode = SEL_ACTIVE;
-                    }
-                }
-            }
-        }
+        update_edit_mode(gui);
     }
 
     return true;

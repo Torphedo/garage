@@ -25,7 +25,10 @@ typedef struct {
     vec3u8 pos;
     u16 pad;
     u8 modifier; // Used for part settings, if applicable (e.g. wheel steering mode)
-    u8 pad2;
+    union {
+        u8 pad2;
+        bool selected; // Used only in this editor, set to 0 before writing
+    };
     u32 id; // part_id enum
     vec3 rot; // Measured in radians
     rgba8 color; // Game stores arbitrary colors, but only the preset colors are allowed
@@ -56,13 +59,17 @@ vehicle* vehicle_load(const char* path);
 // (returns float vector for convenience)
 vec3s vehicle_find_center(vehicle* v);
 
+// Unselect all parts in a vehicle
+void vehicle_unselect_all(vehicle* v);
+
 // Move a part by a 3D vector. If the new position is out of bounds (< 0), that
 // position will be the new zero and the other parts are adjusted accordingly.
+// Returns a boolean indicating if the vehicle had to be adjusted.
 bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff);
 
-// Look up the index of a part by its position.
-// Returns -1 if no part is found, so always check the result!
-s32 part_idx_by_pos(vehicle* v, vec3u8 pos);
+// Look up a part by its position.
+// Returns NULL if no part is found, so always check the result!
+part_entry* part_by_pos(vehicle* v, vec3u8 pos);
 
 
 // NOTE: See common/endian.h for details on endian-ness.
