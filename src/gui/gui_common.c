@@ -32,7 +32,7 @@ void update_edit_mode(gui_state* gui) {
     gui->sel_box.y -= (input.shift && !gui->prev_input.shift);
 
     // Handle moving the selection, if applicable
-    if (gui->sel_mode == SEL_ACTIVE && !vec3s16_eq(gui->sel_box, sel_box_prev)) {
+    if (gui->sel_mode != SEL_NONE && !vec3s16_eq(gui->sel_box, sel_box_prev)) {
         vec3s16 diff = {
             .x = gui->sel_box.x - sel_box_prev.x,
             .y = gui->sel_box.y - sel_box_prev.y,

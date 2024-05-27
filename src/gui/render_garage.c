@@ -129,6 +129,21 @@ enum {
     SEL_BOX_SIZE = (PART_POS_SCALE * 2),
 };
 
+void render_box(vec3s pos, vec4s color, float scale, mat4 pv, garage_state* state) {
+    mat4 model = {0};
+    glm_mat4_identity(model);
+    mat4 pvm = {0};
+
+    glm_translate(model, (float*)&pos);
+    glm_scale_uni(model, scale); // Draw the box a little larger than the part cubes
+    glm_mat4_mul(pv, model, pvm); // Compute pvm
+    glUniformMatrix4fv(state->u_pvm, 1, GL_FALSE, (const float *) &pvm);
+
+    // Upload paint color & draw
+    glUniform4fv(state->u_paint, 1, (const float *) &color);
+    glDrawElements(GL_TRIANGLES, sizeof(cube_indices) / sizeof(*cube_indices), GL_UNSIGNED_SHORT, NULL);
+}
+
 void* garage_init(gui_state* gui) {
     garage_state* state = calloc(1, sizeof(*state));
     if (state == NULL) {
@@ -272,44 +287,66 @@ void garage_render(void* ctx) {
     vec3s center = vehicle_find_center(v);
     for (u16 i = 0; i < v->head.part_count; i++) {
         // Move the part
-        vec3s pos = {
-            .x = ((float)v->parts[i].pos.x - center.x) * PART_POS_SCALE,
-            .y = ((float)v->parts[i].pos.y) * PART_POS_SCALE,
-            .z = ((float)v->parts[i].pos.z - center.z) * PART_POS_SCALE,
-        };
-        glm_translate(model, (float*)&pos);
-
-        // Compute & upload PVM matrix
-        glm_mat4_mul(pv, model, pvm);
-        glUniformMatrix4fv(state->u_pvm, 1, GL_FALSE, (const float*)&pvm);
+        vec3s pos = vec3_from_vec3u8(v->parts[i].pos, PART_POS_SCALE);
+        pos.x -= (center.x * PART_POS_SCALE);
+        pos.z -= (center.z * PART_POS_SCALE);
 
         // Upload paint color & draw
         vec4s paint_col = vec4_from_rgba8(v->parts[i].color);
-        glUniform4fv(state->u_paint, 1, (const float*)&paint_col);
-        glDrawElements(GL_TRIANGLES, sizeof(cube_indices) / sizeof(*cube_indices), GL_UNSIGNED_SHORT, NULL);
-        glm_mat4_identity(model);
+        if (v->parts[i].selected) {
+            paint_col.a /= 3;
+        }
+        // Render
+        render_box(pos, paint_col, 1.0f, pv, state);
     }
 
     // Draw the selection box in wireframe mode
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    // Move the selection box
-    vec3s pos = {
-        .x = ((float)state->gui->sel_box.x - center.x) * PART_POS_SCALE,
-        .y = ((float)state->gui->sel_box.y) * PART_POS_SCALE,
-        .z = ((float)state->gui->sel_box.z - center.z) * PART_POS_SCALE,
-    };
+
+    vec3s pos = {0};
+    vec4s color = {.a = 1.0f};
+
+    // Draw green boxes around all selected parts as we move them
+    if (state->gui->sel_mode != SEL_NONE) {
+        for (u16 i = 0; i < v->head.part_count; i++) {
+            // Only draw cubes around selected parts
+            if (!v->parts[i].selected) {
+                continue;
+            }
+
+            // Move the part
+            pos = vec3_from_vec3u8(v->parts[i].pos, PART_POS_SCALE);
+            pos.x -= (center.x * PART_POS_SCALE);
+            pos.z -= (center.z * PART_POS_SCALE);
+
+            // We could do this else-if in 1 line using a bool as an index, but
+            // I just don't care enough.
+            if (state->gui->sel_mode == SEL_BAD) {
+                color.r = 1.0f;
+            }
+            else {
+                color.g = 1.0f;
+            }
+
+            // Render
+            render_box(pos, color, 1.2f, pv, state);
+        }
+    }
+    else {
+        // Move the selection box
+        pos = vec3_from_vec3s16(state->gui->sel_box, PART_POS_SCALE);
+        pos.x -= (center.x * PART_POS_SCALE);
+        pos.z -= (center.z * PART_POS_SCALE);
+        render_box(pos, color, 1.2f, pv, state);
+    }
+
+    // Lock camera onto selection box during editing
     if (state->gui->mode == MODE_EDIT) {
+        // TODO: This locks to the last selected part while moving parts. We
+        // might want to calculate the centerpoint of the selection and lock
+        // to that instead.
         camera_set_target(pos);
     }
-    glm_translate(model, (float*)&pos);
-    glm_scale_uni(model, 1.2f); // Draw the box a little larger than the part cubes
-    glm_mat4_mul(pv, model, pvm); // Compute pvm
-    glUniformMatrix4fv(state->u_pvm, 1, GL_FALSE, (const float*)&pvm);
-
-    // Upload paint color & draw
-    vec4s black = { .a = 1.0f};
-    glUniform4fv(state->u_paint, 1, (const float*)&black);
-    glDrawElements(GL_TRIANGLES, sizeof(cube_indices) / sizeof(*cube_indices), GL_UNSIGNED_SHORT, NULL);
 
     // Reset state
     glBindVertexArray(0);

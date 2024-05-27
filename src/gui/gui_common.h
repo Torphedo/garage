@@ -13,9 +13,9 @@ typedef enum {
 }editor_mode;
 
 typedef enum {
-    SEL_NONE, // No selection is active
-    SEL_ACTIVE, // Fine to place
-    SEL_BAD, // Overlapping parts
+    SEL_NONE,   // User is still selecting parts to move
+    SEL_ACTIVE, // User is moving parts around, and the selection isn't overlapping anything.
+    SEL_BAD,    // User is moving parts around, but placing it down now would cause an overlap.
 }selection_state;
 
 // Current state of the vehicle editor & GUI in general
