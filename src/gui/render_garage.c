@@ -6,89 +6,10 @@
 
 #include "render_garage.h"
 #include "shader.h"
+#include "primitives.h"
 #include "camera.h"
 #include "gui_common.h"
 #include "GLFW/glfw3.h"
-
-#define QUAD_SIZE (32.0f)
-vec4 quad_paint = {1.0f, 0.5f, 0.2f, 1.0f};
-const vertex quad_vertices[] = {
-    {
-        .position = {QUAD_SIZE, -1.5f, QUAD_SIZE},
-        .color = {1.0f, 1.0f, 1.0f, 1.0f}
-    },
-    {
-        .position = {QUAD_SIZE, -1.5f, -QUAD_SIZE},
-        .color = {1.0f, 1.0f, 1.0f, 1.0f}
-    },
-    {
-        .position = {-QUAD_SIZE, -1.5f, -QUAD_SIZE},
-        .color = {1.0f, 1.0f, 1.0f, 1.0f}
-    },
-    {
-        .position = {-QUAD_SIZE,  -1.5f, QUAD_SIZE},
-        .color = {1.0f, 1.0f, 1.0f, 1.0f}
-    }
-};
-
-const u16 quad_indices[] = {
-    0, 1, 2,
-    3, 0, 2,
-};
-
-#define CUBE_SIZE (1.0f)
-#define CUBE_COLOR {1.0f, 1.0f, 1.0f, 1.0f}
-const vertex cube_vertices[] = {
-    {
-        .position = {CUBE_SIZE, CUBE_SIZE, CUBE_SIZE},
-        .color = CUBE_COLOR
-    },
-    {
-        .position = {CUBE_SIZE, -CUBE_SIZE, CUBE_SIZE},
-        .color = CUBE_COLOR
-    },
-    {
-        .position = {-CUBE_SIZE, -CUBE_SIZE, CUBE_SIZE},
-        .color = CUBE_COLOR
-    },
-    {
-        .position = {-CUBE_SIZE,  CUBE_SIZE, CUBE_SIZE},
-        .color = CUBE_COLOR
-    },
-    {
-        .position = {CUBE_SIZE, CUBE_SIZE, -CUBE_SIZE},
-        .color = CUBE_COLOR
-    },
-    {
-        .position = {CUBE_SIZE, -CUBE_SIZE, -CUBE_SIZE},
-        .color = CUBE_COLOR
-    },
-    {
-        .position = {-CUBE_SIZE, -CUBE_SIZE, -CUBE_SIZE},
-        .color = CUBE_COLOR
-    },
-    {
-        .position = {-CUBE_SIZE,  CUBE_SIZE, -CUBE_SIZE},
-        .color = CUBE_COLOR
-    }
-};
-
-const u16 cube_indices[] = {
-        0, 2, 1,
-        0, 2, 3,
-        4, 6, 5,
-        4, 6, 7,
-
-        0, 5, 1,
-        0, 5, 4,
-        2, 7, 3,
-        2, 7, 6,
-
-        2, 5, 1,
-        2, 5, 6,
-        0, 7, 3,
-        0, 7, 4,
-};
 
 typedef enum {
     STATE_NONE,
@@ -129,7 +50,7 @@ enum {
     SEL_BOX_SIZE = (PART_POS_SCALE * 2),
 };
 
-void render_box(vec3s pos, vec4s color, float scale, mat4 pv, garage_state* state) {
+void render_cube(vec3s pos, vec4s color, float scale, mat4 pv, garage_state* state) {
     mat4 model = {0};
     glm_mat4_identity(model);
     mat4 pvm = {0};
@@ -141,7 +62,7 @@ void render_box(vec3s pos, vec4s color, float scale, mat4 pv, garage_state* stat
 
     // Upload paint color & draw
     glUniform4fv(state->u_paint, 1, (const float *) &color);
-    glDrawElements(GL_TRIANGLES, sizeof(cube_indices) / sizeof(*cube_indices), GL_UNSIGNED_SHORT, NULL);
+    glDrawElements(GL_TRIANGLES, cube.idx_count, GL_UNSIGNED_SHORT, NULL);
 }
 
 void* garage_init(gui_state* gui) {
@@ -185,12 +106,12 @@ void* garage_init(gui_state* gui) {
     // Setup vertex buffer
     glGenBuffers(1, &state->quad_vbuf);
     glBindBuffer(GL_ARRAY_BUFFER, state->quad_vbuf);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quad_vertices), &quad_vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * quad.vert_count, quad.vertices, GL_STATIC_DRAW);
 
     // Setup index buffer
     glGenBuffers(1, &state->quad_ibuf);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->quad_ibuf);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quad_indices), &quad_indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * quad.idx_count, quad_indices, GL_STATIC_DRAW);
 
     // Create vertex layout
     glVertexAttribPointer(0, sizeof(vec3) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, position));
@@ -206,12 +127,12 @@ void* garage_init(gui_state* gui) {
     // Setup vertex buffer
     glGenBuffers(1, &state->cube_vbuf);
     glBindBuffer(GL_ARRAY_BUFFER, state->cube_vbuf);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(cube_vertices), &cube_vertices, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * cube.vert_count, cube.vertices, GL_STATIC_DRAW);
 
     // Setup index buffer
     glGenBuffers(1, &state->cube_ibuf);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->cube_ibuf);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(cube_indices), &cube_indices, GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * cube.idx_count, cube.indices, GL_STATIC_DRAW);
 
     // Create vertex layout
     glVertexAttribPointer(0, sizeof(vec3) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, position));
@@ -271,16 +192,14 @@ void garage_render(void* ctx) {
     glUniform4fv(state->u_paint, 1, (const float*)&quad_paint);
 
     // Draw the floor
-    glBindBuffer(GL_ARRAY_BUFFER, state->quad_vbuf);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->quad_ibuf);
     glBindVertexArray(state->quad_vao);
-    glDrawElements(GL_TRIANGLES, sizeof(quad_indices) / sizeof(*quad_indices), GL_UNSIGNED_SHORT, NULL);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->quad_ibuf);
+    glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
 
 
     // Bind cube model
-    glBindBuffer(GL_ARRAY_BUFFER, state->cube_vbuf);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->cube_ibuf);
     glBindVertexArray(state->cube_vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->cube_ibuf);
 
     // Draw all our parts
     vehicle* v = state->gui->v;
@@ -297,7 +216,7 @@ void garage_render(void* ctx) {
             paint_col.a /= 3;
         }
         // Render
-        render_box(pos, paint_col, 1.0f, pv, state);
+        render_cube(pos, paint_col, 1.0f, pv, state);
     }
 
     // Draw the selection box in wireframe mode
@@ -329,7 +248,7 @@ void garage_render(void* ctx) {
             }
 
             // Render
-            render_box(pos, color, 1.2f, pv, state);
+            render_cube(pos, color, 1.2f, pv, state);
         }
     }
     else {
@@ -337,7 +256,7 @@ void garage_render(void* ctx) {
         pos = vec3_from_vec3s16(state->gui->sel_box, PART_POS_SCALE);
         pos.x -= (center.x * PART_POS_SCALE);
         pos.z -= (center.z * PART_POS_SCALE);
-        render_box(pos, color, 1.2f, pv, state);
+        render_cube(pos, color, 1.2f, pv, state);
     }
 
     // Lock camera onto selection box during editing
@@ -382,3 +301,4 @@ renderer garage = {
     .render = garage_render,
     .destroy = garage_destroy,
 };
+

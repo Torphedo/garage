@@ -18,19 +18,26 @@ typedef enum {
     SEL_BAD,    // User is moving parts around, but placing it down now would cause an overlap.
 }selection_state;
 
+// Part coordinates are a u8, so at 1 bit per cell the bitmask is 32 bytes wide
+#define PART_MAX_DIM ((UINT8_MAX + 1) / 8)
+
 // Current state of the vehicle editor & GUI in general
 typedef struct {
-    vehicle* v; // All vehicle data
-    double delta_time; // Measured in seconds
-    vec3s16 sel_box; // Selection box position
-    input_internal prev_input; // Input from last frame
-    bool cam_allow_vertical; // Whether to allow vertical movement with WASD in freecam
-    editor_mode mode;
+    // Vehicle/part data
+    vehicle* v;
+    // Bitmask for whether a space is occupied by a part, at 1 bit per cell.
+    u8 partmask[PART_MAX_DIM][PART_MAX_DIM][PART_MAX_DIM];
 
+    // Editor state data
+    vec3s16 sel_box; // Selection box position
+    bool cam_allow_vertical; // Allow vertical movement with WASD in freecam?
+    editor_mode mode;
     selection_state sel_mode;
-    // TODO: Maybe we could abuse a padding field in the part to store whether
-    // it's selected, instead of keeping our own separate list.
-    u16 sel_idx; // Currently selected part. Will have to refactor for multi-select later.
+
+    // Extra state that doesn't affect what the user sees
+    double delta_time; // Measured in seconds
+    input_internal prev_input; // Input from last frame
+
 }gui_state;
 
 // Update the GUI state according to new user input.
@@ -59,5 +66,12 @@ typedef struct {
     vec3 position;
     vec4 color;
 }vertex;
+
+typedef struct {
+    u16 vert_count;
+    u16 idx_count;
+    const vertex* vertices;
+    const u16* indices;
+}model;
 
 #endif // GL_TYPES_H
