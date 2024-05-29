@@ -43,6 +43,8 @@ add_executable(garage
     src/gui/shader.c
     src/gui/render_garage.c
     src/gui/gui_common.c
+    src/gui/primitives.c
+    src/gui/render_debug.c
 
     # Adding the GLSL headers here auto-generates them during the build
     ${glsl_headers}
@@ -51,7 +53,6 @@ add_executable(garage
     src/vehicle.c
     src/part_ids.c
     src/stfs.c
-
 )
 
 target_include_directories(garage PRIVATE "src" "ext/glfw/include" "ext/glad/include" "ext/cglm/include")

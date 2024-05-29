@@ -10,5 +10,8 @@ vec3s camera_facing();
 
 void camera_set_target(vec3s pos);
 
+// Get combined projection & view matrix for the current camera position
+void camera_proj_view(gui_state* gui, mat4* out);
+
 #endif // #ifndef CAMERA_H
 

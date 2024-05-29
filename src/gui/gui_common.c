@@ -1,8 +1,21 @@
 #include <stdbool.h>
 
+#include <glad/glad.h>
+
 #include <common/int.h>
 #include "camera.h"
 #include "gui_common.h"
+#include "shader.h"
+#include "primitives.h"
+
+const char* frag = {
+#include "shader/fragment.h"
+};
+
+const char* vert = {
+#include "shader/vertex.h"
+};
+
 
 void update_edit_mode(gui_state* gui) {
     // Handle moving the selector box
@@ -45,6 +58,15 @@ void update_edit_mode(gui_state* gui) {
             if (gui->v->parts[i].selected) {
                 // vehicle_move_part() returns false when a part moves out of bounds
                 vehicle_adjusted |= vehicle_move_part(gui->v, i, diff);
+                vehicle_update_partmask(gui->v, gui->partmask);
+
+                // Check for overlaps and block the placement if needed
+                if (vehicle_selection_overlap(gui->v, gui->partmask)) {
+                    gui->sel_mode = SEL_BAD;
+                }
+                else {
+                    gui->sel_mode = SEL_ACTIVE;
+                }
             }
         }
 
@@ -55,8 +77,8 @@ void update_edit_mode(gui_state* gui) {
         gui->sel_box.z -= diff.z * vehicle_adjusted;
     }
 
-    // Handle user trying to select a part
-    if (input.e && !gui->prev_input.e) {
+    // Handle user trying to select a part (unless the selection is bad).
+    if (input.e && !gui->prev_input.e && gui->sel_mode != SEL_BAD) {
         // If it's out of bounds, we can just ignore this.
         if (gui->sel_box.x >= 0 && gui->sel_box.y >= 0 && gui->sel_box.z >= 0) {
             // Convert to vec3u8
@@ -67,18 +89,23 @@ void update_edit_mode(gui_state* gui) {
             }
 
             if (p->selected) {
-                if (gui->sel_mode == SEL_ACTIVE) {
+                switch (gui->sel_mode) {
+                case SEL_ACTIVE:
                     // User pressed the button while moving parts, which means
                     // we should put them down.
                     vehicle_unselect_all(gui->v);
+                    vehicle_update_partmask(gui->v, gui->partmask);
                     gui->sel_mode = SEL_NONE; // Now you can start moving the parts
-                }
-                else {
+                    break;
+                case SEL_BAD:
+                    // User tried to place overlapping parts. Ignore.
+                    break;
+                case SEL_NONE:
                     // User pressed the button while selecting parts on an
                     // already-selected part, which means they want to start moving them.
                     gui->sel_mode = SEL_ACTIVE;
                 }
-            } else {
+            } else if (p != NULL) {
                 // Select the part (if it exists)
                 if (p != NULL) {
                     p->selected = true;
@@ -134,4 +161,93 @@ bool gui_update_with_input(gui_state* gui, GLFWwindow* window) {
     }
 
     return true;
+}
+
+bool gui_init(gui_state* gui) {
+    // Initialize part bitmask
+    vehicle_update_partmask(gui->v, gui->partmask);
+
+    // Compile shaders
+    gl_obj vertex_shader = shader_compile_src(vert, GL_VERTEX_SHADER);
+    gl_obj fragment_shader = shader_compile_src(frag, GL_FRAGMENT_SHADER);
+    if (vertex_shader == 0 || fragment_shader == 0) {
+        LOG_MSG(error, "Failed to compile shaders\n");
+        return false;
+    }
+    gui->vcolor_shader = glCreateProgram();
+    glAttachShader(gui->vcolor_shader, vertex_shader);
+    glAttachShader(gui->vcolor_shader, fragment_shader);
+    glLinkProgram(gui->vcolor_shader);
+
+    if (!shader_link_check(gui->vcolor_shader)) {
+        return false;
+    }
+
+    // Free the shader objects
+    glDeleteShader(vertex_shader);
+    glDeleteShader(fragment_shader);
+
+    // Get our uniform locations
+    gui->u_pvm = glGetUniformLocation(gui->vcolor_shader, "pvm");
+    gui->u_paint = glGetUniformLocation(gui->vcolor_shader, "paint");
+
+    // Setup VAO
+    glGenVertexArrays(1, &quad.vao);
+    glBindVertexArray(quad.vao);
+
+    // Setup vertex buffer
+    glGenBuffers(1, &quad.vbuf);
+    glBindBuffer(GL_ARRAY_BUFFER, quad.vbuf);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * quad.vert_count, quad.vertices, GL_STATIC_DRAW);
+
+    // Setup index buffer
+    glGenBuffers(1, &quad.ibuf);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quad.ibuf);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * quad.idx_count, quad.indices, GL_STATIC_DRAW);
+
+    // Create vertex layout
+    glVertexAttribPointer(0, sizeof(vec3) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, position));
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, sizeof(vec4) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, color));
+    glEnableVertexAttribArray(1);
+
+    // Cube setup
+    // Setup VAO
+    glGenVertexArrays(1, &cube.vao);
+    glBindVertexArray(cube.vao);
+
+    // Setup vertex buffer
+    glGenBuffers(1, &cube.vbuf);
+    glBindBuffer(GL_ARRAY_BUFFER, cube.vbuf);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * cube.vert_count, cube.vertices, GL_STATIC_DRAW);
+
+    // Setup index buffer
+    glGenBuffers(1, &cube.ibuf);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube.ibuf);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * cube.idx_count, cube.indices, GL_STATIC_DRAW);
+
+    // Create vertex layout
+    glVertexAttribPointer(0, sizeof(vec3) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, position));
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, sizeof(vec4) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, color));
+    glEnableVertexAttribArray(1);
+
+
+    // Unbind our buffers to avoid messing our state up
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    return true;
+}
+
+void gui_teardown(gui_state* gui) {
+    glDeleteProgram(gui->vcolor_shader);
+    glDeleteVertexArrays(1, &quad.vao);
+    glDeleteBuffers(1, &quad.vbuf);
+    glDeleteBuffers(1, &quad.ibuf);
+
+    glDeleteVertexArrays(1, &cube.vao);
+    glDeleteBuffers(1, &cube.vbuf);
+    glDeleteBuffers(1, &cube.ibuf);
 }

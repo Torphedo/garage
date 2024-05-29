@@ -143,7 +143,7 @@ void camera_update(gui_state* gui, mat4* view) {
     // Update angles & zoom from mouse input
     camera_orbit_angles = glms_vec2_add(camera_orbit_angles, cursor_delta);
     radius -= scroll_delta.y;
-    radius = clampf(radius, 0.05f, 128.0f); // Don't allow <= 0 or really high zoom
+    radius = clampf(radius, 0.05f, 256.0f); // Don't allow <= 0 or really high zoom
 
     // Update target pos using delta from user input
     camera_target = glms_vec3_add(camera_target, pos_delta);
@@ -168,4 +168,19 @@ void camera_set_target(vec3s pos) {
         .y = pos.y,
         .z = pos.z,
     };
+}
+
+void camera_proj_view(gui_state* gui, mat4* out) {
+    // Pre-multiply the projection & view components of the PVM matrix
+
+    // Projection matrix
+    mat4 projection = {0};
+    const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+    float aspect = (float)mode->width / (float)mode->height;
+    glm_perspective_rh_no(glm_rad(45), aspect, 0.1f, 1000.0f, projection);
+
+    // Camera matrix
+    mat4 view = {0};
+    camera_update(gui, &view);
+    glm_mat4_mul(projection, view, (vec4*)out);
 }

@@ -1,9 +1,12 @@
-#ifndef GL_TYPES_H
-#define GL_TYPES_H
+#ifndef GUI_COMMON_H
+#define GUI_COMMON_H
 #include <common/int.h>
 #include <common/vector.h>
 #include <vehicle.h>
 #include "input.h"
+
+// Making this the same type as GLuint removes lots of conversion linter warnings
+typedef unsigned int gl_obj;
 
 typedef enum {
     MODE_MOVCAM, // Selection box locked, camera unlocked (freecam)
@@ -18,15 +21,12 @@ typedef enum {
     SEL_BAD,    // User is moving parts around, but placing it down now would cause an overlap.
 }selection_state;
 
-// Part coordinates are a u8, so at 1 bit per cell the bitmask is 32 bytes wide
-#define PART_MAX_DIM ((UINT8_MAX + 1) / 8)
-
 // Current state of the vehicle editor & GUI in general
 typedef struct {
     // Vehicle/part data
     vehicle* v;
     // Bitmask for whether a space is occupied by a part, at 1 bit per cell.
-    u8 partmask[PART_MAX_DIM][PART_MAX_DIM][PART_MAX_DIM];
+    part_bitmask partmask;
 
     // Editor state data
     vec3s16 sel_box; // Selection box position
@@ -38,10 +38,21 @@ typedef struct {
     double delta_time; // Measured in seconds
     input_internal prev_input; // Input from last frame
 
+    // Rendering state that all renderers can re-use
+    gl_obj vcolor_shader; // Shader for drawing objects with vertex colors
+    // Uniforms for the shader
+    gl_obj u_pvm; // PVM matrix uniform
+    gl_obj u_paint; // Vertex color multiplier
 }gui_state;
 
 // Update the GUI state according to new user input.
 bool gui_update_with_input(gui_state* gui, GLFWwindow* window);
+
+// Compile the basic common shader, upload buffers for primitives, setup uniforms
+bool gui_init(gui_state* gui);
+
+// Delete resources created in gui_init().
+void gui_teardown(gui_state* gui);
 
 // Standard interface to facilitate multiple renderers per frame. For example, a
 // UI renderer would render on top of the scene renderer and have separate code.
@@ -59,8 +70,12 @@ typedef struct {
     void (*destroy)(void* ctx);
 }renderer;
 
-// Making this the same type as GLuint removes lots of conversion linter warnings
-typedef unsigned int gl_obj;
+typedef enum {
+    STATE_NONE,
+    STATE_INIT_FAIL,
+    STATE_OK,
+    STATE_DESTROYED,
+}renderer_state;
 
 typedef struct {
     vec3 position;
@@ -72,6 +87,10 @@ typedef struct {
     u16 idx_count;
     const vertex* vertices;
     const u16* indices;
+    gl_obj vao;
+    gl_obj vbuf;
+    gl_obj ibuf;
 }model;
 
-#endif // GL_TYPES_H
+#endif // GUI_COMMON_H 
+

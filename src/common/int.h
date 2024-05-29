@@ -22,6 +22,12 @@ enum {
     INT24_MAX = 0xFFFFFF
 };
 
+// Get a value from a bitmask like it's an array
+u8 mask_get(u8* mask, u8 idx);
+
+// Set a value in a bitmask like it's an array
+void mask_set(u8* mask, u8 idx, u8 val);
+
 s32 s24_to_s32(u8* addr);
 
 // Raise a number to a power (val^pow)

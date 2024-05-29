@@ -11,46 +11,14 @@
 #include "gui_common.h"
 #include "GLFW/glfw3.h"
 
-typedef enum {
-    STATE_NONE,
-    STATE_INIT_FAIL,
-    STATE_OK,
-    STATE_DESTROYED,
-}renderer_state;
-
-const char* frag = {
-#include "shader/fragment.h"
-};
-
-const char* vert = {
-#include "shader/vertex.h"
-};
-
 typedef struct {
      gui_state* gui;
-     gl_obj shader_prog;
-     gl_obj quad_vao;
-     gl_obj quad_vbuf;
-     gl_obj quad_ibuf;
-
-     gl_obj cube_vao;
-     gl_obj cube_vbuf;
-     gl_obj cube_ibuf;
-
-     // Uniforms
-     gl_obj u_pvm; // PVM matrix uniform
-     gl_obj u_paint;
 
      renderer_state status;
 }garage_state;
 
-enum {
-    PART_SCALE = 1,
-    PART_POS_SCALE = 5,
-    SEL_BOX_SIZE = (PART_POS_SCALE * 2),
-};
-
 void render_cube(vec3s pos, vec4s color, float scale, mat4 pv, garage_state* state) {
+    gui_state* gui = state->gui;
     mat4 model = {0};
     glm_mat4_identity(model);
     mat4 pvm = {0};
@@ -58,10 +26,10 @@ void render_cube(vec3s pos, vec4s color, float scale, mat4 pv, garage_state* sta
     glm_translate(model, (float*)&pos);
     glm_scale_uni(model, scale); // Draw the box a little larger than the part cubes
     glm_mat4_mul(pv, model, pvm); // Compute pvm
-    glUniformMatrix4fv(state->u_pvm, 1, GL_FALSE, (const float *) &pvm);
+    glUniformMatrix4fv(gui->u_pvm, 1, GL_FALSE, (const float *) &pvm);
 
     // Upload paint color & draw
-    glUniform4fv(state->u_paint, 1, (const float *) &color);
+    glUniform4fv(gui->u_paint, 1, (const float *) &color);
     glDrawElements(GL_TRIANGLES, cube.idx_count, GL_UNSIGNED_SHORT, NULL);
 }
 
@@ -73,84 +41,13 @@ void* garage_init(gui_state* gui) {
     }
     state->gui = gui;
 
-    // Compile shaders
-    gl_obj vertex_shader = shader_compile_src(vert, GL_VERTEX_SHADER);
-    gl_obj fragment_shader = shader_compile_src(frag, GL_FRAGMENT_SHADER);
-    if (vertex_shader == 0 || fragment_shader == 0) {
-        LOG_MSG(error, "Failed to compile shaders\n");
-        state->status = STATE_INIT_FAIL;
-        return state;
-    }
-    state->shader_prog = glCreateProgram();
-    glAttachShader(state->shader_prog, vertex_shader);
-    glAttachShader(state->shader_prog, fragment_shader);
-    glLinkProgram(state->shader_prog);
-
-    if (!shader_link_check(state->shader_prog)) {
-        state->status = STATE_INIT_FAIL;
-        return state;
-    }
-
-    // Free the shader objects
-    glDeleteShader(vertex_shader);
-    glDeleteShader(fragment_shader);
-
-    // Get our uniform locations
-    state->u_pvm = glGetUniformLocation(state->shader_prog, "pvm");
-    state->u_paint = glGetUniformLocation(state->shader_prog, "paint");
-
-    // Setup VAO
-    glGenVertexArrays(1, &state->quad_vao);
-    glBindVertexArray(state->quad_vao);
-
-    // Setup vertex buffer
-    glGenBuffers(1, &state->quad_vbuf);
-    glBindBuffer(GL_ARRAY_BUFFER, state->quad_vbuf);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * quad.vert_count, quad.vertices, GL_STATIC_DRAW);
-
-    // Setup index buffer
-    glGenBuffers(1, &state->quad_ibuf);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->quad_ibuf);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * quad.idx_count, quad_indices, GL_STATIC_DRAW);
-
-    // Create vertex layout
-    glVertexAttribPointer(0, sizeof(vec3) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, position));
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, sizeof(vec4) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, color));
-    glEnableVertexAttribArray(1);
-
-    // Cube setup
-    // Setup VAO
-    glGenVertexArrays(1, &state->cube_vao);
-    glBindVertexArray(state->cube_vao);
-
-    // Setup vertex buffer
-    glGenBuffers(1, &state->cube_vbuf);
-    glBindBuffer(GL_ARRAY_BUFFER, state->cube_vbuf);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * cube.vert_count, cube.vertices, GL_STATIC_DRAW);
-
-    // Setup index buffer
-    glGenBuffers(1, &state->cube_ibuf);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->cube_ibuf);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * cube.idx_count, cube.indices, GL_STATIC_DRAW);
-
-    // Create vertex layout
-    glVertexAttribPointer(0, sizeof(vec3) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, position));
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, sizeof(vec4) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, color));
-    glEnableVertexAttribArray(1);
-
-
-    // Unbind our buffers to avoid other renderers messing our state up
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     state->status = STATE_OK;
     return state;
 }
 
 void garage_render(void* ctx) {
     garage_state* state = (garage_state*)ctx;
+    gui_state* gui = state->gui;
     if (state->status != STATE_OK) {
         // Printing here would spam console, there should already be errors there
         return;
@@ -163,43 +60,31 @@ void garage_render(void* ctx) {
     glEnable(GL_BLEND);
 
     // We need to bind the shader program before uploading uniforms
-    glUseProgram(state->shader_prog);
+    glUseProgram(gui->vcolor_shader);
 
     // All our matrices for rendering, only PVM is uploaded to GPU
     mat4 pvm = {0};
     mat4 pv = {0};
+    camera_proj_view(gui, &pv);
     mat4 model = {0};
     glm_mat4_identity(model);
 
-    // Pre-multiply the projection & view components of the PVM matrix
-    {
-        // Projection matrix
-        mat4 projection = {0};
-        const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-        float aspect = (float)mode->width / (float)mode->height;
-        glm_perspective_rh_no(glm_rad(45), aspect, 0.1f, 1000.0f, projection);
-
-        // Camera matrix
-        mat4 view = {0};
-        camera_update(state->gui, &view);
-        glm_mat4_mul(projection, view, pv);
-    }
-
     glm_mat4_mul(pv, model, pvm); // Compute pvm
-    glUniformMatrix4fv(state->u_pvm, 1, GL_FALSE, (const float*)&pvm);
+    glUniformMatrix4fv(gui->u_pvm, 1, GL_FALSE, (const float*)&pvm);
 
-    // "Paint" the floor the right color
-    glUniform4fv(state->u_paint, 1, (const float*)&quad_paint);
+    // "Paint" the floor orange
+    vec4 quad_paint = {1.0f, 0.5f, 0.2f, 1.0f};
+    glUniform4fv(gui->u_paint, 1, (const float*)&quad_paint);
 
     // Draw the floor
-    glBindVertexArray(state->quad_vao);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->quad_ibuf);
+    glBindVertexArray(quad.vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quad.ibuf);
     glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
 
 
     // Bind cube model
-    glBindVertexArray(state->cube_vao);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, state->cube_ibuf);
+    glBindVertexArray(cube.vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube.ibuf);
 
     // Draw all our parts
     vehicle* v = state->gui->v;
@@ -280,15 +165,6 @@ void garage_destroy(void* ctx) {
         LOG_MSG(warning, "Avoided a double free, check your destroy() calls!\n");
         return;
     }
-
-    glDeleteProgram(state->shader_prog);
-    glDeleteVertexArrays(1, &state->quad_vao);
-    glDeleteBuffers(1, &state->quad_vbuf);
-    glDeleteBuffers(1, &state->quad_ibuf);
-
-    glDeleteVertexArrays(1, &state->cube_vao);
-    glDeleteBuffers(1, &state->cube_vbuf);
-    glDeleteBuffers(1, &state->cube_ibuf);
 
     // On the off chance we get called again and don't crash while trying to
     // read this already-freed status value, render() will exit early.

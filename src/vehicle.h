@@ -49,6 +49,21 @@ typedef struct {
     part_entry parts[];
 }vehicle;
 
+enum {
+    PART_SCALE = 1,
+    PART_POS_SCALE = 5,
+    SEL_BOX_SIZE = (PART_POS_SCALE * 2),
+
+    // Used to store a compact 3D grid of parts, with 1 bit per cell indicating
+    // if the cell is already used. Part coordinates are a u8, so at 1 bit per
+    // cell the bitmask is 32 bytes wide.
+    PART_MAX_DIM = ((UINT8_MAX + 1) / 8)
+};
+
+// 3D array to store parts at 1 bit each
+typedef u8 part_bitmask[UINT8_MAX + 1][UINT8_MAX + 1][PART_MAX_DIM];
+
+
 // Load a vehicle into a newly allocated buffer. Automatically handles STFS if
 // needed (it's assumed that the vehicle is stored as the first file entry, and
 // is under 680KiB).
@@ -67,6 +82,11 @@ void vehicle_unselect_all(vehicle* v);
 // Returns a boolean indicating if the vehicle had to be adjusted.
 bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff);
 
+// Check if the selected parts overlap with the bitmask of unselected parts.
+bool vehicle_selection_overlap(vehicle* v, part_bitmask mask);
+
+void vehicle_update_partmask(vehicle* v, part_bitmask mask);
+
 // Look up a part by its position.
 // Returns NULL if no part is found, so always check the result!
 part_entry* part_by_pos(vehicle* v, vec3u8 pos);
@@ -79,6 +99,5 @@ void part_byteswap(part_entry* part);
 
 // Byte-swap an existing vehicle header
 void vehicle_header_byteswap(vehicle_header* v);
-
 
 #endif // VEHICLE_H

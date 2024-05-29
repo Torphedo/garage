@@ -92,6 +92,36 @@ void vehicle_unselect_all(vehicle* v) {
     }
 }
 
+bool vehicle_part_conflict(part_bitmask mask, part_entry* p) {
+    vec3u8 pos = p->pos;
+    u8* addr = (u8*)&mask[pos.x][pos.y];
+    return mask_get(addr, pos.z);
+}
+
+bool vehicle_selection_overlap(vehicle* v, part_bitmask mask) {
+    for (u16 i = 0; i < v->head.part_count; i++) {
+        if (!v->parts[i].selected) {
+            continue;
+        }
+        if (vehicle_part_conflict(mask, &v->parts[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void vehicle_update_partmask(vehicle* v, part_bitmask mask) {
+    // Erase the bitmask
+    memset(mask, 0x00, sizeof(part_bitmask));
+
+    for (u16 i = 0; i < v->head.part_count; i++) {
+        vec3u8 pos = v->parts[i].pos;
+        u8* addr = (u8*)&mask[pos.x][pos.y];
+        // Set the bit unless the part is selected
+        mask_set(addr, pos.z, 1 * !v->parts[i].selected);
+    }
+}
+
 bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
     if (idx > v->head.part_count - 1) {
         // We can't move a part that doesn't exist.
