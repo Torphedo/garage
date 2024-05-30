@@ -3,13 +3,13 @@
 
 #include <glad/glad.h>
 #include <cglm/cglm.h>
+#include "GLFW/glfw3.h"
 
 #include "render_garage.h"
 #include "shader.h"
 #include "primitives.h"
 #include "camera.h"
 #include "gui_common.h"
-#include "GLFW/glfw3.h"
 
 typedef struct {
      gui_state* gui;

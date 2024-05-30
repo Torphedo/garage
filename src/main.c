@@ -13,7 +13,7 @@
 #include "gui/gui_common.h"
 
 #include "vehicle.h"
-#include "part_ids.h"
+#include "parts.h"
 
 int main(int argc, char** argv) {
     enable_win_ansi(); // Enable color & extra terminal features on Windows

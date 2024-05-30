@@ -1,4 +1,4 @@
-#include "part_ids.h"
+#include "parts.h"
 
 char* part_get_name(part_id id) {
     switch (id) {

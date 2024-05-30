@@ -14,17 +14,6 @@ void* debug_init(gui_state* gui) {
         state->gui = gui;
     }
 
-    /*
-    for (u16 i = 0; i < UINT8_MAX + 1; i++) {
-        mask_set((u8 *) &gui->partmask[i][0], 0, 1);
-        for (u16 j = 0; j < UINT8_MAX + 1; j++) {
-            for (u16 k = 0; k < UINT8_MAX + 1; k++) {
-                mask_set((u8 *) &gui->partmask[0][0], k, 1);
-            }
-        }
-    }
-     */
-
     return state;
 }
 
@@ -49,7 +38,7 @@ void debug_render(void* ctx) {
     // Highest XYZ coords in the vehicle. We add 1 to include the highest index.
     vec3s max = glms_vec3_adds(glms_vec3_scale(center, 2), 1.0f);
     vec4s color = {.b = 1.0f, .a = 1.0f};
-    glUniform4fv(gui->u_paint, 1, &color);
+    glUniform4fv(gui->u_paint, 1, (const float*)&color);
 
     // Loop over the bitmask
     for (u16 i = 0; i < UINT8_MAX + 1 && i < max.x; i++) {

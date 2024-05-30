@@ -51,7 +51,7 @@ add_executable(garage
 
     src/main.c
     src/vehicle.c
-    src/part_ids.c
+    src/parts.c
     src/stfs.c
 )
 
