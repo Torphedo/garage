@@ -5,6 +5,7 @@ set(CMAKE_C_STANDARD 99)
 
 add_subdirectory(ext/glfw)
 add_subdirectory(ext/glad)
+add_subdirectory(test)
 
 # Internal build tool to generate headers for GLSL shaders
 add_executable(txt2h "ext/txt2h.c")

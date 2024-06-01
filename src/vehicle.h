@@ -35,13 +35,6 @@ typedef struct {
     u32 pad3;
 }part_entry;
 
-// Sanity check to make sure our part structure has correct padding & size.
-static void check_part_entry() {
-    if (sizeof(part_entry) != 0x24) {
-        LOG_MSG(error, "sizeof(part_entry) == 0x%x, expected 0x24\n", sizeof(part_entry));
-    }
-}
-
 // The flexible array member causes sizeof(vehicle) == sizeof(vehicle_header)!
 // Be careful!
 typedef struct {

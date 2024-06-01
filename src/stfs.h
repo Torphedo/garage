@@ -163,7 +163,7 @@ typedef struct {
     s32 data_file_count;
     s32 data_file_size; // Combined size of all files (?)
     u32 descriptor_type; // stfs_descriptor_type enum
-    u32 reserved;
+    u64 reserved;
 
     // == Begin v2 metadata fields. (This is padding in v1) ==
     u8 series_id[0x10];
@@ -176,10 +176,10 @@ typedef struct {
     //      u8 pad[0x4C];
     u8 device_id[20]; // Is this a SHA1?
 
-    wchar_t names[0x40][18]; // 18 wide strings of 80 characters each, one per locale
-    wchar_t descriptions[0x40][18];
-    wchar_t publisher[0x40];
-    wchar_t title[0x40];
+    c16 names[0x40][18]; // 18 wide strings of 80 characters each, one per locale
+    c16 descriptions[0x40][18];
+    c16 publisher[0x40];
+    c16 title[0x40];
 
     u8 transfer_flag; // stfs_transfer_lock enum
     u32 thumbnail_size;
@@ -187,9 +187,9 @@ typedef struct {
 
     // == Begin v2 metadata fields. In v1, the PNG is allowed 0x4000 bytes. ==
     u8 thumbnail[0x3D00]; // PNG image data
-    wchar_t localized_names[0x40][6]; // Extra locales for the name
+    c16 localized_names[0x40][6]; // Extra locales for the name
     u8 title_thumbnail[0x3D00]; // PNG image data
-    wchar_t localized_descs[0x40][6]; // Extra locales for the description
+    c16 localized_descs[0x40][6]; // Extra locales for the description
     // == End v2 metadata fields ==
     // Use this instead for a v1 struct:
     //      u8 thumbnail[0x4000];
@@ -213,6 +213,8 @@ typedef struct {
     stfs_meta meta;
 }stfs_header;
 #pragma pack(pop, r1)
+
+u32 s = offsetof(stfs_header, meta) + offsetof(stfs_meta, publisher);
 
 
 // Extra constants that don't need a typedef
