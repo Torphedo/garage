@@ -1,13 +1,15 @@
-- Don't allow part to be placed overlapping another (use a new function for
-  this check, so we can account for large & weird-shaped parts later)
-- Allow selecting multiple parts at once (maybe by re-using padding bytes as a
-  selection flag, or keeping our own list). Trying to select an already selected
-  part should let you start moving all those selected, like in the game.
-- Highlight selected parts in some way
 - Resize vehicle after every move which changes the centerpoint. We want to
   keep the vehicle in the center as much as possible.
 - Add a button to save the vehicle to a file (trivial)
 - Support saving vehicle to an STFS file for use on the console
+- Load models from OBJ. We'll either have to do 2 passes on the file (one to
+  find out the size and one to fill out the model struct), or grab the queue
+  implementation from koshka to use a dynamic list. OBJ doesn't support vertex
+  colors, but Blender and other tools will export it by giving each vertex 6
+  floats (x, y, z, r, g, b). https://paulbourke.net/dataformats/obj/colour.html
+- Make a single-part volume bitmask to check collisions. The largest part is
+  the Large Box (7x8x2) and we'll need to be able to rotate the part, so the
+  volume needs to be 8x8x8 (64 bytes).
 
 - Look into controller support via GLFW. I think D-pads are exposed as "hat"
   switches, the triggers are one-axis "joysticks", and the actual sticks are
