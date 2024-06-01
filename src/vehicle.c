@@ -92,13 +92,13 @@ void vehicle_unselect_all(vehicle* v) {
     }
 }
 
-bool vehicle_part_conflict(part_bitmask mask, part_entry* p) {
+bool vehicle_part_conflict(vehicle_bitmask mask, part_entry* p) {
     vec3u8 pos = p->pos;
     u8* addr = (u8*)&mask[pos.x][pos.y];
     return mask_get(addr, pos.z);
 }
 
-bool vehicle_selection_overlap(vehicle* v, part_bitmask mask) {
+bool vehicle_selection_overlap(vehicle* v, vehicle_bitmask mask) {
     for (u16 i = 0; i < v->head.part_count; i++) {
         if (!v->parts[i].selected) {
             continue;
@@ -110,9 +110,9 @@ bool vehicle_selection_overlap(vehicle* v, part_bitmask mask) {
     return false;
 }
 
-void vehicle_update_partmask(vehicle* v, part_bitmask mask) {
+void update_vehiclemask(vehicle* v, vehicle_bitmask mask) {
     // Erase the bitmask
-    memset(mask, 0x00, sizeof(part_bitmask));
+    memset(mask, 0x00, sizeof(vehicle_bitmask));
 
     for (u16 i = 0; i < v->head.part_count; i++) {
         vec3u8 pos = v->parts[i].pos;

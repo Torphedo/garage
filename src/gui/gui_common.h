@@ -26,7 +26,7 @@ typedef struct {
     // Vehicle/part data
     vehicle* v;
     // Bitmask for whether a space is occupied by a part, at 1 bit per cell.
-    part_bitmask partmask;
+    vehicle_bitmask vehiclemask;
 
     // Editor state data
     vec3s16 sel_box; // Selection box position
@@ -37,6 +37,7 @@ typedef struct {
     // Extra state that doesn't affect what the user sees
     double delta_time; // Measured in seconds
     input_internal prev_input; // Input from last frame
+    bool vsync;
 
     // Rendering state that all renderers can re-use
     gl_obj vcolor_shader; // Shader for drawing objects with vertex colors

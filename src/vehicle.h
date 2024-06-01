@@ -61,7 +61,7 @@ enum {
 };
 
 // 3D array to store parts at 1 bit each
-typedef u8 part_bitmask[UINT8_MAX + 1][UINT8_MAX + 1][PART_MAX_DIM];
+typedef u8 vehicle_bitmask[UINT8_MAX + 1][UINT8_MAX + 1][PART_MAX_DIM];
 
 
 // Load a vehicle into a newly allocated buffer. Automatically handles STFS if
@@ -83,9 +83,9 @@ void vehicle_unselect_all(vehicle* v);
 bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff);
 
 // Check if the selected parts overlap with the bitmask of unselected parts.
-bool vehicle_selection_overlap(vehicle* v, part_bitmask mask);
+bool vehicle_selection_overlap(vehicle* v, vehicle_bitmask mask);
 
-void vehicle_update_partmask(vehicle* v, part_bitmask mask);
+void update_vehiclemask(vehicle* v, vehicle_bitmask mask);
 
 // Look up a part by its position.
 // Returns NULL if no part is found, so always check the result!

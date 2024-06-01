@@ -29,7 +29,7 @@ int main(int argc, char** argv) {
         // Loader function will print the error message for us, so just exit
         return 1;
     }
-    gui_state gui = {.v = v}; // Initial gui state only has the vehicle ptr
+    gui_state gui = {.v = v, .vsync = true};
 
     GLFWwindow* window = setup_opengl(680, 480, "Garage Opener", ENABLE_DEBUG, GLFW_CURSOR_NORMAL);
     if (window == NULL) {

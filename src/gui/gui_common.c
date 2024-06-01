@@ -7,6 +7,7 @@
 #include "gui_common.h"
 #include "shader.h"
 #include "primitives.h"
+#include "gl_setup.h"
 
 const char* frag = {
 #include "shader/fragment.h"
@@ -58,10 +59,10 @@ void update_edit_mode(gui_state* gui) {
             if (gui->v->parts[i].selected) {
                 // vehicle_move_part() returns false when a part moves out of bounds
                 vehicle_adjusted |= vehicle_move_part(gui->v, i, diff);
-                vehicle_update_partmask(gui->v, gui->partmask);
+                update_vehiclemask(gui->v, gui->vehiclemask);
 
                 // Check for overlaps and block the placement if needed
-                if (vehicle_selection_overlap(gui->v, gui->partmask)) {
+                if (vehicle_selection_overlap(gui->v, gui->vehiclemask)) {
                     gui->sel_mode = SEL_BAD;
                 }
                 else {
@@ -94,7 +95,7 @@ void update_edit_mode(gui_state* gui) {
                     // User pressed the button while moving parts, which means
                     // we should put them down.
                     vehicle_unselect_all(gui->v);
-                    vehicle_update_partmask(gui->v, gui->partmask);
+                    update_vehiclemask(gui->v, gui->vehiclemask);
                     gui->sel_mode = SEL_NONE; // Now you can start moving the parts
                     break;
                 case SEL_BAD:
@@ -146,6 +147,11 @@ bool gui_update_with_input(gui_state* gui, GLFWwindow* window) {
     }
 
     if (input.v && !gui->prev_input.v) {
+        // Toggle vsync
+        gui->vsync = !gui->vsync;
+        set_vsync(gui->vsync);
+    }
+    if (input.u && !gui->prev_input.u) {
         gui->cam_allow_vertical = !gui->cam_allow_vertical;
     }
     if (input.tab && !gui->prev_input.tab) {
@@ -165,7 +171,7 @@ bool gui_update_with_input(gui_state* gui, GLFWwindow* window) {
 
 bool gui_init(gui_state* gui) {
     // Initialize part bitmask
-    vehicle_update_partmask(gui->v, gui->partmask);
+    update_vehiclemask(gui->v, gui->vehiclemask);
 
     // Compile shaders
     gl_obj vertex_shader = shader_compile_src(vert, GL_VERTEX_SHADER);
