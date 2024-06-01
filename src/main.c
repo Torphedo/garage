@@ -38,7 +38,9 @@ int main(int argc, char** argv) {
 
     // Prepare for rendering
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    gui_init(&gui);
+    if (!gui_init(&gui)) {
+        return 1;
+    }
     void* garage_ctx = garage.init(&gui);
     void* dbg_ctx = dbg_view.init(&gui);
 

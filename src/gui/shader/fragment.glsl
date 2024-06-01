@@ -1,9 +1,8 @@
-#version 330 core
-out vec4 fragment_rgba;
-
-in vec4 vert_color;
+#version 110
+// Vertex color passed from vertex shader
+varying vec4 vert_color;
 
 void main() {
-    fragment_rgba = vert_color;
+    gl_FragColor = vert_color;
 }
 
