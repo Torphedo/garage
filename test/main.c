@@ -15,6 +15,7 @@ testproc tests[] = {
 int main() {
     enable_win_ansi();
 
+    LOG_MSG(info, "Running %d tests\n", ARRAY_SIZE(tests));
     u32 passed_count = 0;
     for (u32 i = 0; i < ARRAY_SIZE(tests); i++) {
         passed_count += tests[i]();
