@@ -5,6 +5,8 @@ set(CMAKE_C_STANDARD 99)
 
 add_subdirectory(ext/glfw)
 add_subdirectory(ext/glad)
+
+enable_testing()
 add_subdirectory(test)
 
 # Internal build tool to generate headers for GLSL shaders

@@ -214,9 +214,6 @@ typedef struct {
 }stfs_header;
 #pragma pack(pop, r1)
 
-u32 s = offsetof(stfs_header, meta) + offsetof(stfs_meta, publisher);
-
-
 // Extra constants that don't need a typedef
 enum {
     CON_DEVKIT = 1,
