@@ -6,7 +6,7 @@ set(CMAKE_C_STANDARD 99)
 add_subdirectory(ext/glfw)
 add_subdirectory(ext/glad)
 
-enable_testing()
+include_directories("src" "ext/glfw/include" "ext/glad/include" "ext/cglm/include")
 add_subdirectory(test)
 
 # Internal build tool to generate headers for GLSL shaders
@@ -58,5 +58,6 @@ add_executable(garage
     src/stfs.c
 )
 
-target_include_directories(garage PRIVATE "src" "ext/glfw/include" "ext/glad/include" "ext/cglm/include")
 target_link_libraries(garage PRIVATE glfw glad)
+
+file(COPY "bin/" DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/bin)

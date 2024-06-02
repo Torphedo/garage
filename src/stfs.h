@@ -218,7 +218,7 @@ typedef struct {
 enum {
     CON_DEVKIT = 1,
     CON_RETAIL = 2,
-    STFS_BLOCK_SIZE = 1 << 12,
+    STFS_BLOCK_SIZE = 0x1000,
     BKNB_TITLE_ID = 0x4D5307ED,
 };
 
