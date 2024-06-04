@@ -1,20 +1,17 @@
 #include <stddef.h>
-#include <malloc.h>
 
 #include <glad/glad.h>
 #include <cglm/cglm.h>
-#include "GLFW/glfw3.h"
 
-#include "render_garage.h"
-#include "shader.h"
 #include "primitives.h"
 #include "camera.h"
+#include "obj.h"
 #include "gui_common.h"
 
 typedef struct {
-     gui_state* gui;
+    gui_state* gui;
 
-     renderer_state status;
+    renderer_state status;
 }garage_state;
 
 void render_cube(vec3s pos, vec4s color, float scale, mat4 pv, garage_state* state) {

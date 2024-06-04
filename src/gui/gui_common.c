@@ -17,6 +17,33 @@ const char* vert = {
 #include "shader/vertex.h"
 };
 
+void model_upload(model* m) {
+    gl_obj buffers[2];
+    glGenBuffers(2, buffers);
+    glGenVertexArrays(1, &m->vao);
+    m->vbuf = buffers[0];
+    m->ibuf = buffers[1];
+
+    // Setup vertex buffer
+    glBindVertexArray(m->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, m->vbuf);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * m->vert_count, m->vertices, GL_STATIC_DRAW);
+
+    // Setup index buffer
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ibuf);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u16) * m->idx_count, m->indices, GL_STATIC_DRAW);
+
+    // Create vertex layout
+    glVertexAttribPointer(0, sizeof(vec3) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, position));
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, sizeof(vec4) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, color));
+    glEnableVertexAttribArray(1);
+
+    // Unbind our buffers to avoid messing our state up
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
 
 void update_edit_mode(gui_state* gui) {
     // Handle moving the selector box
@@ -197,52 +224,8 @@ bool gui_init(gui_state* gui) {
     gui->u_pvm = glGetUniformLocation(gui->vcolor_shader, "pvm");
     gui->u_paint = glGetUniformLocation(gui->vcolor_shader, "paint");
 
-    // Setup VAO
-    glGenVertexArrays(1, &quad.vao);
-    glBindVertexArray(quad.vao);
-
-    // Setup vertex buffer
-    glGenBuffers(1, &quad.vbuf);
-    glBindBuffer(GL_ARRAY_BUFFER, quad.vbuf);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * quad.vert_count, quad.vertices, GL_STATIC_DRAW);
-
-    // Setup index buffer
-    glGenBuffers(1, &quad.ibuf);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quad.ibuf);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * quad.idx_count, quad.indices, GL_STATIC_DRAW);
-
-    // Create vertex layout
-    glVertexAttribPointer(0, sizeof(vec3) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, position));
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, sizeof(vec4) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, color));
-    glEnableVertexAttribArray(1);
-
-    // Cube setup
-    // Setup VAO
-    glGenVertexArrays(1, &cube.vao);
-    glBindVertexArray(cube.vao);
-
-    // Setup vertex buffer
-    glGenBuffers(1, &cube.vbuf);
-    glBindBuffer(GL_ARRAY_BUFFER, cube.vbuf);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * cube.vert_count, cube.vertices, GL_STATIC_DRAW);
-
-    // Setup index buffer
-    glGenBuffers(1, &cube.ibuf);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube.ibuf);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u32) * cube.idx_count, cube.indices, GL_STATIC_DRAW);
-
-    // Create vertex layout
-    glVertexAttribPointer(0, sizeof(vec3) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, position));
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, sizeof(vec4) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, color));
-    glEnableVertexAttribArray(1);
-
-
-    // Unbind our buffers to avoid messing our state up
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    model_upload(&quad);
+    model_upload(&cube);
 
     return true;
 }

@@ -50,11 +50,11 @@ enum {
     // Used to store a compact 3D grid of parts, with 1 bit per cell indicating
     // if the cell is already used. Part coordinates are a u8, so at 1 bit per
     // cell the bitmask is 32 bytes wide.
-    PART_MAX_DIM = ((UINT8_MAX + 1) / 8)
+    VEH_MAX_DIM = ((UINT8_MAX + 1) / 8)
 };
 
 // 3D array to store parts at 1 bit each
-typedef u8 vehicle_bitmask[UINT8_MAX + 1][UINT8_MAX + 1][PART_MAX_DIM];
+typedef u8 vehicle_bitmask[UINT8_MAX + 1][UINT8_MAX + 1][VEH_MAX_DIM];
 
 
 // Load a vehicle into a newly allocated buffer. Automatically handles STFS if

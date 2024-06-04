@@ -92,6 +92,6 @@ typedef struct {
     gl_obj vbuf;
     gl_obj ibuf;
 }model;
+void model_upload(model* m);
 
 #endif // GUI_COMMON_H 
-
