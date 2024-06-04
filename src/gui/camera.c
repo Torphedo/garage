@@ -181,6 +181,7 @@ void camera_proj_view(gui_state* gui, mat4* out) {
 
     // Camera matrix
     mat4 view = {0};
+    glm_mat4_identity(view);
     camera_update(gui, &view);
     glm_mat4_mul(projection, view, (vec4*)out);
 }

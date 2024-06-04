@@ -1,7 +1,7 @@
 #include <stdio.h>
 
 #include <glad/glad.h>
-#include <memory.h>
+#include <string.h>
 
 #include "common/int.h"
 #include "common/logging.h"
@@ -29,7 +29,15 @@ int main(int argc, char** argv) {
         // Loader function will print the error message for us, so just exit
         return 1;
     }
-    gui_state gui = {.v = v, .vsync = true};
+    gui_state gui = {
+        .v = v,
+        .vsync = true,
+        .vehiclemask = calloc(1, sizeof(vehicle_bitmask)),
+    };
+    if (gui.vehiclemask == NULL) {
+        LOG_MSG(error, "Failed to alloc vehicle bitmask\n");
+        return 1;
+    }
 
     GLFWwindow* window = setup_opengl(680, 480, "Garage Opener", ENABLE_DEBUG, GLFW_CURSOR_NORMAL);
     if (window == NULL) {
@@ -71,7 +79,7 @@ int main(int argc, char** argv) {
         // Render
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         garage.render(garage_ctx);
-        dbg_view.render(dbg_ctx);
+        // dbg_view.render(dbg_ctx);
         glfwSwapBuffers(window); // Framebuffer swap won't happen until vsync
         glFinish(); // Wait for vsync before going to the next line
 
