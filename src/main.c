@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
         // Render
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         garage.render(garage_ctx);
-        // dbg_view.render(dbg_ctx);
+        dbg_view.render(dbg_ctx);
         glfwSwapBuffers(window); // Framebuffer swap won't happen until vsync
         glFinish(); // Wait for vsync before going to the next line
 
