@@ -13,7 +13,7 @@ vec3s camera_pos = {0};
 
 float radius = 4.0f;
 const float orbit_speed = 0.025f;
-const float move_speed = 30.0f;
+const float move_speed = 10.0f;
 const float mouse_sens = 0.015f;
 
 bool invert_mouse_x = true;

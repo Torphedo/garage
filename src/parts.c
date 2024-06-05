@@ -1,4 +1,35 @@
+#include <malloc.h>
+#include <string.h>
 #include "parts.h"
+
+id_str part_get_id_str(part_id id) {
+    id_str out = {0};
+    for (u8 i = 0; i < sizeof(id); i++) {
+        u8 byte = id >> (i * 8);
+        u8 high = byte >> 4;
+        u8 low = byte & 0x0F;
+
+        // Get the ASCII character of the hex digit. '9' is separated from 'A'
+        // by 0x10 bytes, so we can't just add the value.
+        out.c[i * 2] = '0' + high + (high > 0x9) * 0x7;
+        out.c[i * 2 + 1] |= '0' + low + (low > 0x9) * 0x7;
+    }
+
+    return out;
+}
+
+char* part_get_obj_path(part_id id) {
+    char* out = calloc(1, sizeof("bin/") + 8 + sizeof(".obj") + 1);
+    if (out == NULL) {
+        return out;
+    }
+
+    strcpy(out, "bin/00000000.obj");
+    id_str hex = part_get_id_str(id);
+    strncpy(&out[4], hex.c, sizeof(hex));
+
+    return out;
+}
 
 char* part_get_name(part_id id) {
     switch (id) {
@@ -233,10 +264,9 @@ char* part_get_name(part_id id) {
         return "Papery Pal";
     case RADIO:
         return "Radio";
-    case GOLD_FISH:
+    case GOLDFISH:
         return "Goldfish";
     default:
         return "[Unknown part]";
     }
 }
-

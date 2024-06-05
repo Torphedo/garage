@@ -6,15 +6,22 @@
 #include "primitives.h"
 #include "camera.h"
 #include "obj.h"
+#include "parts.h"
 #include "gui_common.h"
+
+typedef struct {
+    part_id id;
+    model model;
+}part_model;
 
 typedef struct {
     gui_state* gui;
 
+    part_model models[NUM_PARTS + 1];
     renderer_state status;
 }garage_state;
 
-void render_cube(vec3s pos, vec4s color, float scale, mat4 pv, garage_state* state) {
+void render_cube(s32 idx_count, vec3s pos, vec4s color, float scale, mat4 pv, garage_state* state) {
     gui_state* gui = state->gui;
     mat4 model = {0};
     glm_mat4_identity(model);
@@ -27,7 +34,40 @@ void render_cube(vec3s pos, vec4s color, float scale, mat4 pv, garage_state* sta
 
     // Upload paint color & draw
     glUniform4fv(gui->u_paint, 1, (const float *) &color);
-    glDrawElements(GL_TRIANGLES, cube.idx_count, GL_UNSIGNED_SHORT, NULL);
+    glDrawElements(GL_TRIANGLES, idx_count, GL_UNSIGNED_SHORT, NULL);
+}
+
+model get_or_load_model(garage_state* state, part_id id) {
+    for (u8 i = 0; i < ARRAY_SIZE(state->models); i++) {
+        part_model* cur = &state->models[i];
+        if (cur->id == id) {
+            return cur->model;
+        }
+        else if (cur->model.vertices == NULL || cur->model.indices == NULL) {
+            // Our model isn't in the list and we have an empty space.
+            // Load the part!
+            cur->id = id;
+
+            char* obj_path = part_get_obj_path(id);
+            cur->model = obj_load(obj_path);
+            free(obj_path);
+
+            if (cur->model.vertices == NULL || cur->model.indices == NULL) {
+                LOG_MSG(error, "Failed to load \"%s\" (0x%X)\n", part_get_name(id), id);
+                printf("\n"); // Helps make our logs more readable
+
+                // We didn't find it, and couldn't load it. Fall back to cube.
+                cur->model = cube;
+                return cube;
+            }
+            model_upload(&cur->model);
+            cur->id = id;
+
+            LOG_MSG(info, "Loaded \"%s\" in %.2fKiB\n", part_get_name(id), (float)model_size(cur->model) / 1024.0f);
+            printf("\n"); // Helps make our logs more readable
+            return cur->model;
+        }
+    }
 }
 
 void* garage_init(gui_state* gui) {
@@ -37,6 +77,13 @@ void* garage_init(gui_state* gui) {
         return NULL;
     }
     state->gui = gui;
+
+    // ID 0 will just render a cube
+    state->models[0] = (part_model){.id = 0, .model = cube};
+
+    for (u16 i = 0; i < gui->v->head.part_count; i++) {
+        get_or_load_model(state, gui->v->parts[i].id);
+    }
 
     state->status = STATE_OK;
     return state;
@@ -63,10 +110,10 @@ void garage_render(void* ctx) {
     mat4 pvm = {0};
     mat4 pv = {0};
     camera_proj_view(gui, &pv);
-    mat4 model = {0};
-    glm_mat4_identity(model);
+    mat4 mdl = {0};
+    glm_mat4_identity(mdl);
 
-    glm_mat4_mul(pv, model, pvm); // Compute pvm
+    glm_mat4_mul(pv, mdl, pvm); // Compute pvm
     glUniformMatrix4fv(gui->u_pvm, 1, GL_FALSE, (const float*)&pvm);
 
     // "Paint" the floor orange
@@ -97,8 +144,20 @@ void garage_render(void* ctx) {
         if (v->parts[i].selected) {
             paint_col.a /= 3;
         }
-        // Render
-        render_cube(pos, paint_col, 1.0f, pv, state);
+
+        // Load a model for the part, if possible.
+        model m = get_or_load_model(state, v->parts[i].id);
+        // Don't paint parts with custom models
+        if (m.vao != cube.vao) {
+            paint_col = (vec4s){.r = 1.0f, .g = 1.0f, .b = 1.0f, paint_col.a};
+        }
+
+        // Bind our part model and render
+        glBindVertexArray(m.vao);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m.ibuf);
+        render_cube(m.idx_count, pos, paint_col, 1.0f, pv, state);
+        glBindVertexArray(cube.vao);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube.ibuf);
     }
 
     // Draw the selection box in wireframe mode
@@ -130,7 +189,7 @@ void garage_render(void* ctx) {
             }
 
             // Render
-            render_cube(pos, color, 1.2f, pv, state);
+            render_cube(cube.idx_count, pos, color, 1.2f, pv, state);
         }
     }
     else {
@@ -138,7 +197,7 @@ void garage_render(void* ctx) {
         pos = vec3_from_vec3s16(state->gui->sel_box, PART_POS_SCALE);
         pos.x -= (center.x * PART_POS_SCALE);
         pos.z -= (center.z * PART_POS_SCALE);
-        render_cube(pos, color, 1.2f, pv, state);
+        render_cube(cube.idx_count, pos, color, 1.2f, pv, state);
     }
 
     // Lock camera onto selection box during editing

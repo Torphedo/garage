@@ -57,7 +57,7 @@ u32 file_size(const char* path) {
 
 u8* file_load(const char* path) {
     if (!file_exists(path)) {
-        LOG_MSG(error, "Requested file %s does not exist.\n", path);
+        LOG_MSG(error, "File \"%s\" doesn't exist.\n", path);
         return NULL;
     }
     u32 size = file_size(path);

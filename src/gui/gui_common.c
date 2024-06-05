@@ -45,6 +45,10 @@ void model_upload(model* m) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
+u32 model_size(model m) {
+    return sizeof(m) - (2 * sizeof(void*)) + (m.vert_count * sizeof(vertex)) + (m.idx_count * sizeof(u16));
+}
+
 void update_edit_mode(gui_state* gui) {
     // Handle moving the selector box
     vec3s cam_view = glms_normalize(camera_facing());

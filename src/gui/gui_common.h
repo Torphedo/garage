@@ -84,14 +84,15 @@ typedef struct {
 }vertex;
 
 typedef struct {
-    u16 vert_count;
-    u16 idx_count;
     const vertex* vertices;
     const u16* indices;
+    u16 vert_count;
+    u16 idx_count;
     gl_obj vao;
     gl_obj vbuf;
     gl_obj ibuf;
 }model;
 void model_upload(model* m);
+u32 model_size(model m);
 
 #endif // GUI_COMMON_H 

@@ -10,7 +10,8 @@ model obj_load(const char* path) {
     // Load the whole file into a text buffer so we don't need to read it twice
     char* txt = (char*)file_load(path);
     if (txt == NULL) {
-        LOG_MSG(error, "Failed to load \"%s\"");
+        // file_load() already prints an error message. No need to spam log
+        // LOG_MSG(error, "Failed to load \"%s\"\n", path);
         return out;
     }
 
