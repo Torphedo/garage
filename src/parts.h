@@ -1,5 +1,8 @@
 #ifndef PART_IDS_H
 #define PART_IDS_H
+
+#include "common/int.h"
+
 // Part IDs are written are as they appear in the hex editor, in the order of
 // the in-game menu. Use part_get_name() to get a string for a part ID.
 typedef enum {
@@ -89,11 +92,11 @@ typedef enum {
     SPOTLIGHT       = 0x1F72D497,
     SELF_DESTRUCT   = 0x1F583430,
     SPEC_O_SPY      = 0x1F0002C7,
-    /* Don't know these IDs yet
-    CHAMELEON       =
-    ROBO_FIX        =
-    STICKY_BALL     =
-     */
+    // Unknown IDs
+    CHAMELEON       = 0x00000000,
+    ROBO_FIX        = 0x00000000,
+    STICKY_BALL     = 0x00000000,
+
     LIQUID_SQUIRTER = 0x1F41AAC0,
     SPOILER         = 0x1FB56B94,
     SUCK_N_BLOW     = 0x1F6EFC34,
@@ -109,6 +112,8 @@ typedef enum {
     BUMPER        = 0x1F8DF274,
     ARMOR         = 0x1F2BF215,
     ENERGY_SHIELD = 0x1F953740,
+    // Unknown ID
+    SMOKE_SPHERE  = 0x00000000,
 
     // <== Fly & Float ==>
         // Fly & Float -> Wings
@@ -142,6 +147,8 @@ typedef enum {
         MUMBO_BOMBO    = 0x1F3E8E01,
         CLOCKWORK_KAZ  = 0x1F603CC3,
         EMP            = 0x1F31CA4C,
+        // Unknown ID
+        CITRUS_SLICK   = 0x00000000,
 
         // Weapons -> Ammo-Free
         FULGORES_FIST = 0x1F4BC61E,
@@ -158,8 +165,40 @@ typedef enum {
     PAPERY_PAL      = 0x1F98FC81,
     PAPER_FROG      = PAPERY_PAL, // alias
     RADIO           = 0x1F97C327,
-    GOLD_FISH       = 0x1FE338DD,
+
+    // <== Stop N' Swop ==>
+    BEACON          = 0x00000000,
+    DISCO_BALL      = 0x00000000,
+    FLAG            = 0x00000000,
+    FLUFFY_DICE     = 0x00000000,
+    GOLDFISH        = 0x1FE338DD,
+    GOOGLY_EYES     = 0x00000000,
+    MOLE_ON_A_POLE  = 0x00000000,
+
+    // <== Unused ==>
+    WHEEL_CATERPILLAR = 0x00000000,
+    AUTOPILOT         = 0x00000000,
+    REMOTE_CONTROLLER = 0x00000000,
+    SAWBLADE          = 0x00000000,
 }part_id;
+
+enum {
+    NUM_PARTS = 122,
+    PART_MAX_DIM = 8,
+};
+// The largest part (Large Box) is 7x8x2. This stores a 3D array with 1 bit per
+// cell showing the shape of the part (used for collision detection)
+typedef u8 partmask[PART_MAX_DIM][PART_MAX_DIM][1];
+
+// We need a character for all 8 hexidecimal digits in the 32-bit ID number
+// Must be a union, to convince the compiler we're not returning an array.
+typedef union {
+    u64 _val;
+    char c[8];
+}id_str;
+
+id_str part_get_id_str(part_id id);
+char* part_get_obj_path(part_id id);
 
 char* part_get_name(part_id id);
 #endif // PART_IDS_H

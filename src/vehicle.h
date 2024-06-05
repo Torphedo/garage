@@ -44,7 +44,7 @@ typedef struct {
 
 enum {
     PART_SCALE = 1,
-    PART_POS_SCALE = 5,
+    PART_POS_SCALE = 2,
     SEL_BOX_SIZE = (PART_POS_SCALE * 2),
 
     // Used to store a compact 3D grid of parts, with 1 bit per cell indicating
