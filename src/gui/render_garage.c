@@ -222,6 +222,20 @@ void garage_destroy(void* ctx) {
         return;
     }
 
+    // Unload all part models
+    for (u8 i = 0; i < ARRAY_SIZE(state->models); i++) {
+        model* m = &state->models[i].model;
+        // The cube is static data, we can't free it.
+        if (m->vertices == cube.vertices) {
+            continue;
+        }
+        glDeleteBuffers(1, &m->ibuf);
+        glDeleteBuffers(1, &m->vbuf);
+        glDeleteVertexArrays(1, &m->vao);
+        free(m->indices);
+        free(m->vertices);
+    }
+
     // On the off chance we get called again and don't crash while trying to
     // read this already-freed status value, render() will exit early.
     state->status = STATE_DESTROYED;
