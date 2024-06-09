@@ -243,4 +243,7 @@ void gui_teardown(gui_state* gui) {
     glDeleteVertexArrays(1, &cube.vao);
     glDeleteBuffers(1, &cube.vbuf);
     glDeleteBuffers(1, &cube.ibuf);
+    free(gui->v);
+    free(gui->vehiclemask);
 }
+

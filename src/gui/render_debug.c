@@ -73,7 +73,7 @@ void debug_render(void* ctx) {
 }
 
 void debug_destroy(void* ctx) {
-
+    free(ctx);
 }
 
 typedef void (*renderproc)(void*);

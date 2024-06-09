@@ -101,12 +101,6 @@ int main(int argc, char** argv) {
         // End frame
     }
 
-    // Cleanup
-    garage.destroy(garage_ctx);
-    dbg_view.destroy(dbg_ctx);
-    gui_teardown(&gui);
-    glfwTerminate(); // Auto-closes the window if we exited via the quit button
-
     // Print vehicle details (mostly a leftover from old versions of this program)
     LOG_MSG(info, "\"");
     print_c16s(v->head.name); // We need a special function to portably print UTF-16
@@ -117,6 +111,12 @@ int main(int argc, char** argv) {
         printf("painted #%x%x%x", v->parts[i].color.r, v->parts[i].color.g, v->parts[i].color.b);
         printf(", modifier 0x%02hx\n", v->parts[i].modifier);
     }
+
+    // Cleanup
+    garage.destroy(garage_ctx);
+    dbg_view.destroy(dbg_ctx);
+    gui_teardown(&gui);
+    glfwTerminate(); // Auto-closes the window if we exited via the quit button
 
     return 0;
 }

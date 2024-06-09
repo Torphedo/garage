@@ -193,6 +193,7 @@ u8* stfs_get_vehicle(const char* path) {
 
         bytes_read += STFS_BLOCK_SIZE;
     }
+    free(hashtable);
 
     return buf;
 }

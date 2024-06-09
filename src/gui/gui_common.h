@@ -75,7 +75,7 @@ typedef enum {
     STATE_NONE,
     STATE_INIT_FAIL,
     STATE_OK,
-    STATE_DESTROYED,
+    STATE_FREED,
 }renderer_state;
 
 typedef struct {

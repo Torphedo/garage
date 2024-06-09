@@ -217,7 +217,7 @@ void garage_render(void* ctx) {
 
 void garage_destroy(void* ctx) {
     garage_state* state = (garage_state*)ctx;
-    if (state->status == STATE_DESTROYED) {
+    if (state->status == STATE_FREED) {
         LOG_MSG(warning, "Avoided a double free, check your destroy() calls!\n");
         return;
     }
@@ -225,20 +225,27 @@ void garage_destroy(void* ctx) {
     // Unload all part models
     for (u8 i = 0; i < ARRAY_SIZE(state->models); i++) {
         model* m = &state->models[i].model;
-        // The cube is static data, we can't free it.
-        if (m->vertices == cube.vertices) {
+
+        // This is uninitialized, an unknown part, or a part with no model
+        // falling back to the (static) cube model. There's nothing to free.
+        if (state->models[i].id == 0 || m->indices == cube.indices) {
             continue;
         }
+
         glDeleteBuffers(1, &m->ibuf);
         glDeleteBuffers(1, &m->vbuf);
         glDeleteVertexArrays(1, &m->vao);
-        free(m->indices);
-        free(m->vertices);
+        free((void*)m->indices);
+        free((void*)m->vertices);
+
+        // Delete all trace of the pointer and OpenGL object values
+        model empty = {0};
+        *m = empty;
     }
 
     // On the off chance we get called again and don't crash while trying to
     // read this already-freed status value, render() will exit early.
-    state->status = STATE_DESTROYED;
+    state->status = STATE_FREED;
     free(state);
 }
 

@@ -61,7 +61,9 @@ u8* file_load(const char* path) {
         return NULL;
     }
     u32 size = file_size(path);
-    u8* buffer = calloc(1, size);
+    // 1 extra byte for a bit of wiggle room
+    // (prevents some out of bounds reads while looping over file contents)
+    u8* buffer = calloc(1, size + 1);
     if (buffer == NULL) {
         return NULL;
     }
