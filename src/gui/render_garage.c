@@ -3,6 +3,7 @@
 #include <glad/glad.h>
 #include <cglm/cglm.h>
 
+#include <common/logging.h>
 #include "primitives.h"
 #include "camera.h"
 #include "obj.h"
@@ -135,7 +136,7 @@ void garage_render(void* ctx) {
     vec3s center = vehicle_find_center(v);
     for (u16 i = 0; i < v->head.part_count; i++) {
         // Move the part
-        vec3s pos = vec3_from_vec3u8(v->parts[i].pos, PART_POS_SCALE);
+        vec3s pos = vec3_from_vec3s8(v->parts[i].pos, PART_POS_SCALE);
         pos.x -= (center.x * PART_POS_SCALE);
         pos.z -= (center.z * PART_POS_SCALE);
 
@@ -175,7 +176,7 @@ void garage_render(void* ctx) {
             }
 
             // Move the part
-            pos = vec3_from_vec3u8(v->parts[i].pos, PART_POS_SCALE);
+            pos = vec3_from_vec3s8(v->parts[i].pos, PART_POS_SCALE);
             pos.x -= (center.x * PART_POS_SCALE);
             pos.z -= (center.z * PART_POS_SCALE);
 

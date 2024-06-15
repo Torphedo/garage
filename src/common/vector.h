@@ -9,14 +9,14 @@ void vec3_byteswap(vec3* v);
 // cglm also uses anonymous structs like this for its vector struct types.
 typedef union {
     struct {
-        u8 x;
-        u8 y; // Height
-        u8 z;
+        s8 x;
+        s8 y; // Height
+        s8 z;
     };
-    u8 raw[3];
-}vec3u8;
-vec3s vec3_from_vec3u8(vec3u8 vu8, float scale);
-bool vec3u8_eq(vec3u8 a, vec3u8 b);
+    s8 raw[3];
+}vec3s8;
+vec3s vec3_from_vec3s8(vec3s8 vu8, float scale);
+bool vec3s8_eq(vec3s8 a, vec3s8 b);
 
 typedef union {
     struct {
@@ -26,7 +26,7 @@ typedef union {
     };
     s16 raw[3];
 }vec3s16;
-bool vec3u8_eq_vec3s16(vec3u8 a, vec3s16 b);
+bool vec3u8_eq_vec3s16(vec3s8 a, vec3s16 b);
 bool vec3s16_eq(vec3s16 a, vec3s16 b);
 vec3s vec3_from_vec3s16(vec3s16 vs16, float scale);
 

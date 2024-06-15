@@ -3,6 +3,8 @@
 #include <glad/glad.h>
 
 #include <common/int.h>
+#include <common/logging.h>
+
 #include "camera.h"
 #include "gui_common.h"
 #include "shader.h"
@@ -113,8 +115,8 @@ void update_edit_mode(gui_state* gui) {
     if (input.e && !gui->prev_input.e && gui->sel_mode != SEL_BAD) {
         // If it's out of bounds, we can just ignore this.
         if (gui->sel_box.x >= 0 && gui->sel_box.y >= 0 && gui->sel_box.z >= 0) {
-            // Convert to vec3u8
-            vec3u8 pos = {gui->sel_box.x, gui->sel_box.y, gui->sel_box.z};
+            // Convert to vec3s8
+            vec3s8 pos = {gui->sel_box.x, gui->sel_box.y, gui->sel_box.z};
             part_entry *p = part_by_pos(gui->v, pos);
             if (p == NULL) {
                 return;

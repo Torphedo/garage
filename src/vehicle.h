@@ -1,10 +1,8 @@
 #ifndef VEHICLE_H
 #define VEHICLE_H
-#include <stdio.h>
 
 #include "common/int.h"
 #include "common/vector.h"
-#include "common/logging.h"
 
 typedef struct {
     u64 magic; // VEHICLE_MAGIC
@@ -22,7 +20,7 @@ enum {
 
 typedef struct {
     u32 unknown;
-    vec3u8 pos;
+    vec3s8 pos;
     u16 pad;
     u8 modifier; // Used for part settings, if applicable (e.g. wheel steering mode)
     union {
@@ -82,7 +80,7 @@ void update_vehiclemask(vehicle* v, vehicle_bitmask* mask);
 
 // Look up a part by its position.
 // Returns NULL if no part is found, so always check the result!
-part_entry* part_by_pos(vehicle* v, vec3u8 pos);
+part_entry* part_by_pos(vehicle* v, vec3s8 pos);
 
 
 // NOTE: See common/endian.h for details on endian-ness.
