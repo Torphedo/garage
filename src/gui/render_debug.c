@@ -21,11 +21,6 @@ void debug_render(void* ctx) {
     debug_render_state* state = (debug_render_state *)ctx;
     gui_state* gui = (gui_state*) state->gui;
 
-    // All our matrices for rendering, only PVM is uploaded to GPU
-    mat4 pv = {0};
-    camera_proj_view(gui, &pv);
-    mat4 model = {0};
-    glm_mat4_identity(model);
 
     // Bind our shader & buffers
     glUseProgram(gui->vcolor_shader);
@@ -34,36 +29,10 @@ void debug_render(void* ctx) {
     // Draw in wireframe mode
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-    vec3s center = vehicle_find_center(gui->v);
-    // Highest XYZ coords in the vehicle. We add 1 to include the highest index.
-    vec3s max = glms_vec3_adds(glms_vec3_scale(center, 2), 1.0f);
     vec4s color = {.b = 1.0f, .a = 1.0f};
     glUniform4fv(gui->u_paint, 1, (const float*)&color);
 
-    // Loop over the bitmask
-    for (u16 i = 0; i < VEH_MAX_DIM && i < max.x; i++) {
-        for (u16 j = 0; j < VEH_MAX_DIM && j < max.y; j++) {
-            for (u16 k = 0; k < VEH_MAX_DIM && k < max.z; k++) {
-                bool part_present = mask_get((u8*)&(*gui->vacancy_mask)[i][j], k);
-                if (part_present) {
-                    vec3 pos = {i, j, k};
-
-                    // Move to the same position as the part rendering
-                    pos[0] -= center.x;
-                    pos[2] -= center.z;
-                    glm_vec3_scale(pos, PART_POS_SCALE, pos);
-
-                    mat4 pvm = {0};
-                    glm_translate(model, pos);
-                    glm_mat4_mul(pv, model, pvm); // Compute pvm
-
-                    glUniformMatrix4fv(gui->u_pvm, 1, GL_FALSE, (const float*)&pvm);
-                    glDrawElements(GL_TRIANGLES, cube.idx_count, GL_UNSIGNED_SHORT, NULL);
-                    glm_mat4_identity(model);
-                }
-            }
-        }
-    }
+    render_vehicle_bitmask(gui, gui->vacancy_mask);
 
     // Reset state
     glBindVertexArray(0);

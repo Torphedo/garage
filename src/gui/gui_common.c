@@ -51,6 +51,47 @@ u32 model_size(model m) {
     return sizeof(m) - (2 * sizeof(void*)) + (m.vert_count * sizeof(vertex)) + (m.idx_count * sizeof(u16));
 }
 
+void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask) {
+    vec3s center = vehicle_find_center(gui->v);
+
+    // Highest XYZ coords in the vehicle. We add 1 to include the highest
+    // index, then 8 to avoid cutting off large parts with up to 4 cells radius
+    vec3s max = glms_vec3_adds(glms_vec3_scale(center, 2), 5.0f);
+
+    // Tranformation matrices
+    mat4 pv = {0};
+    camera_proj_view(gui, &pv);
+    mat4 model = {0};
+    glm_mat4_identity(model);
+
+    // Loop over the bitmask & render everything within the vehicle bounds
+    for (u16 i = 0; i < VEH_MAX_DIM && i < max.x; i++) {
+        for (u16 j = 0; j < VEH_MAX_DIM && j < max.y; j++) {
+            for (u16 k = 0; k < VEH_MAX_DIM && k < max.z; k++) {
+                bool part_present = mask_get((u8*)&(*mask)[i][j], k);
+                if (part_present) {
+                    vec3 pos = {i, j, k};
+
+                    // Move to the same position as the part rendering
+                    pos[0] -= center.x;
+                    pos[2] -= center.z;
+                    glm_vec3_scale(pos, PART_POS_SCALE, pos);
+
+                    mat4 pvm = {0};
+                    glm_translate(model, pos);
+                    glm_mat4_mul(pv, model, pvm); // Compute pvm
+
+                    glUniformMatrix4fv(gui->u_pvm, 1, GL_FALSE, (const float*)&pvm);
+                    glDrawElements(GL_TRIANGLES, cube.idx_count, GL_UNSIGNED_SHORT, NULL);
+                    glm_mat4_identity(model);
+                }
+            }
+        }
+    }
+
+}
+
+
 void update_edit_mode(gui_state* gui) {
     // Handle moving the selector box
     vec3s cam_view = glms_normalize(camera_facing());
@@ -92,7 +133,7 @@ void update_edit_mode(gui_state* gui) {
             if (gui->v->parts[i].selected) {
                 // vehicle_move_part() returns false when a part moves out of bounds
                 vehicle_adjusted |= vehicle_move_part(gui->v, i, diff);
-                update_vehiclemask(gui->v, gui->vacancy_mask);
+                update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
 
                 // Check for overlaps and block the placement if needed
                 if (vehicle_selection_overlap(gui->v, gui->vacancy_mask)) {
@@ -128,7 +169,7 @@ void update_edit_mode(gui_state* gui) {
                     // User pressed the button while moving parts, which means
                     // we should put them down.
                     vehicle_unselect_all(gui->v);
-                    update_vehiclemask(gui->v, gui->vacancy_mask);
+                    update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
                     gui->sel_mode = SEL_NONE; // Now you can start moving the parts
                     break;
                 case SEL_BAD:
@@ -138,6 +179,7 @@ void update_edit_mode(gui_state* gui) {
                     // User pressed the button while selecting parts on an
                     // already-selected part, which means they want to start moving them.
                     gui->sel_mode = SEL_ACTIVE;
+                    update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
                 }
             } else if (p != NULL) {
                 // Select the part (if it exists)
@@ -204,7 +246,7 @@ bool gui_update_with_input(gui_state* gui, GLFWwindow* window) {
 
 bool gui_init(gui_state* gui) {
     // Initialize part bitmask
-    update_vehiclemask(gui->v, gui->vacancy_mask);
+    update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
 
     // Compile shaders
     gl_obj vertex_shader = shader_compile_src(vert, GL_VERTEX_SHADER);
@@ -247,5 +289,6 @@ void gui_teardown(gui_state* gui) {
     glDeleteBuffers(1, &cube.ibuf);
     free(gui->v);
     free(gui->vacancy_mask);
+    free(gui->selected_mask);
 }
 

@@ -168,36 +168,25 @@ void garage_render(void* ctx) {
     vec4s color = {.a = 1.0f};
 
     // Draw green boxes around all selected parts as we move them
-    if (state->gui->sel_mode != SEL_NONE) {
-        for (u16 i = 0; i < v->head.part_count; i++) {
-            // Only draw cubes around selected parts
-            if (!v->parts[i].selected) {
-                continue;
-            }
-
-            // Move the part
-            pos = vec3_from_vec3s8(v->parts[i].pos, PART_POS_SCALE);
-            pos.x -= (center.x * PART_POS_SCALE);
-            pos.z -= (center.z * PART_POS_SCALE);
-
-            // We could do this else-if in 1 line using a bool as an index, but
-            // I just don't care enough.
-            if (state->gui->sel_mode == SEL_BAD) {
-                color.r = 1.0f;
-            }
-            else {
-                color.g = 1.0f;
-            }
-
-            // Render
-            render_cube(cube.idx_count, pos, color, 1.2f, pv, state);
-        }
+    // Set selection box color
+    if (state->gui->sel_mode == SEL_BAD) {
+        color.r = 1.0f;
     }
     else {
-        // Move the selection box
-        pos = vec3_from_vec3s16(state->gui->sel_box, PART_POS_SCALE);
-        pos.x -= (center.x * PART_POS_SCALE);
-        pos.z -= (center.z * PART_POS_SCALE);
+        color.g = 1.0f;
+    }
+    glUniform4fv(gui->u_paint, 1, (const float*)&color);
+    render_vehicle_bitmask(gui, gui->selected_mask);
+
+    // Get selection position
+    pos = vec3_from_vec3s16(state->gui->sel_box, PART_POS_SCALE);
+    pos.x -= (center.x * PART_POS_SCALE);
+    pos.z -= (center.z * PART_POS_SCALE);
+
+    if (gui->sel_mode == SEL_NONE) {
+        color.r = 0;
+        color.g = 0;
+        // Render selection box
         render_cube(cube.idx_count, pos, color, 1.2f, pv, state);
     }
 

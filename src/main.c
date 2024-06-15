@@ -32,6 +32,7 @@ int main(int argc, char** argv) {
         .v = v,
         .vsync = true,
         .vacancy_mask = calloc(1, sizeof(vehicle_bitmask)),
+        .selected_mask = calloc(1, sizeof(vehicle_bitmask)),
     };
     if (gui.vacancy_mask == NULL) {
         LOG_MSG(error, "Failed to alloc vehicle bitmask\n");

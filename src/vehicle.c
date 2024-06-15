@@ -97,9 +97,10 @@ void vehicle_unselect_all(vehicle* v) {
     }
 }
 
-bool vehicle_part_conflict(vehicle_bitmask* mask, part_entry* p) {
+bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry* p) {
     vec3s8 empty = {0};
     part_id id = p->id;
+    // Find all the cells this part contains
     vec3s8* positions = part_get_info(id).relative_occupation;
     if (positions == NULL) {
         positions = &empty;
@@ -108,8 +109,11 @@ bool vehicle_part_conflict(vehicle_bitmask* mask, part_entry* p) {
     vec3s8 origin = p->pos;
     bool result = false;
     while (1) {
-        u8* addr = (u8*)&(*mask)[origin.x + positions->x][origin.y + positions->y];
-        result |= mask_get(addr, origin.z + positions->z);
+        u8* vacancy_addr = (u8*)&(*vacancy)[origin.x + positions->x][origin.y + positions->y];
+        bool cell_occupied = mask_get(vacancy_addr, origin.z + positions->z);
+
+        // If the part
+        result |= cell_occupied;
         if (vec3s8_eq(*positions, empty)) {
             break;
         }
@@ -118,22 +122,23 @@ bool vehicle_part_conflict(vehicle_bitmask* mask, part_entry* p) {
     return result;
 }
 
-bool vehicle_selection_overlap(vehicle* v, vehicle_bitmask* mask) {
+bool vehicle_selection_overlap(vehicle* v, vehicle_bitmask* vacancy_mask) {
     for (u16 i = 0; i < v->head.part_count; i++) {
         if (!v->parts[i].selected) {
             continue;
         }
-        if (vehicle_part_conflict(mask, &v->parts[i])) {
+        if (vehicle_part_conflict(vacancy_mask, &v->parts[i])) {
             return true;
         }
     }
     return false;
 }
 
-void update_vehiclemask(vehicle* v, vehicle_bitmask* mask) {
+void update_vehiclemask(vehicle* v, vehicle_bitmask* vacancy, vehicle_bitmask* selection) {
     vec3s8 empty = {0};
     // Erase the bitmask
-    memset(mask, 0x00, sizeof(vehicle_bitmask));
+    memset(vacancy, 0x00, sizeof(vehicle_bitmask));
+    memset(selection, 0x00, sizeof(vehicle_bitmask));
 
     for (u16 i = 0; i < v->head.part_count; i++) {
         // Get the list of points relative to the origin this part occupies.
@@ -145,9 +150,24 @@ void update_vehiclemask(vehicle* v, vehicle_bitmask* mask) {
 
         vec3s8 origin = v->parts[i].pos;
         while (1) {
-            u8* addr = (u8*)&(*mask)[origin.x + positions->x][origin.y + positions->y];
-            // Set the bit unless the part is selected
-            mask_set(addr, origin.z + positions->z, 1 * !v->parts[i].selected);
+            vec3s8 cell = {
+                MAX(origin.x + positions->x, 0),
+                MAX(origin.y + positions->y, 0),
+                MAX(origin.z + positions->z, 0),
+            };
+            u8* vacancy_addr = (u8*)&(*vacancy)[cell.x][cell.y];
+            u8* selection_addr = (u8*)&(*selection)[cell.x][cell.y];
+            bool selected = v->parts[i].selected;
+
+            // Only try to set mask bits if the address is in bounds.
+            if (vacancy_addr >= (u8*)vacancy && vacancy_addr <= (u8*)vacancy + sizeof(*vacancy)) {
+                // Remove selected parts from vacancy mask & add them to the
+                // selection mask
+                mask_set(vacancy_addr, cell.z, !selected);
+                mask_set(selection_addr, cell.z, selected);
+            }
+
+            // The position array ends with an all-zero entry (the origin)
             if (vec3s8_eq(*positions, empty)) {
                 break;
             }
@@ -169,7 +189,11 @@ bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
     for (u8 i = 0; i < 3; i++) {
         // Find position of this axis after the move
         s16 new_pos = (s16)p->pos.raw[i] + diff.raw[i];
-        if (new_pos >= 0) {
+        if (new_pos >= VEH_MAX_DIM - 1) {
+            // This part is at the border, there's nothing we can do.
+            continue;
+        }
+        else if (new_pos >= 0) {
             // Everything's fine, update pos and move on
             p->pos.raw[i] += diff.raw[i];
             continue;
@@ -186,6 +210,7 @@ bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
 
             if (v->parts[i].pos.raw[i] >= VEH_MAX_DIM - new_pos) {
                 // Integer overflow, we can't move this part any further.
+                v->parts[i].pos.raw[i] = VEH_MAX_DIM - 1;
                 continue;
             }
 

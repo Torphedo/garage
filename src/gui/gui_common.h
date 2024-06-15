@@ -27,6 +27,8 @@ typedef struct {
     vehicle* v;
     // Bitmask for whether a space is occupied by a part, at 1 bit per cell.
     vehicle_bitmask* vacancy_mask;
+    // Bitmask for whether a cell is selected
+    vehicle_bitmask* selected_mask;
 
     // Editor state data
     vec3s16 sel_box; // Selection box position
@@ -94,5 +96,7 @@ typedef struct {
 }model;
 void model_upload(model* m);
 u32 model_size(model m);
+
+void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask);
 
 #endif // GUI_COMMON_H 

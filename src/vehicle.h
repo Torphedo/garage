@@ -77,10 +77,10 @@ void vehicle_unselect_all(vehicle* v);
 // Returns a boolean indicating if the vehicle had to be adjusted.
 bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff);
 
-// Check if the selected parts overlap with the bitmask of unselected parts.
+// Check if the selected parts overlap with the rest of the vehicle
 bool vehicle_selection_overlap(vehicle* v, vehicle_bitmask* mask);
 
-void update_vehiclemask(vehicle* v, vehicle_bitmask* mask);
+void update_vehiclemask(vehicle* v, vehicle_bitmask* vacancy, vehicle_bitmask* selection);
 
 // Look up a part by its position.
 // Returns NULL if no part is found, so always check the result!
