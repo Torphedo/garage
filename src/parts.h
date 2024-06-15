@@ -2,9 +2,11 @@
 #define PART_IDS_H
 
 #include "common/int.h"
+#include "common/vector.h"
+#include "vehicle.h"
 
 // Part IDs are written are as they appear in the hex editor, in the order of
-// the in-game menu. Use part_get_name() to get a string for a part ID.
+// the in-game menu. Use part_get_info() to get a string for a part ID.
 typedef enum {
     // <== Seats ==>
     SEAT_STANDARD        = 0x1FEA444A,
@@ -186,19 +188,27 @@ enum {
     NUM_PARTS = 122,
     PART_MAX_DIM = 8,
 };
-// The largest part (Large Box) is 7x8x2. This stores a 3D array with 1 bit per
-// cell showing the shape of the part (used for collision detection)
-typedef u8 partmask[PART_MAX_DIM][PART_MAX_DIM][1];
 
-// We need a character for all 8 hexidecimal digits in the 32-bit ID number
+// The 32-bit ID value, written in ASCII hexidecimal digits.
+// We need one character for each of the 8 hex digits
 // Must be a union, to convince the compiler we're not returning an array.
 typedef union {
     u64 _val;
     char c[8];
 }id_str;
 
+
+typedef struct {
+    char* name; // Human-readable part name
+    // The points relative to the origin this part occupies
+    vec3s8* relative_occupation;
+    // Array of points relative to the part's origin where another part is
+    // allowed to connect.
+    vec3s8* relative_connections;
+}part_info;
+
+part_info part_get_info(part_id id);
+
 id_str part_get_id_str(part_id id);
 char* part_get_obj_path(part_id id);
-
-char* part_get_name(part_id id);
 #endif // PART_IDS_H

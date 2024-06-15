@@ -26,7 +26,7 @@ typedef struct {
     // Vehicle/part data
     vehicle* v;
     // Bitmask for whether a space is occupied by a part, at 1 bit per cell.
-    vehicle_bitmask* vehiclemask;
+    vehicle_bitmask* vacancy_mask;
 
     // Editor state data
     vec3s16 sel_box; // Selection box position

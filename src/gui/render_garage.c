@@ -54,7 +54,7 @@ model get_or_load_model(garage_state* state, part_id id) {
             free(obj_path);
 
             if (cur->model.vertices == NULL || cur->model.indices == NULL) {
-                LOG_MSG(error, "Failed to load \"%s\" (0x%X)\n", part_get_name(id), id);
+                LOG_MSG(error, "Failed to load \"%s\" (0x%X)\n", part_get_info(id).name, id);
                 printf("\n"); // Helps make our logs more readable
 
                 // We didn't find it, and couldn't load it. Fall back to cube.
@@ -64,7 +64,7 @@ model get_or_load_model(garage_state* state, part_id id) {
             model_upload(&cur->model);
             cur->id = id;
 
-            LOG_MSG(info, "Loaded \"%s\" in %.2fKiB\n", part_get_name(id), (float)model_size(cur->model) / 1024.0f);
+            LOG_MSG(info, "Loaded \"%s\" in %.2fKiB\n", part_get_info(id).name, (float)model_size(cur->model) / 1024.0f);
             printf("\n"); // Helps make our logs more readable
             return cur->model;
         }

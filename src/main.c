@@ -31,9 +31,9 @@ int main(int argc, char** argv) {
     gui_state gui = {
         .v = v,
         .vsync = true,
-        .vehiclemask = calloc(1, sizeof(vehicle_bitmask)),
+        .vacancy_mask = calloc(1, sizeof(vehicle_bitmask)),
     };
-    if (gui.vehiclemask == NULL) {
+    if (gui.vacancy_mask == NULL) {
         LOG_MSG(error, "Failed to alloc vehicle bitmask\n");
         return 1;
     }
@@ -42,6 +42,7 @@ int main(int argc, char** argv) {
     if (window == NULL) {
         return 1;
     }
+    set_vsync(gui.vsync);
 
     // Prepare for rendering
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -106,7 +107,7 @@ int main(int argc, char** argv) {
     print_c16s(v->head.name); // We need a special function to portably print UTF-16
     printf("\" has %d parts & weighs %f\n", v->head.part_count, v->head.weight);
     for (u16 i = 0; i < v->head.part_count; i++) {
-        LOG_MSG(info, "Part %d: 0x%x [%s] ", i, v->parts[i].id, part_get_name(v->parts[i].id));
+        LOG_MSG(info, "Part %d: 0x%x [%s] ", i, v->parts[i].id, part_get_info(v->parts[i].id).name);
         printf("@ (%d, %d, %d) ", v->parts[i].pos.x, v->parts[i].pos.y, v->parts[i].pos.z);
         printf("painted #%x%x%x", v->parts[i].color.r, v->parts[i].color.g, v->parts[i].color.b);
         printf(", modifier 0x%02hx\n", v->parts[i].modifier);

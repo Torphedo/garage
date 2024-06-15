@@ -92,10 +92,10 @@ void update_edit_mode(gui_state* gui) {
             if (gui->v->parts[i].selected) {
                 // vehicle_move_part() returns false when a part moves out of bounds
                 vehicle_adjusted |= vehicle_move_part(gui->v, i, diff);
-                update_vehiclemask(gui->v, gui->vehiclemask);
+                update_vehiclemask(gui->v, gui->vacancy_mask);
 
                 // Check for overlaps and block the placement if needed
-                if (vehicle_selection_overlap(gui->v, gui->vehiclemask)) {
+                if (vehicle_selection_overlap(gui->v, gui->vacancy_mask)) {
                     gui->sel_mode = SEL_BAD;
                 }
                 else {
@@ -128,7 +128,7 @@ void update_edit_mode(gui_state* gui) {
                     // User pressed the button while moving parts, which means
                     // we should put them down.
                     vehicle_unselect_all(gui->v);
-                    update_vehiclemask(gui->v, gui->vehiclemask);
+                    update_vehiclemask(gui->v, gui->vacancy_mask);
                     gui->sel_mode = SEL_NONE; // Now you can start moving the parts
                     break;
                 case SEL_BAD:
@@ -204,7 +204,7 @@ bool gui_update_with_input(gui_state* gui, GLFWwindow* window) {
 
 bool gui_init(gui_state* gui) {
     // Initialize part bitmask
-    update_vehiclemask(gui->v, gui->vehiclemask);
+    update_vehiclemask(gui->v, gui->vacancy_mask);
 
     // Compile shaders
     gl_obj vertex_shader = shader_compile_src(vert, GL_VERTEX_SHADER);
@@ -246,6 +246,6 @@ void gui_teardown(gui_state* gui) {
     glDeleteBuffers(1, &cube.vbuf);
     glDeleteBuffers(1, &cube.ibuf);
     free(gui->v);
-    free(gui->vehiclemask);
+    free(gui->vacancy_mask);
 }
 

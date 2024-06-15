@@ -41,10 +41,10 @@ void debug_render(void* ctx) {
     glUniform4fv(gui->u_paint, 1, (const float*)&color);
 
     // Loop over the bitmask
-    for (u16 i = 0; i < UINT8_MAX + 1 && i < max.x; i++) {
-        for (u16 j = 0; j < UINT8_MAX + 1 && j < max.y; j++) {
-            for (u16 k = 0; k < UINT8_MAX + 1 && k < max.z; k++) {
-                bool part_present = mask_get((u8*)&(*gui->vehiclemask)[i][j], k);
+    for (u16 i = 0; i < VEH_MAX_DIM && i < max.x; i++) {
+        for (u16 j = 0; j < VEH_MAX_DIM && j < max.y; j++) {
+            for (u16 k = 0; k < VEH_MAX_DIM && k < max.z; k++) {
+                bool part_present = mask_get((u8*)&(*gui->vacancy_mask)[i][j], k);
                 if (part_present) {
                     vec3 pos = {i, j, k};
 

@@ -46,18 +46,17 @@ typedef struct {
 }vehicle;
 
 enum {
-    PART_SCALE = 1,
-    PART_POS_SCALE = 2,
-    SEL_BOX_SIZE = (PART_POS_SCALE * 2),
+  PART_SCALE = 1,
+  PART_POS_SCALE = 2, // Coordinate multiplier for rendering (can add spacing in the part grid)
+  SEL_BOX_SIZE = (PART_POS_SCALE * 2),
 
-    // Used to store a compact 3D grid of parts, with 1 bit per cell indicating
-    // if the cell is already used. Part coordinates are a u8, so at 1 bit per
-    // cell the bitmask is 32 bytes wide.
-    VEH_MAX_DIM = ((UINT8_MAX + 1) / 8)
+  VEH_MAX_DIM = (INT8_MAX + 1),
+  VEH_MASK_BYTE_WIDTH = (VEH_MAX_DIM / 8),
 };
 
-// 3D array to store parts at 1 bit each
-typedef u8 vehicle_bitmask[UINT8_MAX + 1][UINT8_MAX + 1][VEH_MAX_DIM];
+// Used to store a compact 3D grid of parts at 1 bit per cell.
+// Each bit indicates if the cell is occupied by a part.
+typedef u8 vehicle_bitmask[VEH_MAX_DIM][VEH_MAX_DIM][VEH_MASK_BYTE_WIDTH];
 
 
 // Load a vehicle into a newly allocated buffer. Automatically handles STFS if

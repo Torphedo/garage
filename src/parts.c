@@ -31,242 +31,391 @@ char* part_get_obj_path(part_id id) {
     return out;
 }
 
-char* part_get_name(part_id id) {
+// Double-height part with the origin on top
+vec3s8 doubleheight_down_occ[] = {
+    {0, -1, 0},
+    {0},
+};
+
+// Double-height part with the origin on the bottom
+vec3s8 doubleheight_up_occ[] = {
+    {0, 1, 0},
+    {0},
+};
+
+// Flat 3x3 for propellers & energy shield
+vec3s8 flat_square_3_occ[] = {
+    {1, 0, -1},
+    {1, 0, 0},
+    {1, 0, 1},
+    {0, 0, -1},
+    {0, 0, 1},
+    {-1, 0, -1},
+    {-1, 0, 0},
+    {-1, 0, 1},
+    {0},
+};
+
+
+part_info part_get_info(part_id id) {
+    part_info out = {0};
     switch (id) {
     case SEAT_STANDARD:
-        return "Standard Seat";
+        out.name = "Standard Seat";
+        out.relative_occupation = doubleheight_up_occ;
+        break;
     case SEAT_PASSENGER_SMALL:
-        return "Small Passenger Seat";
+        out.name = "Small Passenger Seat";
+        break;
     case SEAT_PASSENGER_LARGE:
-        return "Large Passenger Seat";
+        out.name = "Large Passenger Seat";
+        break;
     case SEAT_STRONG:
-        return "Strong Seat";
+        out.name = "Strong Seat";
+        out.relative_occupation = doubleheight_up_occ;
+        break;
     case SEAT_SCUBA:
-        return "Scuba Seat";
+        out.name = "Scuba Seat";
+        break;
     case SEAT_SUPER:
-        return "Super Seat";
+        out.name = "Super Seat";
+        break;
 
     case WHEEL_STANDARD:
-        return "Standard Wheel";
+        return (part_info) {
+            .name = "Standard Wheel",
+            .relative_occupation = doubleheight_down_occ,
+        };
     case WHEEL_HIGH_GRIP:
-        return "High-Grip Wheel";
+        return (part_info) {
+            .name = "High-Grip Wheel",
+            .relative_occupation = doubleheight_down_occ,
+        };
     case WHEEL_MONSTER:
-        return "Monster Wheel";
+        out.name = "Monster Wheel";
+        break;
     case WHEEL_SUPER:
-        return "Super Wheel";
+        out.name = "Super Wheel";
+        out.relative_occupation = doubleheight_down_occ;
+        break;
 
     case ENGINE_SMALL:
-        return "Small Engine";
+        out.name = "Small Engine";
+        break;
     case ENGINE_MEDIUM:
-        return "Medium Engine";
+        out.name = "Medium Engine";
+        break;
     case ENGINE_LARGE:
-        return "Large Engine";
+        out.name = "Large Engine";
+        break;
     case ENGINE_SUPER:
-        return "Super Engine";
+        out.name = "Super Engine";
+        break;
 
     case SAIL:
-        return "Sail";
+        out.name = "Sail";
+        break;
 
     case JET_SMALL:
-        return "Small Jet";
+        out.name = "Small Jet";
+        break;
     case JET_LARGE:
-        return "Large Jet";
+        out.name = "Large Jet";
+        break;
 
     case FUEL_SMALL:
-        return "Small Fuel";
+        out.name = "Small Fuel";
+        break;
     case FUEL_MEDIUM:
-        return "Medium Fuel";
+        out.name = "Medium Fuel";
+        break;
     case FUEL_LARGE:
-        return "Large Fuel";
+        out.name = "Large Fuel";
+        break;
     case FUEL_SUPER:
-        return "Super Fuel";
+        out.name = "Super Fuel";
+        break;
 
     case TRAY:
-        return "Tray";
+        out.name = "Tray";
+        break;
     case BOX:
-        return "Box";
+        out.name = "Box";
+        break;
     case BOX_LARGE:
-        return "Large Box";
+        out.name = "Large Box";
+        break;
     case TRAY_LARGE:
-        return "Large Tray";
+        out.name = "Large Tray";
+        break;
 
     case AMMO_SMALL:
-        return "Small Ammo";
+        out.name = "Small Ammo";
+        break;
     case AMMO_MEDIUM:
-        return "Medium Ammo";
+        out.name = "Medium Ammo";
+        break;
     case AMMO_LARGE:
-        return "Large Ammo";
+        out.name = "Large Ammo";
+        break;
     case AMMO_SUPER:
-        return "Super Ammo";
+        out.name = "Super Ammo";
+        break;
 
     case LIGHT_CUBE:
-        return "Light Cube";
+        out.name = "Light Cube";
+        break;
     case LIGHT_WEDGE:
-        return "Light Wedge";
+        out.name = "Light Wedge";
+        break;
     case LIGHT_CORNER:
-        return "Light Corner";
+        out.name = "Light Corner";
+        break;
     case LIGHT_POLE:
-        return "Light Pole";
+        out.name = "Light Pole";
+        break;
     case LIGHT_L_POLE:
-        return "Light L-Pole";
+        out.name = "Light L-Pole";
+        break;
     case LIGHT_T_POLE:
-        return "Light T-Pole";
+        out.name = "Light T-Pole";
+        break;
     case LIGHT_PANEL:
-        return "Light Panel";
+        out.name = "Light Panel";
+        break;
     case LIGHT_L_PANEL:
-        return "Light L-Panel";
+        out.name = "Light L-Panel";
+        break;
     case LIGHT_T_PANEL:
-        return "Light T-Panel";
+        out.name = "Light T-Panel";
+        break;
 
     case HEAVY_CUBE:
-        return "Heavy Cube";
+        out.name = "Heavy Cube";
+        break;
     case HEAVY_WEDGE:
-        return "Heavy Wedge";
+        out.name = "Heavy Wedge";
+        break;
     case HEAVY_CORNER:
-        return "Heavy Corner";
+        out.name = "Heavy Corner";
+        break;
     case HEAVY_POLE:
-        return "Heavy Pole";
+        out.name = "Heavy Pole";
+        break;
     case HEAVY_L_POLE:
-        return "Heavy L-Pole";
+        out.name = "Heavy L-Pole";
+        break;
     case HEAVY_T_POLE:
-        return "Heavy T-Pole";
+        out.name = "Heavy T-Pole";
+        break;
     case HEAVY_PANEL:
-        return "Heavy Panel";
+        out.name = "Heavy Panel";
+        break;
     case HEAVY_L_PANEL:
-        return "Heavy L-Panel";
+        out.name = "Heavy L-Panel";
+        break;
     case HEAVY_T_PANEL:
-        return "Heavy T-Panel";
+        out.name = "Heavy T-Panel";
+        break;
 
     case SUPER_CUBE:
-        return "Super Cube";
+        out.name = "Super Cube";
+        break;
     case SUPER_WEDGE:
-        return "Super Wedge";
+        out.name = "Super Wedge";
+        break;
     case SUPER_CORNER:
-        return "Super Corner";
+        out.name = "Super Corner";
+        break;
     case SUPER_POLE:
-        return "Super Pole";
+        out.name = "Super Pole";
+        break;
     case SUPER_L_POLE:
-        return "Super L-Pole";
+        out.name = "Super L-Pole";
+        break;
     case SUPER_T_POLE:
-        return "Super T-Pole";
+        out.name = "Super T-Pole";
+        break;
     case SUPER_PANEL:
-        return "Super Panel";
+        out.name = "Super Panel";
+        break;
     case SUPER_L_PANEL:
-        return "Super L-Panel";
+        out.name = "Super L-Panel";
+        break;
     case SUPER_T_PANEL:
-        return "Super T-Panel";
+        out.name = "Super T-Panel";
+        break;
 
     case AERIAL:
-        return "Aerial";
+        out.name = "Aerial";
+        break;
 
     case GYROSCOPE:
-        return "Gyroscope";
+        out.name = "Gyroscope";
+        break;
     case SPOTLIGHT:
-        return "Spotlight";
+        out.name = "Spotlight";
+        break;
     case SELF_DESTRUCT:
-        return "Self-Destruct";
+        out.name = "Self-Destruct";
+        break;
     case SPEC_O_SPY:
-        return "Spec-O-Spy";
+        out.name = "Spec-O-Spy";
+        break;
     case LIQUID_SQUIRTER:
-        return "Liquid Squirter";
+        out.name = "Liquid Squirter";
+        break;
     case SPOILER:
-        return "Spoiler";
+        out.name = "Spoiler";
+        break;
     case SUCK_N_BLOW:
-        return "Suck N' Blow";
+        out.name = "Suck N' Blow";
+        break;
     case VACUUM:
-        return "Vacuum";
+        out.name = "Vacuum";
+        break;
     case SPRING:
-        return "Spring";
+        out.name = "Spring";
+        break;
     case DETACHER:
-        return "Detacher";
+        out.name = "Detacher";
+        break;
     case SEAT_EJECTOR:
-        return "Ejector Seat";
+        out.name = "Ejector Seat";
+        break;
     case TOW_BAR:
-        return "Tow Bar";
+        out.name = "Tow Bar";
+        break;
     case HORN:
-        return "Horn";
+        out.name = "Horn";
+        break;
     case REPLENISHER:
-        return "Replenisher";
+        out.name = "Replenisher";
+        break;
 
     case BUMPER:
-        return "Bumper";
+        out.name = "Bumper";
+        break;
     case ARMOR:
-        return "Armor";
+        out.name = "Armor";
+        break;
     case ENERGY_SHIELD:
-        return "Energy Shield";
+        out.name = "Energy Shield";
+        out.relative_occupation = flat_square_3_occ;
+        break;
 
     case WING_STANDARD:
-        return "Standard Wing";
+        out.name = "Standard Wing";
+        break;
     case WING_FOLDING:
-        return "Folding Wing";
+        out.name = "Folding Wing";
+        break;
 
     case BALLOON:
-        return "Balloon";
+        out.name = "Balloon";
+        break;
     case FLOATER:
-        return "Floater";
+        out.name = "Floater";
+        break;
 
     case PROPELLER_SMALL:
-        return "Small Propeller";
+        out.name = "Small Propeller";
+        break;
     case PROPELLER_LARGE:
-        return "Large Propeller";
+        out.name = "Large Propeller";
+        out.relative_occupation = flat_square_3_occ;
+        break;
     case PROPELLER_FOLDING:
-        return "Large Folding Propeller";
+        out.name = "Large Folding Propeller";
+        out.relative_occupation = flat_square_3_occ;
+        break;
 
     case SINKER:
-        return "Sinker";
+        out.name = "Sinker";
+        break;
     case AIR_CUSHION:
-        return "Air Cushion";
+        out.name = "Air Cushion";
+        break;
 
     case TURRET_EGG:
-        return "Egg Turret";
+        out.name = "Egg Turret";
+        break;
     case WELDARS_BREATH:
-        return "Weldar's Breath";
+        out.name = "Weldar's Breath";
+        break;
     case GUN_EGG:
-        return "Egg Gun";
+        out.name = "Egg Gun";
+        break;
     case GUN_GRENADE:
-        return "Grenade Gun";
+        out.name = "Grenade Gun";
+        break;
     case RUST_BIN:
-        return "Rust Bin";
+        out.name = "Rust Bin";
+        break;
     case TURRET_GRENADE:
-        return "Grenade Turret";
+        out.name = "Grenade Turret";
+        break;
     case TORPEDO:
-        return "Torpedo";
+        out.name = "Torpedo";
+        break;
     case LASER:
-        return "Laser";
+        out.name = "Laser";
+        break;
     case FREEZEEZY:
-        return "Freezeezy";
+        out.name = "Freezeezy";
+        break;
     case MUMBO_BOMBO:
-        return "Mumbo Bombo";
+        out.name = "Mumbo Bombo";
+        break;
     case CLOCKWORK_KAZ:
-        return "Clockwork Kaz";
+        out.name = "Clockwork Kaz";
+        out.relative_occupation = doubleheight_up_occ;
+        break;
     case EMP:
-        return "EMP";
+        out.name = "EMP";
+        break;
     case FULGORES_FIST:
-        return "Fulgore's Fist";
+        out.name = "Fulgore's Fist";
+        break;
     case BOOT_IN_A_BOX:
-        return "Boot In A Box";
+        out.name = "Boot In A Box";
+        break;
     case SPIKE:
-        return "Spike";
+        out.name = "Spike";
+        break;
 
     case CRUISIN_LIGHT:
-        return "Cruisin' Light";
+        out.name = "Cruisin' Light";
+        break;
     case PLANT_POT:
-        return "Plant Pot";
+        out.name = "Plant Pot";
+        break;
     case SPIRIT_OF_PANTS:
-        return "Spirit of Pants";
+        out.name = "Spirit of Pants";
+        break;
     case WINDSHIELD:
-        return "Windshield";
+        out.name = "Windshield";
+        break;
     case MIRROR:
-        return "Mirror";
+        out.name = "Mirror";
+        break;
     case TAG_PLATE:
-        return "Tag Plate";
+        out.name = "Tag Plate";
+        break;
     case PAPERY_PAL:
-        return "Papery Pal";
+        out.name = "Papery Pal";
+        break;
     case RADIO:
-        return "Radio";
+        out.name = "Radio";
+        break;
     case GOLDFISH:
-        return "Goldfish";
+        out.name = "Goldfish";
+        break;
     default:
-        return "[Unknown part]";
+        out.name = "[Unknown part]";
+        break;
     }
+
+    return out;
 }
+

@@ -5,6 +5,8 @@
 #include "common/file.h"
 
 #include "vehicle.h"
+#include "common/vector.h"
+#include "parts.h"
 #include "common/logging.h"
 #include "stfs.h"
 
@@ -96,9 +98,24 @@ void vehicle_unselect_all(vehicle* v) {
 }
 
 bool vehicle_part_conflict(vehicle_bitmask* mask, part_entry* p) {
-    vec3s8 pos = p->pos;
-    u8* addr = (u8*)&(*mask)[pos.x][pos.y];
-    return mask_get(addr, pos.z);
+    vec3s8 empty = {0};
+    part_id id = p->id;
+    vec3s8* positions = part_get_info(id).relative_occupation;
+    if (positions == NULL) {
+        positions = &empty;
+    }
+
+    vec3s8 origin = p->pos;
+    bool result = false;
+    while (1) {
+        u8* addr = (u8*)&(*mask)[origin.x + positions->x][origin.y + positions->y];
+        result |= mask_get(addr, origin.z + positions->z);
+        if (vec3s8_eq(*positions, empty)) {
+            break;
+        }
+        positions++;
+    }
+    return result;
 }
 
 bool vehicle_selection_overlap(vehicle* v, vehicle_bitmask* mask) {
@@ -114,14 +131,28 @@ bool vehicle_selection_overlap(vehicle* v, vehicle_bitmask* mask) {
 }
 
 void update_vehiclemask(vehicle* v, vehicle_bitmask* mask) {
+    vec3s8 empty = {0};
     // Erase the bitmask
     memset(mask, 0x00, sizeof(vehicle_bitmask));
 
     for (u16 i = 0; i < v->head.part_count; i++) {
-        vec3s8 pos = v->parts[i].pos;
-        u8* addr = (u8*)&(*mask)[pos.x][pos.y];
-        // Set the bit unless the part is selected
-        mask_set(addr, pos.z, 1 * !v->parts[i].selected);
+        // Get the list of points relative to the origin this part occupies.
+        part_id id = v->parts[i].id;
+        vec3s8* positions = part_get_info(id).relative_occupation;
+        if (positions == NULL) {
+            positions = &empty;
+        }
+
+        vec3s8 origin = v->parts[i].pos;
+        while (1) {
+            u8* addr = (u8*)&(*mask)[origin.x + positions->x][origin.y + positions->y];
+            // Set the bit unless the part is selected
+            mask_set(addr, origin.z + positions->z, 1 * !v->parts[i].selected);
+            if (vec3s8_eq(*positions, empty)) {
+                break;
+            }
+            positions++;
+        }
     }
 }
 
@@ -153,7 +184,7 @@ bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
                 continue;
             }
 
-            if (v->parts[i].pos.raw[i] >= UINT8_MAX - new_pos) {
+            if (v->parts[i].pos.raw[i] >= VEH_MAX_DIM - new_pos) {
                 // Integer overflow, we can't move this part any further.
                 continue;
             }
