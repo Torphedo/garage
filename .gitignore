@@ -2,11 +2,17 @@
 .idea/
 .vs/
 .vscode/
+.cache/
+*.json
 
 # Build output
 out/
 cmake-*/
 cmake_*/
+*.exe
+*.lib
+*.a
+*.o
 
 # Auto-generated GLSL headers
 src/gui/shader/*.h
