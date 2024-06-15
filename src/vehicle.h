@@ -8,9 +8,14 @@ typedef struct {
     u64 magic; // VEHICLE_MAGIC
     u16 part_count;
     u8 is_one_piece;
-    u8 unk[0x1D]; // This is very incomplete, there's lots of other data here.
+    u8 unk;
+    float unknownf; // Usually an exact integer?
+    u8 unk1[8];
+    float weight;
+    float unknownf_1;
+    u8 unk2[0x8]; // This is very incomplete, there's lots of other data here.
     c16 name[0x20];
-    u8 unk2[0x18];
+    u8 unk3[0x18];
     // If you add new fields, make sure to update vehicle_header_byteswap().
 }vehicle_header;
 

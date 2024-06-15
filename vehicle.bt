@@ -16,7 +16,7 @@ typedef struct {
     char x;
     char y;
     char z;
-}vec3u8;
+}vec3s8;
 
 typedef struct {
     char r;
@@ -38,7 +38,7 @@ char header[0x75];
 
 struct {
     int unknown<bgcolor=cGray>;
-    vec3u8 pos<bgcolor=cLtRed>;
+    vec3s8 pos<bgcolor=cLtRed>;
     short pad;
     char modifier;
     char pad2;

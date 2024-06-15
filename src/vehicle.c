@@ -25,6 +25,9 @@ void vehicle_header_byteswap(vehicle_header* v) {
     for (u32 i = 0; i < 0x20; i++) {
         ENDIAN_FLIP(c16, v->name[i]);
     }
+    ENDIAN_FLIP_FLOAT(v->weight);
+    ENDIAN_FLIP_FLOAT(v->unknownf);
+    ENDIAN_FLIP_FLOAT(v->unknownf_1);
 }
 
 vec3s vehicle_find_center(vehicle* v) {

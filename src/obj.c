@@ -27,7 +27,10 @@ model obj_load(const char* path) {
         char* line = txt;
         while (*line != 0x00) {
             // Get pointer to end of line (NUL or newline)
-            char* line_end = strchrnul(line, '\n');
+            char* line_end = strchr(line, '\n');
+            if (line_end == NULL) {
+                break;
+            }
             // Replace newline with NUL, so we only search the current line in
             // strstr(). Save original character so we can undo the change.
             char end = *line_end;
