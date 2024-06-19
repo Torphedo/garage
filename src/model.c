@@ -1,9 +1,43 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <glad/glad.h>
+
 #include "common/logging.h"
 #include "common/file.h"
 #include "gui/gui_common.h"
+
+void model_upload(model* m) {
+    gl_obj buffers[2];
+    glGenBuffers(2, buffers);
+    glGenVertexArrays(1, &m->vao);
+    m->vbuf = buffers[0];
+    m->ibuf = buffers[1];
+
+    // Setup vertex buffer
+    glBindVertexArray(m->vao);
+    glBindBuffer(GL_ARRAY_BUFFER, m->vbuf);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertex) * m->vert_count, m->vertices, GL_STATIC_DRAW);
+
+    // Setup index buffer
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m->ibuf);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(u16) * m->idx_count, m->indices, GL_STATIC_DRAW);
+
+    // Create vertex layout
+    glVertexAttribPointer(0, sizeof(vec3) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, position));
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, sizeof(vec4) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(vertex), (void*)offsetof(vertex, color));
+    glEnableVertexAttribArray(1);
+
+    // Unbind our buffers to avoid messing our state up
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+}
+
+u32 model_size(model m) {
+    return sizeof(m) - (2 * sizeof(void*)) + (m.vert_count * sizeof(vertex)) + (m.idx_count * sizeof(u16));
+}
 
 model obj_load(const char* path) {
     model out = {0};

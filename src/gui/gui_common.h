@@ -3,10 +3,8 @@
 #include <common/int.h>
 #include <common/vector.h>
 #include <vehicle.h>
+#include <model.h>
 #include "input.h"
-
-// Making this the same type as GLuint removes lots of conversion linter warnings
-typedef unsigned int gl_obj;
 
 typedef enum {
     MODE_MOVCAM, // Selection box locked, camera unlocked (freecam)
@@ -79,23 +77,6 @@ typedef enum {
     STATE_OK,
     STATE_FREED,
 }renderer_state;
-
-typedef struct {
-    vec3 position;
-    vec4 color;
-}vertex;
-
-typedef struct {
-    const vertex* vertices;
-    const u16* indices;
-    u16 vert_count;
-    u16 idx_count;
-    gl_obj vao;
-    gl_obj vbuf;
-    gl_obj ibuf;
-}model;
-void model_upload(model* m);
-u32 model_size(model m);
 
 void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask);
 

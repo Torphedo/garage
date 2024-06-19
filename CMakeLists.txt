@@ -53,7 +53,7 @@ add_executable(garage
     ${glsl_headers}
 
     src/main.c
-    src/obj.c
+    src/model.c
     src/vehicle.c
     src/parts.c
     src/stfs.c

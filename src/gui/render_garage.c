@@ -6,7 +6,7 @@
 #include <common/logging.h>
 #include "primitives.h"
 #include "camera.h"
-#include "obj.h"
+#include "model.h"
 #include "parts.h"
 #include "gui_common.h"
 

@@ -17,6 +17,11 @@ typedef int16_t s16;
 typedef int32_t s32;
 typedef int64_t s64;
 
+// Dedicated integer type for GL object IDs. Making this the same type as GLuint
+// removes lots of conversion linter warnings
+typedef unsigned int gl_obj;
+
+
 // Useful when handling 24-bit integers not covered by the standard
 enum {
     INT24_MAX = 0xFFFFFF

@@ -69,6 +69,10 @@ vehicle* vehicle_load(const char* path);
 // (returns float vector for convenience)
 vec3s vehicle_find_center(vehicle* v);
 
+// Safely get & set values from vehicle bitmask (with bounds checking)
+u8 vehiclemask_get_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z);
+void vehiclemask_set_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z, u8 val);
+
 // Unselect all parts in a vehicle
 void vehicle_unselect_all(vehicle* v);
 
