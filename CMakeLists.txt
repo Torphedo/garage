@@ -6,8 +6,7 @@ set(CMAKE_C_STANDARD 99)
 add_subdirectory(ext/glfw)
 add_subdirectory(ext/glad)
 
-include_directories("src" "ext/glfw/include" "ext/glad/include" "ext/cglm/include")
-add_subdirectory(test)
+include_directories("src" "ext/glfw/include" "ext/glad/include" "ext/cglm/include" "ext")
 
 # Internal build tool to generate headers for GLSL shaders
 add_executable(txt2h "ext/txt2h.c")
@@ -32,22 +31,26 @@ foreach(glsl_src ${GLSL_SOURCES})
     )
 endforeach()
 
-add_executable(garage
+add_library(common STATIC
     src/common/int.c
     src/common/file.c
     src/common/vector.c
     src/common/logging.c
     src/common/sha1.c
+    src/common/image.c
+)
 
+add_executable(garage
     src/gui/gl_debug.c
     src/gui/gl_setup.c
     src/gui/input.c
     src/gui/camera.c
     src/gui/shader.c
     src/gui/render_garage.c
+    src/gui/render_debug.c
+    src/gui/render_text.c
     src/gui/gui_common.c
     src/gui/primitives.c
-    src/gui/render_debug.c
 
     # Adding the GLSL headers here auto-generates them during the build
     ${glsl_headers}
@@ -59,6 +62,19 @@ add_executable(garage
     src/stfs.c
 )
 
-target_link_libraries(garage PRIVATE glfw glad)
+target_link_libraries(garage PRIVATE glfw glad common)
+
+# List of all test files
+set(test_sources
+    test/test_struct_size.c
+    test/test_stfs.c
+)
+
+add_executable(test
+    src/stfs.c
+    ${test_sources}
+    test/main.c
+)
+target_link_libraries(test PRIVATE common)
 
 file(COPY "bin/" DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/bin)
