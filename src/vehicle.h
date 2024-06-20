@@ -45,6 +45,32 @@ typedef struct {
     part_entry parts[];
 }vehicle;
 
+// Load a vehicle into a newly allocated buffer. Automatically handles STFS if
+// needed (it's assumed that the vehicle is stored as the first file entry, and
+// is under 680KiB).
+// Returns NULL on failure, caller must free the buffer.
+vehicle* vehicle_load(const char* path);
+
+// NOTE: See common/endian.h for details on endian-ness.
+
+// Byte-swap an existing part entry
+void part_byteswap(part_entry* part);
+
+// Byte-swap an existing vehicle header
+void vehicle_header_byteswap(vehicle_header* v);
+
+// Uses part data to find the centerpoint of a vehicle.
+// (returns float vector for convenience, since centerpoint could be a decimal)
+vec3s vehicle_find_center(vehicle* v);
+
+// Look up a part by its origin position.
+// Returns NULL if no part is found, so always check the result!
+part_entry* part_by_pos(vehicle* v, vec3s8 pos);
+
+// Everything after this point involves runtime data structures for the editor.
+// If you're using this header to write your own program, the rest won't be
+// useful unless you adopt the same data structures.
+
 enum {
   PART_SCALE = 1,
   PART_POS_SCALE = 2, // Coordinate multiplier for rendering (can add spacing in the part grid)
@@ -55,22 +81,12 @@ enum {
 };
 
 // Used to store a compact 3D grid of parts at 1 bit per cell.
-// Each bit indicates if the cell is occupied by a part.
+// The editor uses 2 of these, one for storing which cells are occupied and one
+// for storing which cells are selected.
 typedef u8 vehicle_bitmask[VEH_MAX_DIM][VEH_MAX_DIM][VEH_MASK_BYTE_WIDTH];
 
-
-// Load a vehicle into a newly allocated buffer. Automatically handles STFS if
-// needed (it's assumed that the vehicle is stored as the first file entry, and
-// is under 680KiB).
-// Returns NULL on failure, caller must free the buffer.
-vehicle* vehicle_load(const char* path);
-
-// Uses part data to find the centerpoint of a vehicle.
-// (returns float vector for convenience)
-vec3s vehicle_find_center(vehicle* v);
-
 // Safely get & set values from vehicle bitmask (with bounds checking)
-u8 vehiclemask_get_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z);
+bool vehiclemask_get_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z);
 void vehiclemask_set_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z, u8 val);
 
 // Unselect all parts in a vehicle
@@ -85,18 +101,5 @@ bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff);
 bool vehicle_selection_overlap(vehicle* v, vehicle_bitmask* mask);
 
 void update_vehiclemask(vehicle* v, vehicle_bitmask* vacancy, vehicle_bitmask* selection);
-
-// Look up a part by its position.
-// Returns NULL if no part is found, so always check the result!
-part_entry* part_by_pos(vehicle* v, vec3s8 pos);
-
-
-// NOTE: See common/endian.h for details on endian-ness.
-
-// Byte-swap an existing part entry
-void part_byteswap(part_entry* part);
-
-// Byte-swap an existing vehicle header
-void vehicle_header_byteswap(vehicle_header* v);
 
 #endif // VEHICLE_H

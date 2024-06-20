@@ -1,5 +1,7 @@
 #ifndef PART_IDS_H
 #define PART_IDS_H
+// IDs are taken from mojobojo's 2009 vehicle editor, or found manually with a
+// hex editor when missing from his list.
 
 #include "common/int.h"
 #include "common/vector.h"
@@ -7,6 +9,7 @@
 
 // Part IDs are written are as they appear in the hex editor, in the order of
 // the in-game menu. Use part_get_info() to get a string for a part ID.
+// Anything I don't know the ID of is set to zero.
 typedef enum {
     // <== Seats ==>
     SEAT_STANDARD        = 0x1FEA444A,
@@ -186,7 +189,7 @@ typedef enum {
 
 enum {
     NUM_PARTS = 122,
-    PART_MAX_DIM = 8,
+    CONNECT_MASK = 8,
 };
 
 // The 32-bit ID value, written in ASCII hexidecimal digits.
@@ -197,7 +200,7 @@ typedef union {
     char c[8];
 }id_str;
 
-
+// Coordinate arrays are terminated by an all-zero entry representing the origin
 typedef struct {
     char* name; // Human-readable part name
     // The points relative to the origin this part occupies
@@ -207,8 +210,16 @@ typedef struct {
     vec3s8* relative_connections;
 }part_info;
 
+// Returns a struct with info about a part so I don't have to make multiple
+// 300+ line switch statements
 part_info part_get_info(part_id id);
 
+// Outputs 8 ASCII character representing a 32-bit number in hexidecimal
+// For example, part ID 0x1F207106 would output "1F207106"
+// (May be backwards due to endian-ness, but consistent throughout the program)
 id_str part_get_id_str(part_id id);
+
+// Get the path to an OBJ file in a "bin" folder named with the hex ID. For
+// example, part ID 0x1F207106 would output "bin/1F207106.obj"
 char* part_get_obj_path(part_id id);
 #endif // PART_IDS_H

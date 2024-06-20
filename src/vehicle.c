@@ -91,7 +91,7 @@ vehicle* vehicle_load(const char* path) {
     return v;
 }
 
-u8 vehiclemask_get_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z) {
+bool vehiclemask_get_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z) {
     u8* mask_addr = (u8*)&(*mask)[x][y];
 
     // Only try to access mask bits if the address is in bounds.

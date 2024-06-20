@@ -1,4 +1,3 @@
-#include <malloc.h>
 #include <string.h>
 #include "parts.h"
 
@@ -23,13 +22,20 @@ char* part_get_obj_path(part_id id) {
     if (out == NULL) {
         return out;
     }
-
+    // Copy this string into the buffer
     strcpy(out, "bin/00000000.obj");
+
+    // Overwrite all the '0' characters with the hex ID in ASCII
     id_str hex = part_get_id_str(id);
     strncpy(&out[4], hex.c, sizeof(hex));
 
     return out;
 }
+
+// A part that only takes up one cell on its origin
+vec3s8 single_cell_occ[] = {
+    {0},
+};
 
 // Double-height part with the origin on top
 vec3s8 doubleheight_down_occ[] = {
@@ -416,6 +422,8 @@ part_info part_get_info(part_id id) {
         break;
     }
 
+    if (out.relative_occupation == NULL) {
+        out.relative_occupation = single_cell_occ;
+    }
     return out;
 }
-
