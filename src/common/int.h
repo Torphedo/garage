@@ -46,6 +46,7 @@ void print_c16s(const c16* str);
 
 // Return the larger of 2 values
 #define MAX(a, b) ((a > b) ? a : b)
+#define MIN(a, b) ((a < b) ? a : b)
 
 #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof(*arr))
 #endif // INT_H

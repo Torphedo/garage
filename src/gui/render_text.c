@@ -3,6 +3,7 @@
 #include <memory.h>
 #include <malloc.h>
 
+#include <glad/glad.h>
 #define STB_RECT_PACK_IMPLEMENTATION
 #include <stb_rect_pack.h>
 #define STB_TRUETYPE_IMPLEMENTATION  // force following include to generate implementation
@@ -13,24 +14,43 @@
 #include <common/file.h>
 #include <common/logging.h>
 #include <common/image.h>
+#include <common/utf8.h>
 #include "gui_common.h"
 
 enum {
     TTF_BUF_SIZE = 1 << 20,
     TTF_TEX_WIDTH = 512,
-    TTF_TEX_HEIGHT = 1024,
+    TTF_TEX_HEIGHT = 512,
     BC4_BLOCK_SIZE = 8,
 };
 
-u8* ttf_to_bitmap(const char* ttf_path) {
+const char* ttf_path = "ProFontIIxNerdFontMono-Regular.ttf";
+
+typedef struct {
+    gui_state* gui;
+    u8* bc4_bitmap;
+    stbtt_packedchar* packed_chars;
+    stbtt_pack_context pack_ctx;
+
+    gl_obj font_atlas;
+}text_state;
+
+
+void* text_init(gui_state* gui) {
+    text_state* state = calloc(1, sizeof(*state));
+    if (state == NULL) {
+        return NULL;
+    }
+
     if (TTF_TEX_WIDTH % 4 != 0 || TTF_TEX_HEIGHT % 4 != 0) {
         LOG_MSG(error, "Assert fail, texture size isn't a multiple of block size!\n");
         return NULL;
     }
 
-    const u32 num_char = 256;
-    const u32 first_char = 32;
-    stbtt_bakedchar cdata[num_char];
+    // Unicode 0x20 - 0xFF should cover English, German, Spanish, etc.
+    const u32 first_char = 0x20;
+    const u32 num_char = 0xDF;
+    state->packed_chars = calloc(1, sizeof(*state->packed_chars) * num_char);
 
     u8* ttf_buffer = file_load(ttf_path);
     u8 bitmap[TTF_TEX_HEIGHT][TTF_TEX_WIDTH] = {0};
@@ -38,12 +58,15 @@ u8* ttf_to_bitmap(const char* ttf_path) {
         LOG_MSG(error, "Failed to load file\n");
         return NULL;
     }
-    // float char_height = ((TTF_TEX_WIDTH / 8) + (TTF_TEX_HEIGHT / 8)) / 2;
-    float char_height = (TTF_TEX_WIDTH / 8);
-    stbtt_BakeFontBitmap(ttf_buffer, 0, char_height, (unsigned char*)bitmap, TTF_TEX_WIDTH, TTF_TEX_HEIGHT, first_char, num_char, cdata); // no guarantee this fits!
+    // float font_size = ((TTF_TEX_WIDTH / 8) + (TTF_TEX_HEIGHT / 8)) / 2;
+    stbtt_PackBegin(&state->pack_ctx, (unsigned char*)bitmap, TTF_TEX_WIDTH, TTF_TEX_HEIGHT, 0, 1, NULL);
+    // stbtt_PackSetSkipMissingCodepoints(&state->pack_ctx, true);
+    float font_size = ((float)TTF_TEX_WIDTH / 8);
+    stbtt_PackFontRange(&state->pack_ctx, ttf_buffer, 0, font_size, first_char, num_char, state->packed_chars);
+
     free(ttf_buffer);
 
-    u8* out = calloc(1, (TTF_TEX_WIDTH * TTF_TEX_HEIGHT) / 2);
+    state->bc4_bitmap = calloc(1, (TTF_TEX_WIDTH * TTF_TEX_HEIGHT) / 2);
     u32 output_pos = 0;
     for (u16 i = 0; i < TTF_TEX_HEIGHT; i += 4) { // Rows
         for (u16 j = 0; j < TTF_TEX_WIDTH; j+= 4) { // Columns
@@ -54,29 +77,11 @@ u8* ttf_to_bitmap(const char* ttf_path) {
             }
 
             // Compress the block
-            stb_compress_bc4_block(out + output_pos, bc4_in);
+            stb_compress_bc4_block(state->bc4_bitmap + output_pos, bc4_in);
             output_pos += BC4_BLOCK_SIZE;
         }
     }
 
-    return out;
-}
-
-const char* ttf_path = "ProFontIIxNerdFontMono-Regular.ttf";
-
-typedef struct {
-    gui_state* gui;
-    u8* bc4_bitmap;
-}text_state;
-
-
-void* text_init(gui_state* gui) {
-    text_state* state = calloc(1, sizeof(*state));
-    if (state == NULL) {
-        return NULL;
-    }
-
-    state->bc4_bitmap = ttf_to_bitmap(ttf_path);
     if (state->bc4_bitmap == NULL) {
         LOG_MSG(error, "Failed to render bitmap\n");
         return NULL;
@@ -92,15 +97,34 @@ void* text_init(gui_state* gui) {
     };
     img_write(out, "out.dds");
 
+    // Upload font texture
+    glGenTextures(1, &state->font_atlas);
+    glBindTexture(GL_TEXTURE0, state->font_atlas);
+    u32 size = (TTF_TEX_HEIGHT * TTF_TEX_WIDTH) / 2;
+    glCompressedTexImage2D(GL_TEXTURE0, 0, GL_COMPRESSED_RED_RGTC1, TTF_TEX_WIDTH, TTF_TEX_HEIGHT, 0, size, state->bc4_bitmap);
+
     return state;
 }
 
 void text_render(text_state* ctx) {
+    const char* text = "Unicöde! ꀲ";
+
+    u32 total_len = 0;
+    u8 char_len = 0;
+    for (u32 i = 0; i < strlen(text); i += char_len) {
+        u32 codepoint = utf8_codepoint(&text[i], &char_len);
+        total_len += char_len;
+
+        printf("U+%X\n", codepoint);
+        u32 idx = text[i] - 0x20;
+    }
 
 }
 
 void text_destroy(text_state* ctx) {
     free(ctx->bc4_bitmap);
+    stbtt_PackEnd(&ctx->pack_ctx);
+    free(ctx->packed_chars);
     free(ctx);
 }
 

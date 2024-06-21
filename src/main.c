@@ -9,6 +9,7 @@
 #include "gui/gl_setup.h"
 #include "gui/render_garage.h"
 #include "gui/render_debug.h"
+#include "gui/render_text.h"
 #include "gui/input.h"
 #include "gui/gui_common.h"
 
@@ -52,6 +53,7 @@ int main(int argc, char** argv) {
     }
     void* garage_ctx = garage.init(&gui);
     void* dbg_ctx = dbg_view.init(&gui);
+    void* txt_ctx = text.init(&gui);
 
     double one_frame_ago = glfwGetTime(); // Used to calculate delta time
     double two_frames_ago = glfwGetTime();
@@ -81,6 +83,7 @@ int main(int argc, char** argv) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         garage.render(garage_ctx);
         dbg_view.render(dbg_ctx);
+        text.render(txt_ctx);
         glfwSwapBuffers(window); // Framebuffer swap won't happen until vsync
         glFinish(); // Wait for vsync before going to the next line
 
@@ -117,6 +120,7 @@ int main(int argc, char** argv) {
     // Cleanup
     garage.destroy(garage_ctx);
     dbg_view.destroy(dbg_ctx);
+    text.destroy(txt_ctx);
     gui_teardown(&gui);
     glfwTerminate(); // Auto-closes the window if we exited via the quit button
 
