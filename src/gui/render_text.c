@@ -122,6 +122,9 @@ void text_render(text_state* ctx) {
 }
 
 void text_destroy(text_state* ctx) {
+    if (ctx == NULL) {
+        return;
+    }
     free(ctx->bc4_bitmap);
     stbtt_PackEnd(&ctx->pack_ctx);
     free(ctx->packed_chars);

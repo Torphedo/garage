@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <memory.h>
 
 #include <glad/glad.h>
 
@@ -36,6 +37,25 @@ void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask) {
     for (u16 i = 0; i < VEH_MAX_DIM && i < max.x; i++) {
         for (u16 j = 0; j < VEH_MAX_DIM && j < max.y; j++) {
             for (u16 k = 0; k < VEH_MAX_DIM && k < max.z; k++) {
+                // Skip the next bits if they're all 0
+                // Keeping this size small lets us "jump into action" faster when
+                // a big empty space is encountered, even though a 64-bit compare
+                // would be much more efficient.
+                // TODO: Optimize this later? Maybe some sketchy __builtin_clz() stuff?
+                u8 bits = 0;
+                const u8 bit_size = sizeof(bits) * 8;
+                const bool in_arr_bounds = (j < VEH_MAX_DIM - bit_size && i < VEH_MAX_DIM - bit_size);
+                // We only need to run every (bit_size) iterations
+                if (k % bit_size == 0 && in_arr_bounds) {
+                    // When (bits) is a u8, this can just be an assignment
+                    memcpy(&bits, &(*mask)[i][j][k / 8], sizeof(bits));
+                    if (bits == 0) {
+                        k += bit_size - 1;
+                        continue;
+                    }
+                }
+
+
                 bool part_present = vehiclemask_get_3d(mask, i, j, k);
                 if (part_present) {
                     vec3 pos = {i, j, k};
