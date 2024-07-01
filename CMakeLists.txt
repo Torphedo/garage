@@ -14,19 +14,19 @@ add_executable(txt2h "ext/txt2h.c")
 set(GLSL_SOURCES
     src/gui/shader/fragment.glsl
     src/gui/shader/vertex.glsl
+    src/gui/shader/text.vert
+    src/gui/shader/text.frag
 )
 
 # Autogenerate string constant headers for each GLSL source file using txt2h.c
 set(glsl_headers)
 foreach(glsl_src ${GLSL_SOURCES})
-    # Replace the ".glsl" with ".h" and put the string in ${file_h}
-    get_filename_component(file_h ${glsl_src} NAME_WE)
-    set(file_h "${file_h}.h")
+    set(file_h "${glsl_src}.h") # Append ".h" to filename
     list(APPEND glsl_headers ${file_h}) # Add to list of generated headers
 
     add_custom_command(
         OUTPUT  ${CMAKE_SOURCE_DIR}/${file_h}
-        COMMAND txt2h ${glsl_src}
+        COMMAND txt2h ${glsl_src} ${file_h}
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
 endforeach()

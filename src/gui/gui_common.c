@@ -13,19 +13,19 @@
 #include "gl_setup.h"
 
 const char* frag = {
-#include "shader/fragment.h"
+#include "shader/fragment.glsl.h"
 };
 
 const char* vert = {
-#include "shader/vertex.h"
+#include "shader/vertex.glsl.h"
 };
 
 void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask) {
     vec3s center = vehicle_find_center(gui->v);
 
     // Highest XYZ coords in the vehicle. We add 1 to include the highest
-    // index, then 8 to avoid cutting off large parts with up to 4 cells radius
-    vec3s max = glms_vec3_adds(glms_vec3_scale(center, 2), 5.0f);
+    // index, then 4 to avoid cutting off large parts with up to 4 cells radius
+    vec3s max = glms_vec3_adds(glms_vec3_scale(center, PART_POS_SCALE), 5.0f);
 
     // Tranformation matrices
     mat4 pv = {0};
@@ -69,6 +69,9 @@ void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask) {
                     glm_translate(model, pos);
                     glm_mat4_mul(pv, model, pvm); // Compute pvm
 
+                    // TODO: The iteration seems to cause a heavy CPU bottleneck,
+                    // but it's probably still worth doing a single instanced
+                    // draw call instead of this.
                     glUniformMatrix4fv(gui->u_pvm, 1, GL_FALSE, (const float*)&pvm);
                     glDrawElements(GL_TRIANGLES, cube.idx_count, GL_UNSIGNED_SHORT, NULL);
                     glm_mat4_identity(model);

@@ -29,13 +29,12 @@ void string_mk_header_name(char* str) {
 }
 
 int main(int argc, char** argv) {
-    if (argc != 2) {
-        printf("Usage: txt2h infile\n");
+    if (argc != 3) {
+        printf("Usage: txt2h infile outfile\n");
         return 1;
     }
     const char* in_path = argv[1];
-    char* out_path = clone_string(in_path);
-    string_mk_header_name(out_path);
+    char* out_path = argv[2];
 
     FILE* in_file = fopen(in_path, "rb");
     FILE* out_file = fopen(out_path, "wb");
