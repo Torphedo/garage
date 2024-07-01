@@ -4,7 +4,7 @@ layout (location = 1) in vec4 a_color;
 
 out vec4 vert_color;
 
-uniform mat4 transforms[10];
+uniform mat4 transforms[8];
 
 void main() {
     gl_Position = transforms[gl_InstanceID] * vec4(a_pos, 1.0);

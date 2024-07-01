@@ -1,6 +1,6 @@
 #include "gui_common.h"
+#include "primitives.h"
 
-#define QUAD_SIZE (32.0f)
 const vertex quad_vertices[] = {
     {
         .position = {QUAD_SIZE, -1.5f, QUAD_SIZE},
@@ -32,7 +32,6 @@ model quad = {
     .indices = quad_indices,
 };
 
-#define CUBE_SIZE (1.0f)
 #define CUBE_COLOR {1.0f, 1.0f, 1.0f, 1.0f}
 const vertex cube_vertices[] = {
     {
