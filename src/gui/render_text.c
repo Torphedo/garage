@@ -56,8 +56,12 @@ void text_destroy(text_state* ctx) {
     if (ctx == NULL) {
         return;
     }
-    free(ctx->bc4_bitmap);
+    glDeleteProgram(ctx->shader);
+    glDeleteVertexArrays(1, &ctx->vao);
+    glDeleteTextures(1, &ctx->font_atlas);
+
     stbtt_PackEnd(&ctx->pack_ctx);
+    free(ctx->bc4_bitmap);
     free(ctx->packed_chars);
     free(ctx);
 }
@@ -126,9 +130,10 @@ void* text_init(gui_state* gui) {
     img_write(out, "font_atlas.dds"); // For debugging
 
     // Upload font texture
-    // glGenTextures(1, &state->font_atlas);
-    // glBindTexture(GL_TEXTURE0, state->font_atlas);
-    // glCompressedTexImage2D(GL_TEXTURE0, 0, GL_COMPRESSED_RED_RGTC1, TTF_TEX_WIDTH, TTF_TEX_HEIGHT, 0, size, state->bc4_bitmap);
+    glGenTextures(1, &state->font_atlas);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, state->font_atlas);
+    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RED_RGTC1, TTF_TEX_WIDTH, TTF_TEX_HEIGHT, 0, size, state->bc4_bitmap);
 
     gl_obj vert_shader = shader_compile_src(vert_src, GL_VERTEX_SHADER);
     gl_obj frag_shader = shader_compile_src(frag_src, GL_FRAGMENT_SHADER);
@@ -143,7 +148,6 @@ void* text_init(gui_state* gui) {
     glAttachShader(state->shader, vert_shader);
     glAttachShader(state->shader, frag_shader);
     glLinkProgram(state->shader);
-    LOG_MSG(debug, vert_src);
 
     // Delete individual shader objects
     glDeleteShader(vert_shader);
