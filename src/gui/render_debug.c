@@ -25,7 +25,6 @@ void debug_render(void* ctx) {
     // Bind our shader & buffers
     glUseProgram(gui->vcolor_shader);
     glBindVertexArray(cube.vao);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube.ibuf);
     // Draw in wireframe mode
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
@@ -37,7 +36,6 @@ void debug_render(void* ctx) {
     // Reset state
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 

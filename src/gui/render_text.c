@@ -223,7 +223,6 @@ void text_render(text_state* ctx) {
 
     glUseProgram(ctx->shader);
     glBindVertexArray(quad.vao);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quad.ibuf);
     glUniformMatrix4fv(glGetUniformLocation(ctx->shader, "transforms"), num_chars, GL_FALSE, (const float*)transforms);
     glDrawElementsInstanced(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL, num_chars);
 
@@ -232,7 +231,6 @@ void text_render(text_state* ctx) {
     // Reset state
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 typedef void (*renderproc)(void*);

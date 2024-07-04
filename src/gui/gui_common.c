@@ -20,6 +20,8 @@ const char* vert = {
 #include "shader/vertex.glsl.h"
 };
 
+// This doesn't enforce what the bound VAO is... make sure to only call it with
+// the cube VAO bound.
 void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask) {
     vec3s center = vehicle_find_center(gui->v);
 
@@ -79,7 +81,6 @@ void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask) {
             }
         }
     }
-
 }
 
 

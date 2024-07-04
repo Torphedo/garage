@@ -123,13 +123,7 @@ void garage_render(void* ctx) {
 
     // Draw the floor
     glBindVertexArray(quad.vao);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, quad.ibuf);
     glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
-
-
-    // Bind cube model
-    glBindVertexArray(cube.vao);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube.ibuf);
 
     // Draw all our parts
     vehicle* v = state->gui->v;
@@ -155,11 +149,11 @@ void garage_render(void* ctx) {
 
         // Bind our part model and render
         glBindVertexArray(m.vao);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m.ibuf);
         render_cube(m.idx_count, pos, paint_col, 1.0f, pv, state);
-        glBindVertexArray(cube.vao);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, cube.ibuf);
     }
+
+    // Go back to the cube
+    glBindVertexArray(cube.vao);
 
     // Draw the selection box in wireframe mode
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -201,7 +195,6 @@ void garage_render(void* ctx) {
     // Reset state
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
