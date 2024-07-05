@@ -36,13 +36,15 @@ const char frag_src[] = {
 #include "shader/text.frag.h"
 };
 
-const char* ttf_path = "ProFontIIxNerdFontMono-Regular.ttf";
+const char* ttf_path = "ProFontIIxNerdFontPropo-Regular.ttf";
 
 typedef struct {
     gui_state* gui;
     u8* bc4_bitmap;
     stbtt_packedchar* packed_chars;
     stbtt_pack_context pack_ctx;
+    stbtt_fontinfo font_info;
+    u8* ttf_data;
 
     gl_obj font_atlas;
     gl_obj shader;
@@ -60,6 +62,7 @@ void text_destroy(text_state* ctx) {
     stbtt_PackEnd(&ctx->pack_ctx);
     free(ctx->bc4_bitmap);
     free(ctx->packed_chars);
+    free(ctx->ttf_data);
     free(ctx);
 }
 
@@ -78,19 +81,18 @@ void* text_init(gui_state* gui) {
 
     state->packed_chars = calloc(1, sizeof(*state->packed_chars) * NUM_CHAR);
 
-    u8* ttf_buffer = file_load(ttf_path);
+    state->ttf_data = file_load(ttf_path);
     u8 bitmap[TTF_TEX_HEIGHT][TTF_TEX_WIDTH] = {0};
-    if (ttf_buffer == NULL) {
+    if (state->ttf_data == NULL) {
         LOG_MSG(error, "Failed to load TTF!\n");
         text_destroy(state);
         return NULL;
     }
+    stbtt_InitFont(&state->font_info, state->ttf_data, 0);
     stbtt_PackBegin(&state->pack_ctx, (unsigned char*)bitmap, TTF_TEX_WIDTH, TTF_TEX_HEIGHT, 0, 1, NULL);
     // stbtt_PackSetSkipMissingCodepoints(&state->pack_ctx, true);
     float font_size = ((float)TTF_TEX_WIDTH / 8);
-    stbtt_PackFontRange(&state->pack_ctx, ttf_buffer, 0, font_size, FIRST_CHAR, NUM_CHAR, state->packed_chars);
-
-    free(ttf_buffer);
+    stbtt_PackFontRange(&state->pack_ctx, state->ttf_data, 0, font_size, FIRST_CHAR, NUM_CHAR, state->packed_chars);
 
     u32 size = (TTF_TEX_HEIGHT * TTF_TEX_WIDTH) / 2;
     state->bc4_bitmap = calloc(1, size);
@@ -131,6 +133,7 @@ void* text_init(gui_state* gui) {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, state->font_atlas);
     glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RED_RGTC1, TTF_TEX_WIDTH, TTF_TEX_HEIGHT, 0, size, state->bc4_bitmap);
+    glGenerateMipmap(GL_TEXTURE_2D);
 
     gl_obj vert_shader = shader_compile_src(vert_src, GL_VERTEX_SHADER);
     gl_obj frag_shader = shader_compile_src(frag_src, GL_FRAGMENT_SHADER);
@@ -154,6 +157,11 @@ void* text_init(gui_state* gui) {
         text_destroy(state);
         return NULL;
     }
+    glUseProgram(state->shader); // Needed to set uniforms
+
+    // Set our sampler to texture unit 0 for portability
+    gl_obj atlas = glGetUniformLocation(state->shader, "font_atlas");
+    glUniform1i(atlas, 0);
 
     return state;
 }
@@ -184,13 +192,12 @@ void text_render(text_state* ctx) {
         return;
     }
 
-    // Projection matrix
+    // Get aspect ratio
     const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
     const float aspect = (float)mode->width / (float)mode->height;
-    // mat4 projection = {0};
-    // glm_perspective_rh_no(glm_rad(45), aspect, 0.1f, 1000.0f, projection);
 
-    float cur_x = -1.0f;
+    const float scale = 0.005f;
+    float cur_x = -1.0f + (QUAD_SIZE * scale);
     float cur_y = 0;
     u32 char_idx = 0;
     for (u32 i = 0; i < total_len; i += char_len) {
@@ -202,26 +209,28 @@ void text_render(text_state* ctx) {
         mat4 model = {0};
         glm_mat4_identity(model);
         stbtt_aligned_quad baked_quad = {0};
-        float delta_x = 0;
+        int delta_x = 0;
         float delta_y = 0;
-        stbtt_GetPackedQuad(ctx->packed_chars, ctx->pack_ctx.width, ctx->pack_ctx.height, idx, &delta_x, &delta_y, &baked_quad, false);
+        int left_bearing = 0;
+        // stbtt_GetPackedQuad(ctx->packed_chars, ctx->pack_ctx.width, ctx->pack_ctx.height, idx, &delta_x, &delta_y, &baked_quad, false);
+        stbtt_GetCodepointHMetrics(&ctx->font_info, codepoint, &delta_x, &left_bearing);
 
-        const float scale = 0.001f;
-        glm_translate(model, (vec3){cur_x + (QUAD_SIZE * scale) + 0.01f, 0.7f, 0.2f});
+
+        glm_translate(model, (vec3){cur_x, 0.7f, 0.2f});
         glm_scale(model, (vec3){scale, scale * aspect, scale});
         glm_rotate_x(model, glm_rad(90.0f), model);
 
         memcpy(&transforms[char_idx++], model, sizeof(model));
 
         // Update X pos
-        cur_x += ((delta_x / ctx->pack_ctx.width) * 2);
+        cur_x += ((float)delta_x / (float)ctx->pack_ctx.width) * (scale * 100);
         // printf("U+%X\n", codepoint);
     }
 
     glUseProgram(ctx->shader);
-    glBindVertexArray(quad.vao);
+    glBindVertexArray(tex_quad.vao);
     glUniformMatrix4fv(glGetUniformLocation(ctx->shader, "transforms"), num_chars, GL_FALSE, (const float*)transforms);
-    glDrawElementsInstanced(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL, num_chars);
+    glDrawElementsInstanced(GL_TRIANGLES, tex_quad.idx_count, GL_UNSIGNED_SHORT, NULL, num_chars);
 
     free(transforms);
 

@@ -8,6 +8,7 @@ enum {
 };
 
 extern model quad;
+extern model tex_quad; // Same as quad but with texture coords
 extern model cube;
 
 #endif // PRIMITIVES_H

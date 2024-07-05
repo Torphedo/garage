@@ -1,8 +1,10 @@
 #version 330 core
 out vec4 fragment_rgba;
 
-in vec4 vert_color;
+in vec2 texcoord;
+
+uniform sampler2D font_atlas;
 
 void main() {
-    fragment_rgba = vert_color;
+    fragment_rgba = texture(font_atlas, texcoord);
 }
