@@ -60,6 +60,10 @@ add_executable(garage
     src/vehicle.c
     src/parts.c
     src/stfs.c
+
+    ext/stb_rect_pack.c
+    ext/stb_dxt.c
+    ext/stb_truetype.c
 )
 
 target_link_libraries(garage PRIVATE glfw glad common)
@@ -78,3 +82,4 @@ add_executable(test
 target_link_libraries(test PRIVATE common)
 
 file(COPY "bin/" DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/bin)
+
