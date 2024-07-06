@@ -6,5 +6,6 @@ in vec2 texcoord;
 uniform sampler2D font_atlas;
 
 void main() {
-    fragment_rgba = texture(font_atlas, texcoord);
+    vec4 color = texture(font_atlas, texcoord);
+    fragment_rgba = color.rrra;
 }

@@ -209,12 +209,10 @@ void text_render(text_state* ctx) {
         mat4 model = {0};
         glm_mat4_identity(model);
         stbtt_aligned_quad baked_quad = {0};
-        int delta_x = 0;
-        float delta_y = 0;
         int left_bearing = 0;
-        // stbtt_GetPackedQuad(ctx->packed_chars, ctx->pack_ctx.width, ctx->pack_ctx.height, idx, &delta_x, &delta_y, &baked_quad, false);
-        stbtt_GetCodepointHMetrics(&ctx->font_info, codepoint, &delta_x, &left_bearing);
-
+        int width = 0;
+        stbtt_GetCodepointHMetrics(&ctx->font_info, codepoint, &width, &left_bearing);
+        float delta_x = (float)width / (float)ctx->pack_ctx.width;
 
         glm_translate(model, (vec3){cur_x, 0.7f, 0.2f});
         glm_scale(model, (vec3){scale, scale * aspect, scale});
@@ -222,8 +220,8 @@ void text_render(text_state* ctx) {
 
         memcpy(&transforms[char_idx++], model, sizeof(model));
 
-        // Update X pos
-        cur_x += ((float)delta_x / (float)ctx->pack_ctx.width) * (scale * 100);
+        // Advance on X by character width + character gap
+        cur_x += (delta_x * scale) + (QUAD_SIZE * 2 * scale);
         // printf("U+%X\n", codepoint);
     }
 
