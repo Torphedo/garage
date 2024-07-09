@@ -239,7 +239,9 @@ void text_render(text_state* ctx) {
         return; // Avoid stupid segfaults.
     }
 
-    const char* text = "Unicöde!!";
+    // const char* text = "Unicöde!!";
+    const char* text = "trés sûr, d'étude, leçon, çÇœŒ«»€";
+    // const char* text = "éÉàÀèÈùÙâÂêÊîÎôÔûÛëËïÏüÜçÇœŒ«»€";
 
     u32 total_len = 0;
     u8 char_len = 0;
@@ -270,14 +272,16 @@ void text_render(text_state* ctx) {
     const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
     const float aspect = (float)mode->width / (float)mode->height;
 
-    const float scale = 0.08f;
+    const float scale = 0.03f;
     float cur_x = -1.0f + (TEXT_QUAD_SIZE * scale);
     float cur_y = 0;
     u32 char_idx = 0;
     for (u32 i = 0; i < total_len; i += char_len) {
-        const u32 codepoint = utf8_codepoint(&text[i], &char_len);
+        u32 codepoint = utf8_codepoint(&text[i], &char_len);
         if (FIRST_CHAR > codepoint || codepoint > (FIRST_CHAR + NUM_CHAR)) {
-            continue; // Outside the range in the font atlas, skip it.
+            // This is outside the Unicode range we cover, replace it w/
+            // a control character that renders as a box.
+            codepoint = 0x81;
         }
         const u32 idx = codepoint - FIRST_CHAR;
         mat4 model = {0};
@@ -287,23 +291,32 @@ void text_render(text_state* ctx) {
             float temp;
             stbtt_GetPackedQuad(ctx->packed_chars, ctx->pack_ctx.width, ctx->pack_ctx.height, idx, &temp, &temp, &packed_quad, 0);
         }
-        int left_bearing = 0;
-        int width = 0;
-        stbtt_GetCodepointHMetrics(&ctx->font_info, codepoint, &width, &left_bearing);
+        float left_bearing = 0;
+        float width = 0;
+        float height = 0;
+        float start_height = 0;
         {
+            // Get left bearing
+            int i_width, i_left;
+            stbtt_GetCodepointHMetrics(&ctx->font_info, codepoint, &i_width, &i_left);
+            left_bearing = (float)i_left / ctx->pack_ctx.width;
+
+            // Get width/height
             int x0, y0, x1, y1;
             stbtt_GetCodepointBox(&ctx->font_info, codepoint, &x0, &y0, &x1, &y1);
-            width = x1 - x0;
+            width = (float)(x1 - x0) / ctx->pack_ctx.width;
+            height = (float)(y1 - y0) / ctx->pack_ctx.height;
+            start_height = (float)y0 / ctx->pack_ctx.height;
         }
 
-        float delta_x = (float)width / (float)ctx->pack_ctx.width;
-        cur_x -= ((float)left_bearing / ctx->pack_ctx.width) * scale * 2;
+        float delta_x = width;
+        cur_x -= left_bearing * scale * 2;
 
-        LOG_MSG(debug, "%c is %d wide, %d left bearing, ", text[i], width, left_bearing);
-        printf("delta x = %f, cur_x = %f\n", delta_x, cur_x);
+        // LOG_MSG(debug, "%c is %f wide, %f left bearing, ", text[i], width, left_bearing);
+        // printf("delta x = %f, cur_x = %f\n", delta_x, cur_x);
 
-        glm_translate(model, (vec3){cur_x, 0.7f, 0.2f});
-        glm_scale(model, (vec3){scale * delta_x, scale * aspect, scale});
+        glm_translate(model, (vec3){cur_x, 0.7f - ((1.0f - height - (start_height * 2)) * 2 * scale), 0.2f});
+        glm_scale(model, (vec3){scale * delta_x, scale * aspect * height, scale});
         glm_rotate_x(model, glm_rad(90.0f), model);
 
         texcoords[char_idx][0] = packed_quad.s0;
@@ -313,7 +326,7 @@ void text_render(text_state* ctx) {
         memcpy(&transforms[char_idx++], model, sizeof(model));
 
         // Advance on X by character width + character gap
-        cur_x += 2 * (delta_x + ((float)left_bearing / ctx->pack_ctx.width)) * scale;
+        cur_x += 2 * (delta_x + left_bearing + 0.2f) * scale;
     }
 
     // Upload transforms & render
