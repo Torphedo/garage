@@ -8,12 +8,6 @@ typedef struct {
     vec4 color;
 }vertex;
 
-// A vertex with position and texture coordinates
-typedef struct {
-    vec3 position;
-    vec2 texcoord;
-}tex_vertex;
-
 typedef struct {
     const void* vertices;
     const u16* indices;

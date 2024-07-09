@@ -267,28 +267,6 @@ bool gui_init(gui_state* gui) {
     model_upload(&quad);
     model_upload(&cube);
 
-    // Need to upload the tex quad in a special way because its vertex format is different
-    glGenBuffers(1, &tex_quad.vbuf);
-    tex_quad.ibuf = quad.ibuf; // Re-use quad indices
-    glGenVertexArrays(1, &tex_quad.vao);
-
-    // Setup vertex buffer
-    glBindVertexArray(tex_quad.vao);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tex_quad.ibuf);
-    glBindBuffer(GL_ARRAY_BUFFER, tex_quad.vbuf);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(tex_vertex) * tex_quad.vert_count, tex_quad.vertices, GL_STATIC_DRAW);
-
-    // Create vertex layout
-    glVertexAttribPointer(0, sizeof(vec3) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(tex_vertex), (void*)offsetof(tex_vertex, position));
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, sizeof(vec2) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(tex_vertex), (void*)offsetof(tex_vertex, texcoord));
-    glEnableVertexAttribArray(1);
-
-    // Unbind our buffers to avoid messing our state up
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-
     return true;
 }
 
@@ -297,10 +275,6 @@ void gui_teardown(gui_state* gui) {
     glDeleteVertexArrays(1, &quad.vao);
     glDeleteBuffers(1, &quad.vbuf);
     glDeleteBuffers(1, &quad.ibuf);
-
-    // tex quad shares the regular quad's index buffer, no need to delete it
-    glDeleteVertexArrays(1, &tex_quad.vao);
-    glDeleteBuffers(1, &tex_quad.vbuf);
 
     glDeleteVertexArrays(1, &cube.vao);
     glDeleteBuffers(1, &cube.vbuf);

@@ -16,8 +16,40 @@
 #include "primitives.h"
 #include "gui_common.h"
 
+// A vertex with position and texture coordinates
+typedef struct {
+    vec3 position;
+    vec2 texcoord;
+}tex_vertex;
+
+// The same quad, but with texture coordinates instead of colors
+const tex_vertex texquad_vertices[] = {
+    {
+        .position = {QUAD_SIZE, -1.5f, QUAD_SIZE},
+        .texcoord = {1.0f, 1.0f},
+    },
+    {
+        .position = {QUAD_SIZE, -1.5f, -QUAD_SIZE},
+        .texcoord = {1.0f, 0},
+    },
+    {
+        .position = {-QUAD_SIZE, -1.5f, -QUAD_SIZE},
+        .texcoord = {0, 0},
+    },
+    {
+        .position = {-QUAD_SIZE,  -1.5f, QUAD_SIZE},
+        .texcoord = {0, 1.0f},
+    }
+};
+
+model tex_quad = {
+    .vert_count = ARRAY_SIZE(texquad_vertices),
+    .idx_count = ARRAY_SIZE(quad_indices),
+    .vertices = texquad_vertices,
+    .indices = quad_indices,
+};
+
 enum {
-    TTF_BUF_SIZE = 1 << 20,
     TTF_TEX_WIDTH = 512,
     TTF_TEX_HEIGHT = 512,
     BC4_BLOCK_SIZE = 8,
@@ -48,6 +80,11 @@ typedef struct {
 
     gl_obj font_atlas;
     gl_obj shader;
+
+    // Shader uniform locations
+    gl_obj transforms;
+    gl_obj texcoords;
+
     gl_obj vao;
 }text_state;
 
@@ -58,6 +95,10 @@ void text_destroy(text_state* ctx) {
     glDeleteProgram(ctx->shader);
     glDeleteVertexArrays(1, &ctx->vao);
     glDeleteTextures(1, &ctx->font_atlas);
+
+    glDeleteVertexArrays(1, &tex_quad.vao);
+    glDeleteBuffers(1, &tex_quad.vbuf);
+    // tex quad shares the regular quad's index buffer, no need to delete it
 
     stbtt_PackEnd(&ctx->pack_ctx);
     free(ctx->bc4_bitmap);
@@ -133,8 +174,10 @@ void* text_init(gui_state* gui) {
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, state->font_atlas);
     glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RED_RGTC1, TTF_TEX_WIDTH, TTF_TEX_HEIGHT, 0, size, state->bc4_bitmap);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glGenerateMipmap(GL_TEXTURE_2D);
 
+    // Compile shaders
     gl_obj vert_shader = shader_compile_src(vert_src, GL_VERTEX_SHADER);
     gl_obj frag_shader = shader_compile_src(frag_src, GL_FRAGMENT_SHADER);
     if (vert_shader == 0 || frag_shader == 0) {
@@ -161,7 +204,31 @@ void* text_init(gui_state* gui) {
 
     // Set our sampler to texture unit 0 for portability
     gl_obj atlas = glGetUniformLocation(state->shader, "font_atlas");
+    state->transforms = glGetUniformLocation(state->shader, "transforms");
+    state->texcoords = glGetUniformLocation(state->shader, "texcoords");
     glUniform1i(atlas, 0);
+
+    // Upload our custom text rendering quad
+    glGenBuffers(1, &tex_quad.vbuf);
+    tex_quad.ibuf = quad.ibuf; // Re-use quad indices
+    glGenVertexArrays(1, &tex_quad.vao);
+
+    // Setup vertex buffer
+    glBindVertexArray(tex_quad.vao);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, tex_quad.ibuf);
+    glBindBuffer(GL_ARRAY_BUFFER, tex_quad.vbuf);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(tex_vertex) * tex_quad.vert_count, tex_quad.vertices, GL_STATIC_DRAW);
+
+    // Create vertex layout
+    glVertexAttribPointer(0, sizeof(vec3) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(tex_vertex), (void*)offsetof(tex_vertex, position));
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, sizeof(vec2) / sizeof(float), GL_FLOAT, GL_FALSE, sizeof(tex_vertex), (void*)offsetof(tex_vertex, texcoord));
+    glEnableVertexAttribArray(1);
+
+    // Unbind our buffers to avoid messing our state up
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     return state;
 }
@@ -191,6 +258,12 @@ void text_render(text_state* ctx) {
         LOG_MSG(error, "Allocation failed for %d 4x4 matrices!\n", num_chars);
         return;
     }
+    // First 2 coords are top-left UVs, last 2 are the bottom-right UVs.
+    vec4* texcoords = calloc(num_chars, sizeof(*texcoords));
+    if (texcoords == NULL) {
+        LOG_MSG(error, "Allocation failed for %d-element vec4 array!\n", num_chars);
+        return;
+    }
 
     // Get aspect ratio
     const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
@@ -209,6 +282,11 @@ void text_render(text_state* ctx) {
         mat4 model = {0};
         glm_mat4_identity(model);
         stbtt_aligned_quad baked_quad = {0};
+        {
+            float temp;
+            // int idx = stbtt_FindGlyphIndex(&ctx->font_info, codepoint);
+            stbtt_GetPackedQuad(ctx->packed_chars, ctx->pack_ctx.width, ctx->pack_ctx.height, idx, &temp, &temp, &baked_quad, 0);
+        }
         int left_bearing = 0;
         int width = 0;
         stbtt_GetCodepointHMetrics(&ctx->font_info, codepoint, &width, &left_bearing);
@@ -218,6 +296,10 @@ void text_render(text_state* ctx) {
         glm_scale(model, (vec3){scale, scale * aspect, scale});
         glm_rotate_x(model, glm_rad(90.0f), model);
 
+        texcoords[char_idx][0] = baked_quad.s0;
+        texcoords[char_idx][1] = baked_quad.t0;
+        texcoords[char_idx][2] = baked_quad.s1;
+        texcoords[char_idx][3] = baked_quad.t1;
         memcpy(&transforms[char_idx++], model, sizeof(model));
 
         // Advance on X by character width + character gap
@@ -225,9 +307,11 @@ void text_render(text_state* ctx) {
         // printf("U+%X\n", codepoint);
     }
 
+    // Upload transforms & render
     glUseProgram(ctx->shader);
     glBindVertexArray(tex_quad.vao);
-    glUniformMatrix4fv(glGetUniformLocation(ctx->shader, "transforms"), num_chars, GL_FALSE, (const float*)transforms);
+    glUniformMatrix4fv(ctx->transforms, num_chars, GL_FALSE, (const float*)transforms);
+    glUniform4fv(ctx->texcoords, num_chars, (const float*)texcoords);
     glDrawElementsInstanced(GL_TRIANGLES, tex_quad.idx_count, GL_UNSIGNED_SHORT, NULL, num_chars);
 
     free(transforms);

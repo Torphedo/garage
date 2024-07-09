@@ -20,42 +20,10 @@ const vertex quad_vertices[] = {
     }
 };
 
-const u16 quad_indices[] = {
-    0, 1, 2,
-    3, 0, 2,
-};
-
 model quad = {
     .vert_count = ARRAY_SIZE(quad_vertices),
     .idx_count = ARRAY_SIZE(quad_indices),
     .vertices = quad_vertices,
-    .indices = quad_indices,
-};
-
-// The same quad, but with texture coordinates instead of colors
-const tex_vertex texquad_vertices[] = {
-    {
-        .position = {QUAD_SIZE, -1.5f, QUAD_SIZE},
-        .texcoord = {1.0f, 1.0f},
-    },
-    {
-        .position = {QUAD_SIZE, -1.5f, -QUAD_SIZE},
-        .texcoord = {1.0f, 0},
-    },
-    {
-        .position = {-QUAD_SIZE, -1.5f, -QUAD_SIZE},
-        .texcoord = {0, 0},
-    },
-    {
-        .position = {-QUAD_SIZE,  -1.5f, QUAD_SIZE},
-        .texcoord = {0, 1.0f},
-    }
-};
-
-model tex_quad = {
-    .vert_count = ARRAY_SIZE(texquad_vertices),
-    .idx_count = ARRAY_SIZE(quad_indices),
-    .vertices = texquad_vertices,
     .indices = quad_indices,
 };
 
