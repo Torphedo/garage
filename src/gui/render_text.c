@@ -22,22 +22,34 @@ typedef struct {
     vec2 texcoord;
 }tex_vertex;
 
+enum {
+    TTF_TEX_WIDTH = 512,
+    TTF_TEX_HEIGHT = 560,
+    BC4_BLOCK_SIZE = 8,
+    TEXT_QUAD_SIZE = 1,
+
+    // The lower bound and size of the Unicode range we support.
+    // Unicode 0x20 - 0xFF should cover English, German, Spanish, etc.
+    FIRST_CHAR = 0x20,
+    NUM_CHAR = 0xDF,
+};
+
 // The same quad, but with texture coordinates instead of colors
 const tex_vertex texquad_vertices[] = {
     {
-        .position = {QUAD_SIZE, -1.5f, QUAD_SIZE},
+        .position = {TEXT_QUAD_SIZE, -1.5f, TEXT_QUAD_SIZE},
         .texcoord = {1.0f, 1.0f},
     },
     {
-        .position = {QUAD_SIZE, -1.5f, -QUAD_SIZE},
+        .position = {TEXT_QUAD_SIZE, -1.5f, -TEXT_QUAD_SIZE},
         .texcoord = {1.0f, 0},
     },
     {
-        .position = {-QUAD_SIZE, -1.5f, -QUAD_SIZE},
+        .position = {-TEXT_QUAD_SIZE, -1.5f, -TEXT_QUAD_SIZE},
         .texcoord = {0, 0},
     },
     {
-        .position = {-QUAD_SIZE,  -1.5f, QUAD_SIZE},
+        .position = {-TEXT_QUAD_SIZE,  -1.5f, TEXT_QUAD_SIZE},
         .texcoord = {0, 1.0f},
     }
 };
@@ -47,17 +59,6 @@ model tex_quad = {
     .idx_count = ARRAY_SIZE(quad_indices),
     .vertices = texquad_vertices,
     .indices = quad_indices,
-};
-
-enum {
-    TTF_TEX_WIDTH = 512,
-    TTF_TEX_HEIGHT = 560,
-    BC4_BLOCK_SIZE = 8,
-
-    // The lower bound and size of the Unicode range we support.
-    // Unicode 0x20 - 0xFF should cover English, German, Spanish, etc.
-    FIRST_CHAR = 0x20,
-    NUM_CHAR = 0xDF,
 };
 
 const char vert_src[] = {
@@ -238,7 +239,7 @@ void text_render(text_state* ctx) {
         return; // Avoid stupid segfaults.
     }
 
-    const char* text = "Unicöde!";
+    const char* text = "Unicöde!!";
 
     u32 total_len = 0;
     u8 char_len = 0;
@@ -269,8 +270,8 @@ void text_render(text_state* ctx) {
     const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
     const float aspect = (float)mode->width / (float)mode->height;
 
-    const float scale = 0.003f;
-    float cur_x = -1.0f + (QUAD_SIZE * scale);
+    const float scale = 0.08f;
+    float cur_x = -1.0f + (TEXT_QUAD_SIZE * scale);
     float cur_y = 0;
     u32 char_idx = 0;
     for (u32 i = 0; i < total_len; i += char_len) {
@@ -281,30 +282,38 @@ void text_render(text_state* ctx) {
         const u32 idx = codepoint - FIRST_CHAR;
         mat4 model = {0};
         glm_mat4_identity(model);
-        stbtt_aligned_quad baked_quad = {0};
+        stbtt_aligned_quad packed_quad = {0};
         {
             float temp;
-            // int idx = stbtt_FindGlyphIndex(&ctx->font_info, codepoint);
-            stbtt_GetPackedQuad(ctx->packed_chars, ctx->pack_ctx.width, ctx->pack_ctx.height, idx, &temp, &temp, &baked_quad, 0);
+            stbtt_GetPackedQuad(ctx->packed_chars, ctx->pack_ctx.width, ctx->pack_ctx.height, idx, &temp, &temp, &packed_quad, 0);
         }
         int left_bearing = 0;
         int width = 0;
         stbtt_GetCodepointHMetrics(&ctx->font_info, codepoint, &width, &left_bearing);
+        {
+            int x0, y0, x1, y1;
+            stbtt_GetCodepointBox(&ctx->font_info, codepoint, &x0, &y0, &x1, &y1);
+            width = x1 - x0;
+        }
+
         float delta_x = (float)width / (float)ctx->pack_ctx.width;
+        cur_x -= ((float)left_bearing / ctx->pack_ctx.width) * scale * 2;
+
+        LOG_MSG(debug, "%c is %d wide, %d left bearing, ", text[i], width, left_bearing);
+        printf("delta x = %f, cur_x = %f\n", delta_x, cur_x);
 
         glm_translate(model, (vec3){cur_x, 0.7f, 0.2f});
-        glm_scale(model, (vec3){scale, scale * aspect, scale});
+        glm_scale(model, (vec3){scale * delta_x, scale * aspect, scale});
         glm_rotate_x(model, glm_rad(90.0f), model);
 
-        texcoords[char_idx][0] = baked_quad.s0;
-        texcoords[char_idx][1] = baked_quad.t0;
-        texcoords[char_idx][2] = baked_quad.s1;
-        texcoords[char_idx][3] = baked_quad.t1;
+        texcoords[char_idx][0] = packed_quad.s0;
+        texcoords[char_idx][1] = packed_quad.t0;
+        texcoords[char_idx][2] = packed_quad.s1;
+        texcoords[char_idx][3] = packed_quad.t1;
         memcpy(&transforms[char_idx++], model, sizeof(model));
 
         // Advance on X by character width + character gap
-        cur_x += (delta_x * scale) + (QUAD_SIZE * 2 * scale);
-        // printf("U+%X\n", codepoint);
+        cur_x += 2 * (delta_x + ((float)left_bearing / ctx->pack_ctx.width)) * scale;
     }
 
     // Upload transforms & render
@@ -315,6 +324,7 @@ void text_render(text_state* ctx) {
     glDrawElementsInstanced(GL_TRIANGLES, tex_quad.idx_count, GL_UNSIGNED_SHORT, NULL, num_chars);
 
     free(transforms);
+    free(texcoords);
 
     // Reset state
     glBindVertexArray(0);
