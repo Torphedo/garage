@@ -51,7 +51,7 @@ model tex_quad = {
 
 enum {
     TTF_TEX_WIDTH = 512,
-    TTF_TEX_HEIGHT = 512,
+    TTF_TEX_HEIGHT = 560,
     BC4_BLOCK_SIZE = 8,
 
     // The lower bound and size of the Unicode range we support.
@@ -269,7 +269,7 @@ void text_render(text_state* ctx) {
     const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
     const float aspect = (float)mode->width / (float)mode->height;
 
-    const float scale = 0.005f;
+    const float scale = 0.003f;
     float cur_x = -1.0f + (QUAD_SIZE * scale);
     float cur_y = 0;
     u32 char_idx = 0;
