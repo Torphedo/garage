@@ -71,7 +71,6 @@ const char frag_src[] = {
 
 stbtt_packedchar packed_chars[NUM_CHAR];
 u8* ttf_data;
-u8* bc4_bitmap;
 stbtt_fontinfo font_info;
 stbtt_pack_context pack_ctx;
 
@@ -100,15 +99,11 @@ bool text_renderer_setup(const char* ttf_path) {
     float font_size = ((float)TTF_TEX_WIDTH / 8);
     stbtt_PackFontRange(&pack_ctx, ttf_data, 0, font_size, FIRST_CHAR, NUM_CHAR, packed_chars);
 
+    // BC4 is 0.5 bytes per pixel
     u32 size = (TTF_TEX_HEIGHT * TTF_TEX_WIDTH) / 2;
-    bc4_bitmap = calloc(1, size);
-    if (bc4_bitmap == NULL) {
-        LOG_MSG(error, "Failed to allocate %d bytes for font atlas\n", size);
-        stbtt_PackEnd(&pack_ctx);
-        free(ttf_data);
-        return false;
-    }
+    u8 bc4_bitmap[(TTF_TEX_HEIGHT * TTF_TEX_WIDTH) / 2] = {0};
 
+    // Compress the texture
     u32 output_pos = 0;
     for (u16 i = 0; i < TTF_TEX_HEIGHT; i += 4) { // Rows
         for (u16 j = 0; j < TTF_TEX_WIDTH; j+= 4) { // Columns
@@ -119,14 +114,14 @@ bool text_renderer_setup(const char* ttf_path) {
             }
 
             // Compress the block
-            stb_compress_bc4_block(bc4_bitmap + output_pos, bc4_in);
+            stb_compress_bc4_block((u8*)bc4_bitmap + output_pos, bc4_in);
             output_pos += BC4_BLOCK_SIZE;
         }
     }
 
     texture out = {
         .channels = 1,
-        .data = bc4_bitmap,
+        .data = (u8*)bc4_bitmap,
         .width = TTF_TEX_WIDTH,
         .height = TTF_TEX_HEIGHT,
         .compressed = true,
@@ -214,7 +209,6 @@ void text_renderer_cleanup() {
 
     stbtt_PackEnd(&pack_ctx);
     free(ttf_data);
-    free(bc4_bitmap);
 }
 
 text_state text_render_prep(const char* text, u32 len) {
