@@ -14,7 +14,7 @@
 #include <common/utf8.h>
 #include "shader.h"
 #include "primitives.h"
-#include "gui_common.h"
+#include "render_text.h"
 
 // A vertex with position and texture coordinates
 typedef struct {
@@ -34,7 +34,7 @@ enum {
     NUM_CHAR = 0xDF,
 };
 
-// The same quad, but with texture coordinates instead of colors
+// Regular quad, but with texture coordinates instead of colors
 const tex_vertex texquad_vertices[] = {
     {
         .position = {TEXT_QUAD_SIZE, -1.5f, TEXT_QUAD_SIZE},
@@ -69,79 +69,45 @@ const char frag_src[] = {
 #include "shader/text.frag.h"
 };
 
-const char* ttf_path = "ProFontIIxNerdFontPropo-Regular.ttf";
 
-typedef struct {
-    gui_state* gui;
-    u8* bc4_bitmap;
-    stbtt_packedchar* packed_chars;
-    stbtt_pack_context pack_ctx;
-    stbtt_fontinfo font_info;
-    u8* ttf_data;
+stbtt_packedchar packed_chars[NUM_CHAR];
+u8* ttf_data;
+u8* bc4_bitmap;
+stbtt_fontinfo font_info;
+stbtt_pack_context pack_ctx;
 
-    gl_obj font_atlas;
-    gl_obj shader;
+// OpenGL objects
+gl_obj font_atlas; // BC4 font atlas texture
+gl_obj shader;
+gl_obj u_transforms;
+gl_obj u_texcoords;
 
-    // Shader uniform locations
-    gl_obj transforms;
-    gl_obj texcoords;
-
-    gl_obj vao;
-}text_state;
-
-void text_destroy(text_state* ctx) {
-    if (ctx == NULL) {
-        return;
-    }
-    glDeleteProgram(ctx->shader);
-    glDeleteVertexArrays(1, &ctx->vao);
-    glDeleteTextures(1, &ctx->font_atlas);
-
-    glDeleteVertexArrays(1, &tex_quad.vao);
-    glDeleteBuffers(1, &tex_quad.vbuf);
-    // tex quad shares the regular quad's index buffer, no need to delete it
-
-    stbtt_PackEnd(&ctx->pack_ctx);
-    free(ctx->bc4_bitmap);
-    free(ctx->packed_chars);
-    free(ctx->ttf_data);
-    free(ctx);
-}
-
-void* text_init(gui_state* gui) {
-    text_state* state = calloc(1, sizeof(*state));
-    if (state == NULL) {
-        return NULL;
-    }
-    state->gui = gui;
-
+bool text_renderer_setup(const char* ttf_path) {
     if (TTF_TEX_WIDTH % 4 != 0 || TTF_TEX_HEIGHT % 4 != 0) {
         LOG_MSG(error, "Assert fail, texture size isn't a multiple of block size!\n");
-        free(state);
         return NULL;
     }
 
-    state->packed_chars = calloc(1, sizeof(*state->packed_chars) * NUM_CHAR);
-
-    state->ttf_data = file_load(ttf_path);
+    ttf_data = file_load(ttf_path);
     u8 bitmap[TTF_TEX_HEIGHT][TTF_TEX_WIDTH] = {0};
-    if (state->ttf_data == NULL) {
+    if (ttf_data == NULL) {
         LOG_MSG(error, "Failed to load TTF!\n");
-        text_destroy(state);
-        return NULL;
+        free(ttf_data);
+        return false;
     }
-    stbtt_InitFont(&state->font_info, state->ttf_data, 0);
-    stbtt_PackBegin(&state->pack_ctx, (unsigned char*)bitmap, TTF_TEX_WIDTH, TTF_TEX_HEIGHT, 0, 1, NULL);
+    stbtt_InitFont(&font_info, ttf_data, 0);
+    stbtt_PackBegin(&pack_ctx, (unsigned char*)bitmap, TTF_TEX_WIDTH, TTF_TEX_HEIGHT, 0, 1, NULL);
     // stbtt_PackSetSkipMissingCodepoints(&state->pack_ctx, true);
     float font_size = ((float)TTF_TEX_WIDTH / 8);
-    stbtt_PackFontRange(&state->pack_ctx, state->ttf_data, 0, font_size, FIRST_CHAR, NUM_CHAR, state->packed_chars);
+    stbtt_PackFontRange(&pack_ctx, ttf_data, 0, font_size, FIRST_CHAR, NUM_CHAR, packed_chars);
 
     u32 size = (TTF_TEX_HEIGHT * TTF_TEX_WIDTH) / 2;
-    state->bc4_bitmap = calloc(1, size);
-    if (state->bc4_bitmap == NULL) {
+    bc4_bitmap = calloc(1, size);
+    if (bc4_bitmap == NULL) {
         LOG_MSG(error, "Failed to allocate %d bytes for font atlas\n", size);
-        text_destroy(state);
-        return NULL;
+        stbtt_PackEnd(&pack_ctx);
+        free(ttf_data);
+        return false;
     }
 
     u32 output_pos = 0;
@@ -154,14 +120,14 @@ void* text_init(gui_state* gui) {
             }
 
             // Compress the block
-            stb_compress_bc4_block(state->bc4_bitmap + output_pos, bc4_in);
+            stb_compress_bc4_block(bc4_bitmap + output_pos, bc4_in);
             output_pos += BC4_BLOCK_SIZE;
         }
     }
 
     texture out = {
         .channels = 1,
-        .data = state->bc4_bitmap,
+        .data = bc4_bitmap,
         .width = TTF_TEX_WIDTH,
         .height = TTF_TEX_HEIGHT,
         .compressed = true,
@@ -171,10 +137,10 @@ void* text_init(gui_state* gui) {
     img_write(out, "font_atlas.dds"); // For debugging
 
     // Upload font texture
-    glGenTextures(1, &state->font_atlas);
+    glGenTextures(1, &font_atlas);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, state->font_atlas);
-    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RED_RGTC1, TTF_TEX_WIDTH, TTF_TEX_HEIGHT, 0, size, state->bc4_bitmap);
+    glBindTexture(GL_TEXTURE_2D, font_atlas);
+    glCompressedTexImage2D(GL_TEXTURE_2D, 0, GL_COMPRESSED_RED_RGTC1, TTF_TEX_WIDTH, TTF_TEX_HEIGHT, 0, size, bc4_bitmap);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glGenerateMipmap(GL_TEXTURE_2D);
 
@@ -183,30 +149,35 @@ void* text_init(gui_state* gui) {
     gl_obj frag_shader = shader_compile_src(frag_src, GL_FRAGMENT_SHADER);
     if (vert_shader == 0 || frag_shader == 0) {
         LOG_MSG(error, "Shader compilation failure!\n");
-        text_destroy(state);
+        stbtt_PackEnd(&pack_ctx);
+        free(ttf_data);
+        glDeleteTextures(1, &font_atlas);
         return NULL;
     }
 
     // Create & link final shader program
-    state->shader = glCreateProgram();
-    glAttachShader(state->shader, vert_shader);
-    glAttachShader(state->shader, frag_shader);
-    glLinkProgram(state->shader);
+    shader = glCreateProgram();
+    glAttachShader(shader, vert_shader);
+    glAttachShader(shader, frag_shader);
+    glLinkProgram(shader);
 
     // Delete individual shader objects
     glDeleteShader(vert_shader);
     glDeleteShader(frag_shader);
-    if (!shader_link_check(state->shader)) {
+    if (!shader_link_check(shader)) {
         LOG_MSG(error, "Shader linker failure!\n");
-        text_destroy(state);
+        stbtt_PackEnd(&pack_ctx);
+        free(ttf_data);
+        glDeleteTextures(1, &font_atlas);
+        glDeleteProgram(shader);
         return NULL;
     }
-    glUseProgram(state->shader); // Needed to set uniforms
+    glUseProgram(shader); // Needed to set uniforms
 
     // Set our sampler to texture unit 0 for portability
-    gl_obj atlas = glGetUniformLocation(state->shader, "font_atlas");
-    state->transforms = glGetUniformLocation(state->shader, "transforms");
-    state->texcoords = glGetUniformLocation(state->shader, "texcoords");
+    gl_obj atlas = glGetUniformLocation(shader, "font_atlas");
+    u_transforms = glGetUniformLocation(shader, "transforms");
+    u_texcoords = glGetUniformLocation(shader, "texcoords");
     glUniform1i(atlas, 0);
 
     // Upload our custom text rendering quad
@@ -231,40 +202,75 @@ void* text_init(gui_state* gui) {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    return state;
+    return true;
 }
 
-void text_render(text_state* ctx) {
-    if (ctx == NULL) {
-        return; // Avoid stupid segfaults.
+void text_renderer_cleanup() {
+    glDeleteProgram(shader);
+    glDeleteTextures(1, &font_atlas);
+
+    glDeleteVertexArrays(1, &tex_quad.vao);
+    glDeleteBuffers(1, &tex_quad.vbuf);
+    // tex quad shares the regular quad's index buffer, no need to delete it
+
+    stbtt_PackEnd(&pack_ctx);
+    free(ttf_data);
+    free(bc4_bitmap);
+}
+
+text_state text_render_prep(const char* text, u32 len) {
+    // We discard const here, but I pinky promise this is only so you can
+    // change the pointer value to NULL ;)
+    // (allows you to free the string itself, but keep rendering it)
+    text_state ctx = { .text = (char*)text };
+
+    if (len > 0) {
+        // Allows caller to override allocation size
+        ctx.num_chars = len;
+    }
+    else {
+        if (text == NULL) {
+            LOG_MSG(error, "Caller gave a NULL string with no allocation hint\n");
+            return ctx;
+        }
+        ctx.num_chars = strlen(text);
     }
 
-    // const char* text = "Unicöde!!";
-    const char* text = "trés sûr, d'étude, leçon, çÇœŒ«»€";
-    // const char* text = "éÉàÀèÈùÙâÂêÊîÎôÔûÛëËïÏüÜçÇœŒ«»€";
+    // Now that we know how many characters need drawing, we can allocate.
 
-    u32 total_len = 0;
-    u8 char_len = 0;
-    u32 num_chars = 0;
-    // Loop step is variable because of variable character size
-    for (u32 i = 0; i < strlen(text); i += char_len) {
-        // Only needed to handle the variable step
-        utf8_codepoint(&text[i], &char_len);
-        num_chars++;
-        total_len += char_len;
-    }
-    char_len = 0; // Reset for next loop
-
-    // Now that we know how many characters need drawing, we can allocate
-    mat4* transforms = calloc(num_chars, sizeof(*transforms));
-    if (transforms == NULL) {
-        LOG_MSG(error, "Allocation failed for %d 4x4 matrices!\n", num_chars);
-        return;
+    // One transform per instanced character quad
+    ctx.transforms = calloc(ctx.num_chars, sizeof(*ctx.transforms));
+    if (ctx.transforms == NULL) {
+        LOG_MSG(error, "Allocation failed for %d 4x4 matrices!\n", ctx.num_chars);
+        return ctx;
     }
     // First 2 coords are top-left UVs, last 2 are the bottom-right UVs.
-    vec4* texcoords = calloc(num_chars, sizeof(*texcoords));
-    if (texcoords == NULL) {
-        LOG_MSG(error, "Allocation failed for %d-element vec4 array!\n", num_chars);
+    ctx.texcoords = calloc(ctx.num_chars, sizeof(*ctx.texcoords));
+    if (ctx.texcoords == NULL) {
+        LOG_MSG(error, "Allocation failed for %d-element vec4 array!\n", ctx.num_chars);
+        return ctx;
+    }
+
+    // The intuitive behaviour is for length to match the provided string
+    if (len > 0) {
+        if (text == NULL) {
+            ctx.num_chars = 0;
+            return ctx;
+        }
+        else {
+            ctx.num_chars = strlen(text);
+        }
+    }
+    
+    if (text != NULL) {
+        text_update_transforms(&ctx); // Make sure caller is ready to render
+    }
+    return ctx;
+}
+
+void text_update_transforms(text_state* ctx) {
+    if (ctx->text == NULL) {
+        LOG_MSG(warning, "Someone asked for a text update, but there's nothing to update to... [ignored]\n");
         return;
     }
 
@@ -276,78 +282,76 @@ void text_render(text_state* ctx) {
     float cur_x = -1.0f + (TEXT_QUAD_SIZE * scale);
     float cur_y = 0;
     u32 char_idx = 0;
-    for (u32 i = 0; i < total_len; i += char_len) {
-        u32 codepoint = utf8_codepoint(&text[i], &char_len);
+    u8 char_len = 0;
+    for (u32 i = 0; i < strlen(ctx->text); i += char_len) {
+        u32 codepoint = utf8_codepoint(&ctx->text[i], &char_len);
         if (FIRST_CHAR > codepoint || codepoint > (FIRST_CHAR + NUM_CHAR)) {
             // This is outside the Unicode range we cover, replace it w/
             // a control character that renders as a box.
             codepoint = 0x81;
         }
         const u32 idx = codepoint - FIRST_CHAR;
-        mat4 model = {0};
-        glm_mat4_identity(model);
+        // Find out the character's texture coords & put them in the array
         stbtt_aligned_quad packed_quad = {0};
         {
+            // This function requires a valid float output address, even though I don't need that output.
             float temp;
-            stbtt_GetPackedQuad(ctx->packed_chars, ctx->pack_ctx.width, ctx->pack_ctx.height, idx, &temp, &temp, &packed_quad, 0);
+            stbtt_GetPackedQuad(packed_chars, pack_ctx.width, pack_ctx.height, idx, &temp, &temp, &packed_quad, 0);
         }
+        mat4 model = {0};
+        glm_mat4_identity(model);
         float left_bearing = 0;
         float width = 0;
         float height = 0;
         float start_height = 0;
         {
             // Get left bearing
-            int i_width, i_left;
-            stbtt_GetCodepointHMetrics(&ctx->font_info, codepoint, &i_width, &i_left);
-            left_bearing = (float)i_left / ctx->pack_ctx.width;
+            int i_width, i_left; // The "i" is for "integer".
+            stbtt_GetCodepointHMetrics(&font_info, codepoint, &i_width, &i_left);
+            left_bearing = (float)i_left / pack_ctx.width;
 
             // Get width/height
             int x0, y0, x1, y1;
-            stbtt_GetCodepointBox(&ctx->font_info, codepoint, &x0, &y0, &x1, &y1);
-            width = (float)(x1 - x0) / ctx->pack_ctx.width;
-            height = (float)(y1 - y0) / ctx->pack_ctx.height;
-            start_height = (float)y0 / ctx->pack_ctx.height;
+            stbtt_GetCodepointBox(&font_info, codepoint, &x0, &y0, &x1, &y1);
+            width = (float)(x1 - x0) / pack_ctx.width;
+            height = (float)(y1 - y0) / pack_ctx.height;
+            start_height = (float)y0 / pack_ctx.height; // Offset from baseline
         }
 
         float delta_x = width;
+        // Scoots thin characters back by the appropriate amount
         cur_x -= left_bearing * scale * 2;
 
         // LOG_MSG(debug, "%c is %f wide, %f left bearing, ", text[i], width, left_bearing);
         // printf("delta x = %f, cur_x = %f\n", delta_x, cur_x);
 
+        // Apply our transforms for this character
         glm_translate(model, (vec3){cur_x, 0.7f - ((1.0f - height - (start_height * 2)) * 2 * scale), 0.2f});
         glm_scale(model, (vec3){scale * delta_x, scale * aspect * height, scale});
-        glm_rotate_x(model, glm_rad(90.0f), model);
+        glm_rotate_x(model, glm_rad(90.0f), model); // Face quad towards camera
+        memcpy(&ctx->transforms[char_idx], model, sizeof(model));
 
-        texcoords[char_idx][0] = packed_quad.s0;
-        texcoords[char_idx][1] = packed_quad.t0;
-        texcoords[char_idx][2] = packed_quad.s1;
-        texcoords[char_idx][3] = packed_quad.t1;
-        memcpy(&transforms[char_idx++], model, sizeof(model));
+        ctx->texcoords[char_idx][0] = packed_quad.s0; // Upper-left texcoord
+        ctx->texcoords[char_idx][1] = packed_quad.t0;
+        ctx->texcoords[char_idx][2] = packed_quad.s1; // Bottom-right texcoord
+        ctx->texcoords[char_idx][3] = packed_quad.t1;
+        char_idx++;
 
-        // Advance on X by character width + character gap
+        // Advance on X by character width (* 2 because that's distance from center)
         cur_x += 2 * (delta_x + left_bearing + 0.2f) * scale;
     }
+}
 
+void text_render(text_state ctx) {
     // Upload transforms & render
-    glUseProgram(ctx->shader);
+    glUseProgram(shader);
     glBindVertexArray(tex_quad.vao);
-    glUniformMatrix4fv(ctx->transforms, num_chars, GL_FALSE, (const float*)transforms);
-    glUniform4fv(ctx->texcoords, num_chars, (const float*)texcoords);
-    glDrawElementsInstanced(GL_TRIANGLES, tex_quad.idx_count, GL_UNSIGNED_SHORT, NULL, num_chars);
-
-    free(transforms);
-    free(texcoords);
+    glUniformMatrix4fv(u_transforms, ctx.num_chars, GL_FALSE, (const float*)ctx.transforms);
+    glUniform4fv(u_texcoords, ctx.num_chars, (const float*)ctx.texcoords);
+    glDrawElementsInstanced(GL_TRIANGLES, tex_quad.idx_count, GL_UNSIGNED_SHORT, NULL, ctx.num_chars);
 
     // Reset state
     glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
-
-typedef void (*renderproc)(void*);
-renderer text = {
-    text_init,
-    (renderproc)text_render,
-    (renderproc)text_destroy,
-};
 

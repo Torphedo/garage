@@ -53,7 +53,15 @@ int main(int argc, char** argv) {
     }
     void* garage_ctx = garage.init(&gui);
     void* dbg_ctx = dbg_view.init(&gui);
-    void* txt_ctx = text.init(&gui);
+    if (!text_renderer_setup("ProFontIIxNerdFontPropo-Regular.ttf")) {
+        LOG_MSG(error, "Couldn't setup text renderer\n");
+        return 1;
+    }
+    // const char* text = "Unicöde!!";
+    char text[] = "trés sûr, d'étude, leçon, çÇœŒ«»€";
+    // const char* text = "éÉàÀèÈùÙâÂêÊîÎôÔûÛëËïÏüÜçÇœŒ«»€";
+
+    text_state french_sample = text_render_prep(text, 0);
 
     double one_frame_ago = glfwGetTime(); // Used to calculate delta time
     double two_frames_ago = glfwGetTime();
@@ -83,7 +91,10 @@ int main(int argc, char** argv) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         garage.render(garage_ctx);
         dbg_view.render(dbg_ctx);
-        text.render(txt_ctx);
+
+        text_update_transforms(&french_sample);
+        text_render(french_sample);
+
         glfwSwapBuffers(window); // Framebuffer swap won't happen until vsync
         glFinish(); // Wait for vsync before going to the next line
 
@@ -120,7 +131,7 @@ int main(int argc, char** argv) {
     // Cleanup
     garage.destroy(garage_ctx);
     dbg_view.destroy(dbg_ctx);
-    text.destroy(txt_ctx);
+    text_renderer_cleanup();
     gui_teardown(&gui);
     glfwTerminate(); // Auto-closes the window if we exited via the quit button
 
