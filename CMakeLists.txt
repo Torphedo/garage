@@ -61,7 +61,6 @@ add_executable(garage
     src/parts.c
     src/stfs.c
 
-    ext/stb_rect_pack.c
     ext/stb_dxt.c
     ext/stb_truetype.c
 )

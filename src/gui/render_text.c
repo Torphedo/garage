@@ -1,10 +1,9 @@
 #include <stddef.h>
-#include <stdio.h>
 #include <memory.h>
 #include <malloc.h>
+#include <string.h>
 
 #include <glad/glad.h>
-#include <stb_rect_pack.h>
 #include <stb_truetype.h>
 #include <stb_dxt.h>
 
@@ -24,7 +23,7 @@ typedef struct {
 
 enum {
     TTF_TEX_WIDTH = 512,
-    TTF_TEX_HEIGHT = 560,
+    TTF_TEX_HEIGHT = 512,
     BC4_BLOCK_SIZE = 8,
     TEXT_QUAD_SIZE = 1,
 
