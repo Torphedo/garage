@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 
 #include <glad/glad.h>
@@ -44,6 +45,8 @@ int main(int argc, char** argv) {
     if (window == NULL) {
         return 1;
     }
+    // TODO: VSync seems to cause framerate drops when CPU-bottlenecked...
+    // maybe just use a regular framerate limit (sleep in the extra time)?
     set_vsync(gui.vsync);
 
     // Prepare for rendering
@@ -57,15 +60,13 @@ int main(int argc, char** argv) {
         LOG_MSG(error, "Couldn't setup text renderer\n");
         return 1;
     }
-    // const char* text = "Unicöde!!";
-    char text[] = "trés sûr, d'étude, leçon, çÇœŒ«»€";
-    // const char* text = "éÉàÀèÈùÙâÂêÊîÎôÔûÛëËïÏüÜçÇœŒ«»€";
 
-    text_state french_sample = text_render_prep(text, 0);
+    char fps_text[32] = {0};
+    text_state fps_display = text_render_prep(fps_text, sizeof(fps_text));
 
     double one_frame_ago = glfwGetTime(); // Used to calculate delta time
     double two_frames_ago = glfwGetTime();
-    float frame_times[10] = {0};
+    float frame_times[10] = {0}; // For averaging frame times
 
     // Main loop for rendering, UI, etc.
     while (!glfwWindowShouldClose(window)) {
@@ -92,8 +93,11 @@ int main(int argc, char** argv) {
         garage.render(garage_ctx);
         dbg_view.render(dbg_ctx);
 
-        text_update_transforms(&french_sample);
-        text_render(french_sample);
+        // Update FPS counter 4 times a second
+        if (fmod(one_frame_ago, 0.25) < 0.01) {
+            text_update_transforms(&fps_display);
+        }
+        text_render(fps_display);
 
         glfwSwapBuffers(window); // Framebuffer swap won't happen until vsync
         glFinish(); // Wait for vsync before going to the next line
@@ -101,19 +105,17 @@ int main(int argc, char** argv) {
         // Update the last frame's input to this frame's input
         gui.prev_input = input;
 
-
         // Calculate framerate from average frame time
         float avg_time = 0.0f;
         for (u8 i = 0; i < ARRAY_SIZE(frame_times); i++) {
             avg_time += frame_times[i];
         }
         avg_time /= ARRAY_SIZE(frame_times);
+        const float framerate = 1.0f / avg_time;
+        const float time_ms = avg_time * 1000;
 
-        // Print debug info about this frame
-        LOG_MSG(debug, "Last frame: %.3lfms\n", avg_time * 1000.0);
-        LOG_MSG(debug, "FPS: %.1f\n", 1.0 / avg_time);
-        // Erase the last 2 lines, so we can make it look like they constantly update in-place.
-        printf("\033[1F\033[K\033[1F\033[K");
+        // Update FPS text (to be rendered next frame)
+        snprintf(fps_text, sizeof(fps_text), "FPS: %.0f [%.2fms]", framerate, time_ms);
         // End frame
     }
 

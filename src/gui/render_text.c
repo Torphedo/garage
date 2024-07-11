@@ -68,7 +68,6 @@ const char frag_src[] = {
 #include "shader/text.frag.h"
 };
 
-
 stbtt_packedchar packed_chars[NUM_CHAR];
 u8* ttf_data;
 stbtt_fontinfo font_info;
@@ -266,6 +265,7 @@ void text_update_transforms(text_state* ctx) {
         LOG_MSG(warning, "Someone asked for a text update, but there's nothing to update to... [ignored]\n");
         return;
     }
+    ctx->num_chars = strlen(ctx->text);
 
     // Get aspect ratio
     const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
@@ -276,7 +276,7 @@ void text_update_transforms(text_state* ctx) {
     float cur_y = 0;
     u32 char_idx = 0;
     u8 char_len = 0;
-    for (u32 i = 0; i < strlen(ctx->text); i += char_len) {
+    for (u32 i = 0; i < ctx->num_chars; i += char_len) {
         u32 codepoint = utf8_codepoint(&ctx->text[i], &char_len);
         if (FIRST_CHAR > codepoint || codepoint > (FIRST_CHAR + NUM_CHAR)) {
             // This is outside the Unicode range we cover, replace it w/
