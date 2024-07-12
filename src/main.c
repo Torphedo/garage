@@ -45,8 +45,6 @@ int main(int argc, char** argv) {
     if (window == NULL) {
         return 1;
     }
-    // TODO: VSync seems to cause framerate drops when CPU-bottlenecked...
-    // maybe just use a regular framerate limit (sleep in the extra time)?
     set_vsync(gui.vsync);
 
     // Prepare for rendering
@@ -99,8 +97,8 @@ int main(int argc, char** argv) {
         }
         text_render(fps_display);
 
-        glfwSwapBuffers(window); // Framebuffer swap won't happen until vsync
-        glFinish(); // Wait for vsync before going to the next line
+        // If VSync is on, this will wait for the next screen refresh.
+        glfwSwapBuffers(window);
 
         // Update the last frame's input to this frame's input
         gui.prev_input = input;
