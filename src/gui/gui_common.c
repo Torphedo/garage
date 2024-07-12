@@ -124,7 +124,7 @@ void update_edit_mode(gui_state* gui) {
         for (u16 i = 0; i < gui->v->head.part_count; i++) {
             if (gui->v->parts[i].selected) {
                 // vehicle_move_part() returns false when a part moves out of bounds
-                vehicle_adjusted |= vehicle_move_part(gui->v, i, diff);
+                vehicle_adjusted &= vehicle_move_part(gui->v, i, diff);
                 update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
 
                 // Check for overlaps and block the placement if needed
@@ -144,41 +144,34 @@ void update_edit_mode(gui_state* gui) {
         gui->sel_box.z -= diff.z * vehicle_adjusted;
     }
 
-    // Handle user trying to select a part (unless the selection is bad).
-    if (input.e && !gui->prev_input.e && gui->sel_mode != SEL_BAD) {
-        // If it's out of bounds, we can just ignore this.
-        if (gui->sel_box.x >= 0 && gui->sel_box.y >= 0 && gui->sel_box.z >= 0) {
-            // Convert to vec3s8
-            vec3s8 pos = {gui->sel_box.x, gui->sel_box.y, gui->sel_box.z};
-            part_entry *p = part_by_pos(gui->v, pos);
-            if (p == NULL) {
-                return;
-            }
+    // Keep selection box in bounds
+    gui->sel_box.x = CLAMP(0, gui->sel_box.x, 127);
+    gui->sel_box.y = CLAMP(0, gui->sel_box.y, 127);
+    gui->sel_box.z = CLAMP(0, gui->sel_box.z, 127);
 
+    // Handle user trying to select a part (unless the selection has overlaps).
+    if (input.e && !gui->prev_input.e && gui->sel_mode != SEL_BAD) {
+        // Convert to vec3s8
+        vec3s8 pos = {gui->sel_box.x, gui->sel_box.y, gui->sel_box.z};
+        part_entry *p = part_by_pos(gui->v, pos);
+        if (gui->sel_mode == SEL_ACTIVE) {
+            // User pressed the button while moving parts, which means
+            // we should put them down.
+            vehicle_unselect_all(gui->v);
+            update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
+            gui->sel_mode = SEL_NONE; // Now you can start moving the parts
+        }
+        else if (p != NULL) {
             if (p->selected) {
-                switch (gui->sel_mode) {
-                case SEL_ACTIVE:
-                    // User pressed the button while moving parts, which means
-                    // we should put them down.
-                    vehicle_unselect_all(gui->v);
-                    update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
-                    gui->sel_mode = SEL_NONE; // Now you can start moving the parts
-                    break;
-                case SEL_BAD:
-                    // User tried to place overlapping parts. Ignore.
-                    break;
-                case SEL_NONE:
-                    // User pressed the button while selecting parts on an
-                    // already-selected part, which means they want to start moving them.
-                    gui->sel_mode = SEL_ACTIVE;
-                    update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
-                }
-            } else if (p != NULL) {
+                // User pressed the button while selecting parts on an
+                // already-selected part, which means they want to start moving them.
+                gui->sel_mode = SEL_ACTIVE;
+                update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
+            }
+            else {
                 // Select the part (if it exists)
-                if (p != NULL) {
-                    p->selected = true;
-                    gui->sel_mode = SEL_NONE;
-                }
+                p->selected = true;
+                gui->sel_mode = SEL_NONE;
             }
         }
     }
