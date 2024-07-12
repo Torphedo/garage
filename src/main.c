@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    char fps_text[32] = {0};
+    char fps_text[32] = "FPS: 0 [0.00ms]";
     text_state fps_display = text_render_prep(fps_text, sizeof(fps_text));
 
     double one_frame_ago = glfwGetTime(); // Used to calculate delta time
@@ -129,6 +129,7 @@ int main(int argc, char** argv) {
     }
 
     // Cleanup
+    text_free(fps_display);
     garage.destroy(garage_ctx);
     dbg_view.destroy(dbg_ctx);
     text_renderer_cleanup();
@@ -137,3 +138,4 @@ int main(int argc, char** argv) {
 
     return 0;
 }
+

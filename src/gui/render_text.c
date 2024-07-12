@@ -348,3 +348,8 @@ void text_render(text_state ctx) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
+void text_free(text_state ctx) {
+    free(ctx.transforms);
+    free(ctx.texcoords);
+}
+

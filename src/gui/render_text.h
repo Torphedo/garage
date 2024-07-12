@@ -43,5 +43,9 @@ void text_update_transforms(text_state* ctx);
 // buffer, set it to NULL in the struct, then keep rendering it.
 void text_render(text_state ctx);
 
+// Frees all internal buffers in [ctx]
+// (text pointer isn't freed, because it could be on the stack)
+void text_free(text_state ctx);
+
 #endif // RENDER_TEXT_H
 
