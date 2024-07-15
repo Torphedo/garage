@@ -25,7 +25,6 @@ enum {
     TTF_TEX_WIDTH = 512,
     TTF_TEX_HEIGHT = 512,
     BC4_BLOCK_SIZE = 8,
-    TEXT_QUAD_SIZE = 1,
 
     // The lower bound and size of the Unicode range we support.
     // Unicode 0x20 - 0xFF should cover English, German, Spanish, etc.
@@ -36,19 +35,19 @@ enum {
 // Regular quad, but with texture coordinates instead of colors
 const tex_vertex texquad_vertices[] = {
     {
-        .position = {TEXT_QUAD_SIZE, -1.5f, TEXT_QUAD_SIZE},
+        .position = {0.5f, -1.5f, 0.5f},
         .texcoord = {1.0f, 1.0f},
     },
     {
-        .position = {TEXT_QUAD_SIZE, -1.5f, -TEXT_QUAD_SIZE},
+        .position = {0.5f, -1.5f, -0.5f},
         .texcoord = {1.0f, 0},
     },
     {
-        .position = {-TEXT_QUAD_SIZE, -1.5f, -TEXT_QUAD_SIZE},
+        .position = {-0.5f, -1.5f, -0.5f},
         .texcoord = {0, 0},
     },
     {
-        .position = {-TEXT_QUAD_SIZE,  -1.5f, TEXT_QUAD_SIZE},
+        .position = {-0.5f,  -1.5f, 0.5f},
         .texcoord = {0, 1.0f},
     }
 };
@@ -210,11 +209,12 @@ void text_renderer_cleanup() {
     free(ttf_data);
 }
 
-text_state text_render_prep(const char* text, u32 len) {
+text_state text_render_prep(const char* text, u32 len, float scale, vec2 pos) {
+    // Copy arguments into struct.
     // We discard const here, but I pinky promise this is only so you can
     // change the pointer value to NULL ;)
     // (allows you to free the string itself, but keep rendering it)
-    text_state ctx = { .text = (char*)text };
+    text_state ctx = { .text = (char*)text, .scale = scale, .pos[0] = pos[0], .pos[1] = pos[1], };
 
     if (len > 0) {
         // Allows caller to override allocation size
@@ -271,9 +271,9 @@ void text_update_transforms(text_state* ctx) {
     const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
     const float aspect = (float)mode->width / (float)mode->height;
 
-    const float scale = 0.03f;
-    float cur_x = -1.0f + (TEXT_QUAD_SIZE * scale);
-    float cur_y = 0;
+    const float scale = ctx->scale;
+    float cur_x = ctx->pos[0];
+    float cur_y = ctx->pos[1];
     u32 char_idx = 0;
     u8 char_len = 0;
     for (u32 i = 0; i < ctx->num_chars; i += char_len) {
@@ -297,11 +297,17 @@ void text_update_transforms(text_state* ctx) {
         float width = 0;
         float height = 0;
         float start_height = 0;
+        float line_height = 0;
+        float ascent = 0;
         {
             // Get left bearing
             int i_width, i_left; // The "i" is for "integer".
+            int i_ascent, i_descent, line_gap;
             stbtt_GetCodepointHMetrics(&font_info, codepoint, &i_width, &i_left);
+            stbtt_GetFontVMetrics(&font_info, &i_ascent, &i_descent, &line_gap);
             left_bearing = (float)i_left / pack_ctx.width;
+            line_height = (float)(i_ascent - i_descent) / pack_ctx.height;
+            ascent = (float)i_ascent / pack_ctx.height;
 
             // Get width/height
             int x0, y0, x1, y1;
@@ -311,16 +317,27 @@ void text_update_transforms(text_state* ctx) {
             start_height = (float)y0 / pack_ctx.height; // Offset from baseline
         }
 
-        float delta_x = width;
-        // Scoots thin characters back by the appropriate amount
-        cur_x -= left_bearing * scale * 2;
+        float delta_x = (width + left_bearing + 0.25f);
 
-        // LOG_MSG(debug, "%c is %f wide, %f left bearing, ", text[i], width, left_bearing);
-        // printf("delta x = %f, cur_x = %f\n", delta_x, cur_x);
+        // Since quad origin is the middle, first character needs to advance
+        // by half the quad width so its left edge matches the intended position.
+        if (i == 0) {
+            delta_x /= 2;
+        }
+        // Advance on X by character width
+        cur_x += delta_x * scale;
 
         // Apply our transforms for this character
-        glm_translate(model, (vec3){cur_x, 0.7f - ((1.0f - height - (start_height * 2)) * 2 * scale), 0.2f});
-        glm_scale(model, (vec3){scale * delta_x, scale * aspect * height, scale});
+        vec3 pos_diff = {
+            cur_x,
+            // Origin is top-left, so we go down by line height to be at the
+            // baseline. Then go down by the amount of empty space between the
+            // line top and character top, and go back up by the offset from baseline.
+            cur_y - ((line_height - start_height + (ascent - height)) * scale),
+            0, // No depth needed
+        };
+        glm_translate(model, pos_diff);
+        glm_scale(model, (vec3){scale * width, scale * aspect * height, scale});
         glm_rotate_x(model, glm_rad(90.0f), model); // Face quad towards camera
         memcpy(&ctx->transforms[char_idx], model, sizeof(model));
 
@@ -328,10 +345,8 @@ void text_update_transforms(text_state* ctx) {
         ctx->texcoords[char_idx][1] = packed_quad.t0;
         ctx->texcoords[char_idx][2] = packed_quad.s1; // Bottom-right texcoord
         ctx->texcoords[char_idx][3] = packed_quad.t1;
-        char_idx++;
 
-        // Advance on X by character width (* 2 because that's distance from center)
-        cur_x += 2 * (delta_x + left_bearing + 0.2f) * scale;
+        char_idx++;
     }
 }
 

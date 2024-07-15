@@ -6,9 +6,11 @@
 
 // All the information needed to render a text buffer (Please treat as opaque)
 typedef struct {
-    mat4* transforms;
-    vec4* texcoords;
+    mat4* transforms; // 3D transform of each character's quad
+    vec4* texcoords;  // Top-left & bottom right UVs of each character's quad
     u32 num_chars;
+    float scale; // Text scale
+    vec2 pos;    // X/Y pos of the first character
     char* text;
 }text_state;
 
@@ -29,7 +31,9 @@ void text_renderer_cleanup();
 // [text] is the text buffer used to update the transforms.
 // You can pass in a NULL pointer, as long as you give an allocation hint.
 // (but this means text_update_transforms() won't be called)
-text_state text_render_prep(const char* text, u32 len);
+//
+// [scale] is the font size, & [pos] is the 2D position of the first character
+text_state text_render_prep(const char* text, u32 len, float scale, vec2 pos);
 
 // Uses the UTF-8 in the text pointer to update the transforms and texture
 // coordinates for each character. Call this if the pointer or string contents
