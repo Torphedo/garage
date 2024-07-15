@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
     }
 
     char fps_text[32] = "FPS: 0 [0.00ms]";
-    text_state fps_display = text_render_prep(fps_text, sizeof(fps_text), 0.06, (vec2){-1, 1});
+    text_state fps_display = text_render_prep(fps_text, sizeof(fps_text), 0.03f, (vec2){-1, 1});
 
     double one_frame_ago = glfwGetTime(); // Used to calculate delta time
     double two_frames_ago = glfwGetTime();

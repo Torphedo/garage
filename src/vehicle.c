@@ -240,13 +240,40 @@ bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
     return needed_readjustment;
 }
 
-part_entry* part_by_pos(vehicle* v, vec3s8 pos) {
+part_entry* part_by_pos(vehicle* v, vec3s8 target) {
     // Linearly search for the part
     for (u16 i = 0; i < v->head.part_count; i++) {
         part_entry* p = &v->parts[i]; // Just a shortcut
-        if (vec3s8_eq(p->pos, pos)) {
-            return p;
+        // A part's max width is 8, so anything farther away can't be a match
+        if (abs(p->pos.x - target.x) > 8 || 
+            abs(p->pos.y - target.y) > 8 || 
+            abs(p->pos.z - target.z) > 8) {
+            break;
+        }
+
+        // Loop over every cell this part occupies
+        part_info part = part_get_info(p->id);
+        while (1) {
+            // Array has relative positions, we need to add them to part origin
+            vec3s8 cell = {
+                p->pos.x + part.relative_occupation->x,
+                p->pos.y + part.relative_occupation->y,
+                p->pos.z + part.relative_occupation->z,
+            };
+
+            if (vec3s8_eq(cell, target)) {
+                // Found it!
+                return p;
+            }
+
+            // Move on when we find the final entry (all zeroes, the origin)
+            if (vec3s8_eq(*part.relative_occupation, (vec3s8){})) {
+                break;
+            }
+            part.relative_occupation++; // Go to next entry
         }
     }
+
+    // Nothing here...
     return NULL;
 }

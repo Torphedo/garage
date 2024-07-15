@@ -65,7 +65,7 @@ vec3s vehicle_find_center(vehicle* v);
 
 // Look up a part by its origin position.
 // Returns NULL if no part is found, so always check the result!
-part_entry* part_by_pos(vehicle* v, vec3s8 pos);
+part_entry* part_by_pos(vehicle* v, vec3s8 target);
 
 // Everything after this point involves runtime data structures for the editor.
 // If you're using this header to write your own program, the rest won't be
