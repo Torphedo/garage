@@ -332,8 +332,8 @@ void text_update_transforms(text_state* ctx) {
             cur_x,
             // Origin is top-left, so we go down by line height to be at the
             // baseline. Then go down by the amount of empty space between the
-            // line top and character top, and go back up by the offset from baseline.
-            cur_y - ((line_height - start_height + (ascent - height)) * scale),
+            // line top and character top, and go back up by double the offset from baseline.
+            cur_y - ((line_height - (start_height * 2) + (ascent - height)) * scale),
             0, // No depth needed
         };
         glm_translate(model, pos_diff);
