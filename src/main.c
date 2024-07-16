@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
     }
     void* garage_ctx = garage.init(&gui);
     void* dbg_ctx = dbg_view.init(&gui);
-    if (!text_renderer_setup("ProFontIIxNerdFontPropo-Regular.ttf")) {
+    if (!text_renderer_setup("bin/ProFontIIxNerdFontPropo-Regular.ttf")) {
         LOG_MSG(error, "Couldn't setup text renderer\n");
         return 1;
     }
