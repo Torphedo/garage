@@ -49,6 +49,7 @@ add_executable(garage
     src/gui/render_garage.c
     src/gui/render_debug.c
     src/gui/render_text.c
+    src/gui/render_user.c
     src/gui/gui_common.c
     src/gui/primitives.c
 

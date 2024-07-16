@@ -11,6 +11,7 @@
 #include "gui/render_garage.h"
 #include "gui/render_debug.h"
 #include "gui/render_text.h"
+#include "gui/render_user.h"
 #include "gui/input.h"
 #include "gui/gui_common.h"
 
@@ -52,12 +53,14 @@ int main(int argc, char** argv) {
     if (!gui_init(&gui)) {
         return 1;
     }
-    void* garage_ctx = garage.init(&gui);
-    void* dbg_ctx = dbg_view.init(&gui);
     if (!text_renderer_setup("bin/ProFontIIxNerdFontPropo-Regular.ttf")) {
         LOG_MSG(error, "Couldn't setup text renderer\n");
         return 1;
     }
+
+    void* garage_ctx = garage.init(&gui);
+    void* dbg_ctx = dbg_view.init(&gui);
+    void* ui_ctx = ui.init(&gui);
 
     char fps_text[32] = "FPS: 0 [0.00ms]";
     text_state fps_display = text_render_prep(fps_text, sizeof(fps_text), 0.03f, (vec2){-1, 1});
@@ -90,6 +93,7 @@ int main(int argc, char** argv) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         garage.render(garage_ctx);
         dbg_view.render(dbg_ctx);
+        ui.render(ui_ctx);
 
         // Update FPS counter 4 times a second
         if (fmod(one_frame_ago, 0.25) < 0.01) {
@@ -132,6 +136,8 @@ int main(int argc, char** argv) {
     text_free(fps_display);
     garage.destroy(garage_ctx);
     dbg_view.destroy(dbg_ctx);
+    ui.destroy(ui_ctx);
+
     text_renderer_cleanup();
     gui_teardown(&gui);
     glfwTerminate(); // Auto-closes the window if we exited via the quit button
