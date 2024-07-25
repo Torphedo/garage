@@ -12,8 +12,8 @@ include_directories("src" "ext/glfw/include" "ext/glad/include" "ext/cglm/includ
 add_executable(txt2h "ext/txt2h.c")
 
 set(GLSL_SOURCES
-    src/gui/shader/fragment.glsl
-    src/gui/shader/vertex.glsl
+    src/gui/shader/vcolor.frag
+    src/gui/shader/vcolor.vert
     src/gui/shader/text.vert
     src/gui/shader/text.frag
 )

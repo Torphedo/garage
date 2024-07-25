@@ -13,11 +13,11 @@
 #include "gl_setup.h"
 
 const char* frag = {
-#include "shader/fragment.glsl.h"
+#include "shader/vcolor.frag.h"
 };
 
 const char* vert = {
-#include "shader/vertex.glsl.h"
+#include "shader/vcolor.vert.h"
 };
 
 // This doesn't enforce what the bound VAO is... make sure to only call it with
