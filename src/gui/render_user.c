@@ -1,7 +1,5 @@
-#include <glad/glad.h>
 #include <string.h>
 
-#include <common/logging.h>
 #include "parts.h"
 #include "gui_common.h"
 #include "render_text.h"

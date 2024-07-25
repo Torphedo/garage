@@ -39,6 +39,9 @@ void program_print_log(gl_obj shader) {
 
 // Linker error checking
 bool shader_link_check(gl_obj shader) {
+    if (shader == 0) {
+        return false;
+    }
     s32 link_success = 0;
     glGetProgramiv(shader, GL_LINK_STATUS, &link_success);
     if (link_success) {
@@ -48,6 +51,41 @@ bool shader_link_check(gl_obj shader) {
     program_print_log(shader);
 
     return false;
+}
+
+gl_obj program_compile_src(const char* vert_src, const char* frag_src) {
+    // Compile shaders
+    gl_obj vertex_shader = shader_compile_src(vert_src, GL_VERTEX_SHADER);
+    gl_obj fragment_shader = shader_compile_src(frag_src, GL_FRAGMENT_SHADER);
+    if (vertex_shader == 0 || fragment_shader == 0) {
+        LOG_MSG(error, "Failed to compile shaders\n");
+        return 0;
+    }
+    gl_obj program = glCreateProgram();
+    glAttachShader(program, vertex_shader);
+    glAttachShader(program, fragment_shader);
+    glLinkProgram(program);
+
+    // Free the shader objects
+    glDeleteShader(vertex_shader);
+    glDeleteShader(fragment_shader);
+
+    return program;
+}
+
+gl_obj program_compile(const char* vert_path, const char* frag_path) {
+    const char* vert_src = (char*)file_load(vert_path);
+    if (vert_src == NULL) {
+        LOG_MSG(error, "Failed to read vertex shader file %s\n", vert_path);
+        return 0;
+    }
+    const char* frag_src = (char*)file_load(frag_path);
+    if (frag_src == NULL) {
+        LOG_MSG(error, "Failed to read fragment shader file %s\n", frag_path);
+        return 0;
+    }
+
+    return program_compile_src(vert_src, frag_src);
 }
 
 gl_obj shader_compile_src(const char* src, GLenum shader_type) {

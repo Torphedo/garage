@@ -233,25 +233,10 @@ bool gui_init(gui_state* gui) {
     // Initialize part bitmask
     update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
 
-    // Compile shaders
-    gl_obj vertex_shader = shader_compile_src(vert, GL_VERTEX_SHADER);
-    gl_obj fragment_shader = shader_compile_src(frag, GL_FRAGMENT_SHADER);
-    if (vertex_shader == 0 || fragment_shader == 0) {
-        LOG_MSG(error, "Failed to compile shaders\n");
-        return false;
-    }
-    gui->vcolor_shader = glCreateProgram();
-    glAttachShader(gui->vcolor_shader, vertex_shader);
-    glAttachShader(gui->vcolor_shader, fragment_shader);
-    glLinkProgram(gui->vcolor_shader);
-
+    gui->vcolor_shader = program_compile_src(vert, frag);
     if (!shader_link_check(gui->vcolor_shader)) {
         return false;
     }
-
-    // Free the shader objects
-    glDeleteShader(vertex_shader);
-    glDeleteShader(fragment_shader);
 
     // Get our uniform locations
     gui->u_pvm = glGetUniformLocation(gui->vcolor_shader, "pvm");

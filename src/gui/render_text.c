@@ -1,6 +1,4 @@
 #include <stddef.h>
-#include <memory.h>
-#include <malloc.h>
 #include <string.h>
 
 #include <glad/glad.h>
@@ -67,6 +65,7 @@ const char frag_src[] = {
 #include "shader/text.frag.h"
 };
 
+bool initialized = false;
 stbtt_packedchar packed_chars[NUM_CHAR];
 u8* ttf_data;
 stbtt_fontinfo font_info;
@@ -137,25 +136,9 @@ bool text_renderer_setup(const char* ttf_path) {
     glGenerateMipmap(GL_TEXTURE_2D);
 
     // Compile shaders
-    gl_obj vert_shader = shader_compile_src(vert_src, GL_VERTEX_SHADER);
-    gl_obj frag_shader = shader_compile_src(frag_src, GL_FRAGMENT_SHADER);
-    if (vert_shader == 0 || frag_shader == 0) {
-        LOG_MSG(error, "Shader compilation failure!\n");
-        stbtt_PackEnd(&pack_ctx);
-        free(ttf_data);
-        glDeleteTextures(1, &font_atlas);
-        return NULL;
-    }
-
-    // Create & link final shader program
-    shader = glCreateProgram();
-    glAttachShader(shader, vert_shader);
-    glAttachShader(shader, frag_shader);
-    glLinkProgram(shader);
+    shader = program_compile_src(vert_src, frag_src);
 
     // Delete individual shader objects
-    glDeleteShader(vert_shader);
-    glDeleteShader(frag_shader);
     if (!shader_link_check(shader)) {
         LOG_MSG(error, "Shader linker failure!\n");
         stbtt_PackEnd(&pack_ctx);
@@ -194,6 +177,7 @@ bool text_renderer_setup(const char* ttf_path) {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
+    initialized = true;
     return true;
 }
 
@@ -210,9 +194,14 @@ void text_renderer_cleanup() {
 }
 
 text_state text_render_prep(const char* text, u32 len, float scale, vec2 pos) {
+    if (!initialized) {
+        LOG_MSG(warning, "You haven't initialized the text renderer yet! I've silently ignored this, but nothing will render!\n");
+        return (text_state){0};
+    }
+
     // Copy arguments into struct.
     // We discard const here, but I pinky promise this is only so you can
-    // change the pointer value to NULL ;)
+    // change the pointer value to NULL later ;)
     // (allows you to free the string itself, but keep rendering it)
     text_state ctx = { .text = (char*)text, .scale = scale, .pos[0] = pos[0], .pos[1] = pos[1], };
 
@@ -351,6 +340,9 @@ void text_update_transforms(text_state* ctx) {
 }
 
 void text_render(text_state ctx) {
+    if (ctx.transforms == NULL || ctx.texcoords == NULL) {
+        return; // Avoid segfaults
+    }
     // Upload transforms & render
     glUseProgram(shader);
     glBindVertexArray(tex_quad.vao);
