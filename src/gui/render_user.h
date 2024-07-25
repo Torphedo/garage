@@ -3,8 +3,8 @@
 
 #include "gui_common.h"
 
-// Renders & updates all interactive user interface
-extern renderer ui;
+void ui_update_render(gui_state* gui);
+void ui_teardown();
 
 #endif // RENDER_USER_H
 

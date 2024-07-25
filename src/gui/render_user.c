@@ -3,34 +3,20 @@
 
 #include <common/logging.h>
 #include "parts.h"
-#include "primitives.h"
-#include "camera.h"
 #include "gui_common.h"
 #include "render_text.h"
 #include "vehicle.h"
 
-typedef struct {
-    gui_state* gui;
-    text_state part_name;
-}ui_render_state;
-
 char partname_buf[32] = "Large Folding Propeller";
+text_state part_name = {0};
 
-void* ui_init(gui_state* gui) {
-    ui_render_state* state = calloc(1, sizeof(*state));
-    if (state == NULL) {
-        LOG_MSG(error, "Failed to allocate state struct\n");
-        return NULL;
+void ui_update_render(gui_state* gui) {
+    // Setup on first run
+    static bool initialized = false;
+    if (!initialized) {
+        part_name = text_render_prep(partname_buf, sizeof(partname_buf), 0.03f, (vec2){-1, -0.7f});
+        initialized = true;
     }
-    state->gui = gui;
-    state->part_name = text_render_prep(partname_buf, sizeof(partname_buf), 0.03f, (vec2){-1, -0.7f});
-
-    return state;
-}
-
-void ui_update(void* ctx) {
-    ui_render_state* state = (ui_render_state*)ctx;
-    gui_state* gui = (gui_state*) state->gui;
 
     // Invalid cursor position forces the text to update on the first frame
     static vec3s16 last_selbox = {-1, -1, -1};
@@ -46,22 +32,15 @@ void ui_update(void* ctx) {
             part_info cur_part = part_get_info(p->id);
             strncpy(partname_buf, cur_part.name, sizeof(partname_buf));
         }
-        // Update part name
-        text_update_transforms(&state->part_name);
+        // Update part name & selection box
+        text_update_transforms(&part_name);
+        last_selbox = gui->sel_box;
     }
-    last_selbox = gui->sel_box;
 
-    text_render(state->part_name);
+    text_render(part_name);
 }
 
-void ui_destroy(void* ctx) {
-    free(ctx);
+void ui_teardown() {
+    text_free(part_name);
 }
-
-typedef void (*renderproc)(void*);
-renderer ui = {
-    ui_init,
-    (renderproc)ui_update,
-    (renderproc)ui_destroy,
-};
 

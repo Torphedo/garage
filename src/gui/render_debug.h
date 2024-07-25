@@ -3,7 +3,7 @@
 
 #include "gui_common.h"
 
-extern renderer dbg_view;
+void debug_render(gui_state* gui);
 
 #endif // RENDER_DEBUG_H
 
