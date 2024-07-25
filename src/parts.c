@@ -49,6 +49,13 @@ vec3s8 doubleheight_up_occ[] = {
     {0},
 };
 
+// Same as the double-height part, w/ extra cell on the back for the air tanks
+vec3s8 scuba_seat_occ[] = {
+    {0, 1, -1},
+    {0, 1, 0},
+    {0},
+};
+
 // Flat 3x3 for propellers & energy shield
 vec3s8 flat_square_3_occ[] = {
     {1, 0, -1},
@@ -66,6 +73,7 @@ vec3s8 flat_square_3_occ[] = {
 part_info part_get_info(part_id id) {
     part_info out = {0};
     switch (id) {
+    // Seats
     case SEAT_STANDARD:
         out.name = "Standard Seat";
         out.relative_occupation = doubleheight_up_occ;
@@ -82,21 +90,23 @@ part_info part_get_info(part_id id) {
         break;
     case SEAT_SCUBA:
         out.name = "Scuba Seat";
+        out.relative_occupation = scuba_seat_occ;
         break;
     case SEAT_SUPER:
         out.name = "Super Seat";
+        // Same as scuba seat, the only difference is where parts can connect
+        out.relative_occupation = scuba_seat_occ;
         break;
 
+    // Wheels
     case WHEEL_STANDARD:
-        return (part_info) {
-            .name = "Standard Wheel",
-            .relative_occupation = doubleheight_down_occ,
-        };
+        out.name = "Standard Wheel";
+        out.relative_occupation = doubleheight_down_occ;
+        break;
     case WHEEL_HIGH_GRIP:
-        return (part_info) {
-            .name = "High-Grip Wheel",
-            .relative_occupation = doubleheight_down_occ,
-        };
+        out.name = "High-Grip Wheel";
+        out.relative_occupation = doubleheight_down_occ;
+        break;
     case WHEEL_MONSTER:
         out.name = "Monster Wheel";
         break;
@@ -105,6 +115,7 @@ part_info part_get_info(part_id id) {
         out.relative_occupation = doubleheight_down_occ;
         break;
 
+    // Power (Engines)
     case ENGINE_SMALL:
         out.name = "Small Engine";
         break;
@@ -122,6 +133,7 @@ part_info part_get_info(part_id id) {
         out.name = "Sail";
         break;
 
+    // Power (Jets)
     case JET_SMALL:
         out.name = "Small Jet";
         break;
@@ -129,6 +141,7 @@ part_info part_get_info(part_id id) {
         out.name = "Large Jet";
         break;
 
+    // Fuel
     case FUEL_SMALL:
         out.name = "Small Fuel";
         break;
@@ -142,6 +155,7 @@ part_info part_get_info(part_id id) {
         out.name = "Super Fuel";
         break;
 
+    // Storage
     case TRAY:
         out.name = "Tray";
         break;
@@ -155,6 +169,7 @@ part_info part_get_info(part_id id) {
         out.name = "Large Tray";
         break;
 
+    // Ammo
     case AMMO_SMALL:
         out.name = "Small Ammo";
         break;
@@ -168,6 +183,7 @@ part_info part_get_info(part_id id) {
         out.name = "Super Ammo";
         break;
 
+    // Body (Light)
     case LIGHT_CUBE:
         out.name = "Light Cube";
         break;
@@ -196,6 +212,7 @@ part_info part_get_info(part_id id) {
         out.name = "Light T-Panel";
         break;
 
+    // Body (Heavy)
     case HEAVY_CUBE:
         out.name = "Heavy Cube";
         break;
@@ -224,6 +241,7 @@ part_info part_get_info(part_id id) {
         out.name = "Heavy T-Panel";
         break;
 
+    // Body (Super)
     case SUPER_CUBE:
         out.name = "Super Cube";
         break;
@@ -252,6 +270,7 @@ part_info part_get_info(part_id id) {
         out.name = "Super T-Panel";
         break;
 
+    // Gadgets
     case AERIAL:
         out.name = "Aerial";
         break;
@@ -299,6 +318,7 @@ part_info part_get_info(part_id id) {
         out.name = "Replenisher";
         break;
 
+    // Defense
     case BUMPER:
         out.name = "Bumper";
         break;
@@ -310,6 +330,7 @@ part_info part_get_info(part_id id) {
         out.relative_occupation = flat_square_3_occ;
         break;
 
+    // Wings
     case WING_STANDARD:
         out.name = "Standard Wing";
         break;
@@ -317,6 +338,7 @@ part_info part_get_info(part_id id) {
         out.name = "Folding Wing";
         break;
 
+    // Boat stuff
     case BALLOON:
         out.name = "Balloon";
         break;
@@ -324,6 +346,7 @@ part_info part_get_info(part_id id) {
         out.name = "Floater";
         break;
 
+    // Propellers
     case PROPELLER_SMALL:
         out.name = "Small Propeller";
         break;
@@ -336,6 +359,7 @@ part_info part_get_info(part_id id) {
         out.relative_occupation = flat_square_3_occ;
         break;
 
+    // More boats & hovercraft
     case SINKER:
         out.name = "Sinker";
         break;
@@ -343,6 +367,7 @@ part_info part_get_info(part_id id) {
         out.name = "Air Cushion";
         break;
 
+    // Weapons (using ammo)
     case TURRET_EGG:
         out.name = "Egg Turret";
         break;
@@ -380,6 +405,8 @@ part_info part_get_info(part_id id) {
     case EMP:
         out.name = "EMP";
         break;
+
+    // Weapons (ammo-free)
     case FULGORES_FIST:
         out.name = "Fulgore's Fist";
         break;
@@ -390,6 +417,7 @@ part_info part_get_info(part_id id) {
         out.name = "Spike";
         break;
 
+    // Accessories
     case CRUISIN_LIGHT:
         out.name = "Cruisin' Light";
         break;
