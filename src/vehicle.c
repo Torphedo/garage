@@ -242,13 +242,17 @@ bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
 
 part_entry* part_by_pos(vehicle* v, vec3s8 target) {
     // Linearly search for the part
+    // TODO: When moving a selection through other parts, the detected part can
+    // suddenly switch to one of the parts you're moving through. Maybe we
+    // should prioritize selected parts in the search?
     for (u16 i = 0; i < v->head.part_count; i++) {
         part_entry* p = &v->parts[i]; // Just a shortcut
-        // A part's max width is 8, so anything farther away can't be a match
+
+        // A part's max width is 8, so anything further away can't be a match
         if (abs(p->pos.x - target.x) > 8 || 
             abs(p->pos.y - target.y) > 8 || 
             abs(p->pos.z - target.z) > 8) {
-            break;
+            continue; // The part is too far away, skip it
         }
 
         // Loop over every cell this part occupies
@@ -268,7 +272,7 @@ part_entry* part_by_pos(vehicle* v, vec3s8 target) {
 
             // Move on when we find the final entry (all zeroes, the origin)
             if (vec3s8_eq(*part.relative_occupation, (vec3s8){})) {
-                break;
+                break; // Breaks from the while() loop, not the for()
             }
             part.relative_occupation++; // Go to next entry
         }
