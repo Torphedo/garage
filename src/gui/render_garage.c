@@ -31,28 +31,23 @@ model get_or_load_model(garage_state* state, part_id id) {
         if (cur->id == id) {
             return cur->model;
         }
+        // We hit an empty space without finding our model. We'll try to load it
         else if (cur->model.vertices == NULL || cur->model.indices == NULL) {
-            // Our model isn't in the list and we have an empty space.
-            // Load the part!
             cur->id = id;
-
-            char* obj_path = part_get_obj_path(id);
+            // Path is on the stack, so we don't need to free it
+            const char* obj_path = part_get_obj_path(id).str;
             cur->model = obj_load(obj_path);
-            free(obj_path);
 
             if (cur->model.vertices == NULL || cur->model.indices == NULL) {
-                LOG_MSG(error, "Failed to load \"%s\" (0x%X)\n", part_get_info(id).name, id);
-                printf("\n"); // Helps make our logs more readable
+                LOG_MSG(error, "Failed to load \"%s\" (0x%X)\n\n", part_get_info(id).name, id);
 
-                // We didn't find it, and couldn't load it. Fall back to cube.
+                // It's not here and we couldn't load it. Fall back to the cube
                 cur->model = cube;
                 return cube;
             }
             model_upload(&cur->model);
-            cur->id = id;
 
-            LOG_MSG(info, "Loaded \"%s\" in %.2fKiB\n", part_get_info(id).name, (float)model_size(cur->model) / 1024.0f);
-            printf("\n"); // Helps make our logs more readable
+            LOG_MSG(info, "Loaded \"%s\" in %.2fKiB\n\n", part_get_info(id).name, (float)model_size(cur->model) / 1024.0f);
             return cur->model;
         }
     }

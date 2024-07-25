@@ -200,6 +200,12 @@ typedef union {
     char c[8];
 }id_str;
 
+// This only exists to let us return an array without the compiler complaining
+typedef struct {
+    // String in the format "bin/00000000.obj" (with numbers matching a part ID)
+    char str[sizeof("bin/") + 8 + sizeof(".obj") + 1];
+}obj_path;
+
 // Coordinate arrays are terminated by an all-zero entry representing the origin
 typedef struct {
     char* name; // Human-readable part name
@@ -221,5 +227,5 @@ id_str part_get_id_str(part_id id);
 
 // Get the path to an OBJ file in a "bin" folder named with the hex ID. For
 // example, part ID 0x1F207106 would output "bin/1F207106.obj"
-char* part_get_obj_path(part_id id);
+obj_path part_get_obj_path(part_id id);
 #endif // PART_IDS_H

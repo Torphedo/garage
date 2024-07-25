@@ -74,18 +74,21 @@ gl_obj program_compile_src(const char* vert_src, const char* frag_src) {
 }
 
 gl_obj program_compile(const char* vert_path, const char* frag_path) {
-    const char* vert_src = (char*)file_load(vert_path);
+    char* vert_src = (char*)file_load(vert_path);
     if (vert_src == NULL) {
         LOG_MSG(error, "Failed to read vertex shader file %s\n", vert_path);
         return 0;
     }
-    const char* frag_src = (char*)file_load(frag_path);
+    char* frag_src = (char*)file_load(frag_path);
     if (frag_src == NULL) {
         LOG_MSG(error, "Failed to read fragment shader file %s\n", frag_path);
         return 0;
     }
 
-    return program_compile_src(vert_src, frag_src);
+    gl_obj out = program_compile_src(vert_src, frag_src);
+    free(vert_src);
+    free(frag_src);
+    return out;
 }
 
 gl_obj shader_compile_src(const char* src, GLenum shader_type) {

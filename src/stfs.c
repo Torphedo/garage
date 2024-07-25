@@ -171,7 +171,7 @@ u8* stfs_get_vehicle(const char* path) {
     stfs_filetable_byteswap(&entry);
 
     // We round up to the block size to make reading simpler, at the cost of up
-    // to ~4KiB extra memory usage for the file.
+    // to 4KiB extra memory usage for the file.
     u8* buf = calloc(1, ALIGN_UP(entry.size, STFS_BLOCK_SIZE));
     u32 bytes_read = 0;
     s32 next_block = s24_to_s32((u8*)&entry.start_block);

@@ -17,17 +17,15 @@ id_str part_get_id_str(part_id id) {
     return out;
 }
 
-char* part_get_obj_path(part_id id) {
-    char* out = calloc(1, sizeof("bin/") + 8 + sizeof(".obj") + 1);
-    if (out == NULL) {
-        return out;
-    }
-    // Copy this string into the buffer
-    strcpy(out, "bin/00000000.obj");
+obj_path part_get_obj_path(part_id id) {
+    obj_path out = {0};
+
+    // Initialize path
+    strcpy(out.str, "bin/00000000.obj");
 
     // Overwrite all the '0' characters with the hex ID in ASCII
     id_str hex = part_get_id_str(id);
-    strncpy(&out[4], hex.c, sizeof(hex));
+    strncpy(&out.str[4], hex.c, sizeof(hex));
 
     return out;
 }

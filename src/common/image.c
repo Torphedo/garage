@@ -200,8 +200,6 @@ void img_write(texture img, const char* path) {
     fwrite(&header, sizeof(header), 1, out);
     fwrite(img.data, tex_size, 1, out);
     fclose(out);
-
-    LOG_MSG(info, "Written to %s\n", path);
 }
 
 bool is_dds(char* filename) {
