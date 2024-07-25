@@ -27,7 +27,7 @@ void set_vsync(bool interval) {
     glfwSwapInterval(interval);
 }
 
-GLFWwindow* setup_opengl(s32 width, s32 height, const char* window_name, bool enable_debug, int mouse_mode) {
+GLFWwindow* setup_opengl(s32 width, s32 height, const char* window_name, bool enable_debug, int mouse_mode, bool use_vsync) {
     glfwSetErrorCallback(glfw_error);
 
     // Setup GLFW
@@ -91,7 +91,7 @@ GLFWwindow* setup_opengl(s32 width, s32 height, const char* window_name, bool en
     // Set OpenGL viewport to size of window, handle resizing
     glViewport(0, 0, width, height);
     glfwSetFramebufferSizeCallback(window, frame_resize_callback);
-    set_vsync(true);
+    set_vsync(use_vsync);
 
     return window;
 }

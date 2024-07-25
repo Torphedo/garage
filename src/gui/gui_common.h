@@ -39,7 +39,7 @@ typedef struct {
     input_internal prev_input; // Input from last frame
     bool vsync;
 
-    // Rendering state that all renderers can re-use
+    // Rendering state that everyone can re-use
     gl_obj vcolor_shader; // Shader for drawing objects with vertex colors
     // Uniforms for the shader
     gl_obj u_pvm; // PVM matrix uniform
@@ -54,30 +54,6 @@ bool gui_init(gui_state* gui);
 
 // Delete resources created in gui_init().
 void gui_teardown(gui_state* gui);
-
-// Standard interface to facilitate multiple renderers per frame. For example, a
-// UI renderer would render on top of the scene renderer and have separate code.
-// This also allows multiple copies of a renderer at once.
-typedef struct {
-    // For initial setup, like compiling shaders or loading assets. Pass the
-    // returned pointer to render() and destroy(), they use it to store data.
-    void* (*init)(gui_state* gui);
-
-    // For taking over the rendering pipeline (binding shaders, etc.), then
-    // rendering on top and updating internal state (checking for input, etc.)
-    void (*render)(void* ctx);
-
-    // Free all buffers, unload all shaders, etc.
-    void (*destroy)(void* ctx);
-}renderer;
-
-typedef enum {
-    STATE_NONE,
-    STATE_INIT_FAIL,
-    STATE_OK,
-    STATE_FREED,
-}renderer_state;
-
 void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask);
 
 #endif // GUI_COMMON_H 

@@ -7,23 +7,10 @@
 #include "primitives.h"
 #include "camera.h"
 #include "model.h"
-#include "parts.h"
 #include "gui_common.h"
+#include "render_garage.h"
 
-typedef struct {
-    part_id id;
-    model model;
-}part_model;
-
-typedef struct {
-    gui_state* gui;
-
-    part_model models[NUM_PARTS + 1];
-    renderer_state status;
-}garage_state;
-
-void render_cube(s32 idx_count, vec3s pos, vec4s color, float scale, mat4 pv, garage_state* state) {
-    gui_state* gui = state->gui;
+void render_cube(s32 idx_count, vec3s pos, vec4s color, float scale, mat4 pv, garage_state* state, gui_state* gui) {
     mat4 model = {0};
     glm_mat4_identity(model);
     mat4 pvm = {0};
@@ -69,41 +56,25 @@ model get_or_load_model(garage_state* state, part_id id) {
             return cur->model;
         }
     }
+
+    // Couldn't find it & we're out of space to add it... return placeholder cube
+    return state->models[0].model;
 }
 
-void* garage_init(gui_state* gui) {
-    garage_state* state = calloc(1, sizeof(*state));
-    if (state == NULL) {
-        LOG_MSG(info, "Couldn't allocate for renderer state!\n");
-        return NULL;
-    }
-    state->gui = gui;
+garage_state garage_init(gui_state* gui) {
+    garage_state state = {0};
 
     // ID 0 will just render a cube
-    state->models[0] = (part_model){.id = 0, .model = cube};
+    state.models[0] = (part_model){.id = 0, .model = cube};
 
     for (u16 i = 0; i < gui->v->head.part_count; i++) {
-        get_or_load_model(state, gui->v->parts[i].id);
+        get_or_load_model(&state, gui->v->parts[i].id);
     }
 
-    state->status = STATE_OK;
     return state;
 }
 
-void garage_render(void* ctx) {
-    garage_state* state = (garage_state*)ctx;
-    gui_state* gui = state->gui;
-    if (state->status != STATE_OK) {
-        // Printing here would spam console, there should already be errors there
-        return;
-    }
-
-    glEnable(GL_DEPTH_TEST);
-
-    // Enable transparency
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_BLEND);
-
+void garage_render(garage_state* state, gui_state* gui) {
     // We need to bind the shader program before uploading uniforms
     glUseProgram(gui->vcolor_shader);
 
@@ -126,7 +97,7 @@ void garage_render(void* ctx) {
     glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
 
     // Draw all our parts
-    vehicle* v = state->gui->v;
+    vehicle* v = gui->v;
     vec3s center = vehicle_find_center(v);
     for (u16 i = 0; i < v->head.part_count; i++) {
         // Move the part
@@ -149,7 +120,7 @@ void garage_render(void* ctx) {
 
         // Bind our part model and render
         glBindVertexArray(m.vao);
-        render_cube(m.idx_count, pos, paint_col, 1.0f, pv, state);
+        render_cube(m.idx_count, pos, paint_col, 1.0f, pv, state, gui);
     }
 
     // Go back to the cube
@@ -163,7 +134,7 @@ void garage_render(void* ctx) {
 
     // Draw green boxes around all selected parts as we move them
     // Set selection box color
-    if (state->gui->sel_mode == SEL_BAD) {
+    if (gui->sel_mode == SEL_BAD) {
         color.r = 1.0f;
     }
     else {
@@ -173,7 +144,7 @@ void garage_render(void* ctx) {
     render_vehicle_bitmask(gui, gui->selected_mask);
 
     // Get selection position
-    pos = vec3_from_vec3s16(state->gui->sel_box, PART_POS_SCALE);
+    pos = vec3_from_vec3s16(gui->sel_box, PART_POS_SCALE);
     pos.x -= (center.x * PART_POS_SCALE);
     pos.z -= (center.z * PART_POS_SCALE);
 
@@ -181,11 +152,11 @@ void garage_render(void* ctx) {
         color.r = 0;
         color.g = 0;
         // Render selection box
-        render_cube(cube.idx_count, pos, color, 1.2f, pv, state);
+        render_cube(cube.idx_count, pos, color, 1.2f, pv, state, gui);
     }
 
     // Lock camera onto selection box during editing
-    if (state->gui->mode == MODE_EDIT) {
+    if (gui->mode == MODE_EDIT) {
         // TODO: This locks to the last selected part while moving parts. We
         // might want to calculate the centerpoint of the selection and lock
         // to that instead.
@@ -198,13 +169,7 @@ void garage_render(void* ctx) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
 
-void garage_destroy(void* ctx) {
-    garage_state* state = (garage_state*)ctx;
-    if (state->status == STATE_FREED) {
-        LOG_MSG(warning, "Avoided a double free, check your destroy() calls!\n");
-        return;
-    }
-
+void garage_destroy(garage_state* state) {
     // Unload all part models
     for (u8 i = 0; i < ARRAY_SIZE(state->models); i++) {
         model* m = &state->models[i].model;
@@ -221,20 +186,9 @@ void garage_destroy(void* ctx) {
         free((void*)m->indices);
         free((void*)m->vertices);
 
-        // Delete all trace of the pointer and OpenGL object values
+        // Clear the pointers & OpenGL object values
         model empty = {0};
         *m = empty;
     }
-
-    // On the off chance we get called again and don't crash while trying to
-    // read this already-freed status value, render() will exit early.
-    state->status = STATE_FREED;
-    free(state);
 }
-
-renderer garage = {
-    .init = garage_init,
-    .render = garage_render,
-    .destroy = garage_destroy,
-};
 

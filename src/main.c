@@ -37,19 +37,24 @@ int main(int argc, char** argv) {
         .vacancy_mask = calloc(1, sizeof(vehicle_bitmask)),
         .selected_mask = calloc(1, sizeof(vehicle_bitmask)),
     };
-    if (gui.vacancy_mask == NULL) {
-        LOG_MSG(error, "Failed to alloc vehicle bitmask\n");
+    if (gui.vacancy_mask == NULL || gui.vacancy_mask == NULL) {
+        LOG_MSG(error, "Failed to alloc a vehicle bitmask\n");
         return 1;
     }
 
-    GLFWwindow* window = setup_opengl(680, 480, "Garage Opener", ENABLE_DEBUG, GLFW_CURSOR_NORMAL);
+    GLFWwindow* window = setup_opengl(680, 480, "Garage Opener", ENABLE_DEBUG, GLFW_CURSOR_NORMAL, gui.vsync);
     if (window == NULL) {
         return 1;
     }
-    set_vsync(gui.vsync);
 
     // Prepare for rendering
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glEnable(GL_DEPTH_TEST);
+
+    // Enable transparency
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+
     if (!gui_init(&gui)) {
         return 1;
     }
@@ -58,7 +63,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    void* garage_ctx = garage.init(&gui);
+    garage_state garage = garage_init(&gui);
 
     char fps_text[32] = "FPS: 0 [0.00ms]";
     text_state fps_display = text_render_prep(fps_text, sizeof(fps_text), 0.03f, (vec2){-1, 1});
@@ -89,7 +94,7 @@ int main(int argc, char** argv) {
 
         // Render
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        garage.render(garage_ctx);
+        garage_render(&garage, &gui);
         debug_render(&gui);
         ui_update_render(&gui);
 
@@ -132,7 +137,7 @@ int main(int argc, char** argv) {
 
     // Cleanup
     text_free(fps_display);
-    garage.destroy(garage_ctx);
+    garage_destroy(&garage);
     ui_teardown();
 
     text_renderer_cleanup();
