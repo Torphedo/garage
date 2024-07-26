@@ -444,7 +444,7 @@ part_info part_get_info(part_id id) {
         out.name = "Goldfish";
         break;
     default:
-        out.name = "[Unknown part]";
+        out.name = "[Unknown/Missing part]";
         break;
     }
 

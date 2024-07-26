@@ -240,6 +240,8 @@ bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
     return needed_readjustment;
 }
 
+part_entry empty_part = {0};
+
 part_entry* part_by_pos(vehicle* v, vec3s8 target) {
     // Linearly search for the part
     // TODO: When moving a selection through other parts, the detected part can
@@ -279,5 +281,5 @@ part_entry* part_by_pos(vehicle* v, vec3s8 target) {
     }
 
     // Nothing here...
-    return NULL;
+    return &empty_part;
 }

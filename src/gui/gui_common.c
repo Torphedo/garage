@@ -161,7 +161,7 @@ void update_edit_mode(gui_state* gui) {
             update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
             gui->sel_mode = SEL_NONE; // Now you can start moving the parts
         }
-        else if (p != NULL) {
+        else {
             if (p->selected) {
                 // User pressed the button while selecting parts on an
                 // already-selected part, which means they want to start moving them.
@@ -169,8 +169,10 @@ void update_edit_mode(gui_state* gui) {
                 update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
             }
             else {
-                // Select the part (if it exists)
-                p->selected = true;
+                // Select the part (unless it's a blank)
+                if (p->id > 0) {
+                    p->selected = true;
+                }
                 gui->sel_mode = SEL_NONE;
             }
         }
