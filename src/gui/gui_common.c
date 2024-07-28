@@ -2,6 +2,7 @@
 #include <memory.h>
 
 #include <glad/glad.h>
+#include <cglm/cglm.h>
 
 #include <common/int.h>
 #include <common/logging.h>
@@ -11,6 +12,7 @@
 #include "shader.h"
 #include "primitives.h"
 #include "gl_setup.h"
+#include "vehicle.h"
 
 const char* frag = {
 #include "shader/vcolor.frag.h"
@@ -87,29 +89,34 @@ void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask) {
 void update_edit_mode(gui_state* gui) {
     // Handle moving the selector box
     vec3s cam_view = glms_normalize(camera_facing());
+    // Absolute value of camera vector
+    vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
+
+    // Set our view direction to have a magnitude of 1 on the axis we're facing
+    // the most strongly, and 0 in all other directions.
+    vec3s forward_vec = {
+        // zero if it's not the largest element, otherwise 1 or -1 depending on direction
+        .x = ((cam_view.x < 0) ? -1 : 1) * (cam_abs.x > cam_abs.y && cam_abs.x > cam_abs.z),
+        .y = ((cam_view.y < 0) ? -1 : 1) * (cam_abs.y > cam_abs.z && cam_abs.y > cam_abs.x),
+        .z = ((cam_view.z < 0) ? -1 : 1) * (cam_abs.z > cam_abs.y && cam_abs.z > cam_abs.x),
+    };
+    vec3s right_vec = glms_vec3_rotate(forward_vec, glm_rad(-90), (vec3s){0, 1, 0});
+
     s8 forward_diff = ((input.w && !gui->prev_input.w) - (input.s && !gui->prev_input.s));
     s8 side_diff = ((input.d && !gui->prev_input.d) - (input.a && !gui->prev_input.a));
 
     vec3s16 sel_box_prev = gui->sel_box;
 
-    // This is kind of spaghetti. Sorry.
-    bool facing_z = fabsf(cam_view.z) > fabsf(cam_view.x);
-    // Indices of the X or Z axis, depending on how we're facing
-    u8 facing_axis = 2 * facing_z; // The axis we're facing
-    u8 other_axis = 2 * !facing_z; // The axis we're not facing
+    if (!input.control) {
+        for (u8 i = 0; i < 3; i++) {
+            gui->sel_box.raw[i] += forward_diff * forward_vec.raw[i];
+            gui->sel_box.raw[i] += side_diff * right_vec.raw[i];
+        }
 
-    // Flip the sign of our forward/back movement as needed.
-    // [sign] is -1 or 1, matching the sign of the direction we face.
-    s8 sign = cam_view.raw[facing_axis] / fabsf(cam_view.raw[facing_axis]);
-    gui->sel_box.raw[facing_axis] += forward_diff * sign;
-
-    // Negate our sideways movement when facing Z.
-    side_diff -= (2 * side_diff) * facing_z;
-    gui->sel_box.raw[other_axis] += side_diff * sign;
-
-    // Handle vertical movement
-    gui->sel_box.y += (input.space && !gui->prev_input.space);
-    gui->sel_box.y -= (input.shift && !gui->prev_input.shift);
+        // Handle vertical movement
+        gui->sel_box.y += (input.space && !gui->prev_input.space);
+        gui->sel_box.y -= (input.shift && !gui->prev_input.shift);
+    }
 
     // Handle moving the selection, if applicable
     if (gui->sel_mode != SEL_NONE && !vec3s16_eq(gui->sel_box, sel_box_prev)) {
