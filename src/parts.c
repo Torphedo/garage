@@ -54,16 +54,16 @@ vec3s8 scuba_seat_occ[] = {
     {0},
 };
 
-// Flat 3x3 for propellers & energy shield
+// Vertical 3x3 for propellers & energy shield
 vec3s8 flat_square_3_occ[] = {
-    {1, 0, -1},
+    {1, -1, 0},
     {1, 0, 0},
-    {1, 0, 1},
-    {0, 0, -1},
-    {0, 0, 1},
-    {-1, 0, -1},
+    {1, 1, 0},
+    {0, -1, 0},
+    {0, 1, 0},
+    {-1, -1, 0},
     {-1, 0, 0},
-    {-1, 0, 1},
+    {-1, 1, 0},
     {0},
 };
 
