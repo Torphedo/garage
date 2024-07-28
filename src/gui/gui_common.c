@@ -92,24 +92,25 @@ void update_edit_mode(gui_state* gui) {
     // Absolute value of camera vector
     vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
 
-    // Set our view direction to have a magnitude of 1 on the axis we're facing
-    // the most strongly, and 0 in all other directions.
-    vec3s forward_vec = {
-        // zero if it's not the largest element, otherwise 1 or -1 depending on direction
-        .x = ((cam_view.x < 0) ? -1 : 1) * (cam_abs.x > cam_abs.y && cam_abs.x > cam_abs.z),
-        .y = ((cam_view.y < 0) ? -1 : 1) * (cam_abs.y > cam_abs.z && cam_abs.y > cam_abs.x),
-        .z = ((cam_view.z < 0) ? -1 : 1) * (cam_abs.z > cam_abs.y && cam_abs.z > cam_abs.x),
-    };
-    vec3s right_vec = glms_vec3_rotate(forward_vec, glm_rad(-90), (vec3s){0, 1, 0});
-
     s8 forward_diff = ((input.w && !gui->prev_input.w) - (input.s && !gui->prev_input.s));
     s8 side_diff = ((input.d && !gui->prev_input.d) - (input.a && !gui->prev_input.a));
 
     vec3s16 sel_box_prev = gui->sel_box;
 
+    // Set our view direction to have a magnitude of 1 on the horizontal axis
+    // we're facing the most strongly, and 0 in all other directions.
+    vec3s horizontal_vec = {
+        // zero if it's not the largest element, otherwise 1 or -1 depending on direction
+        ((cam_view.x < 0) ? -1 : 1) * (cam_abs.x > cam_abs.z),
+        0, // Vertical component ignored
+        ((cam_view.z < 0) ? -1 : 1) * (cam_abs.z > cam_abs.x),
+    };
+
     if (!input.control) {
+        vec3s right_vec = {-horizontal_vec.z, 0, horizontal_vec.x};
+
         for (u8 i = 0; i < 3; i++) {
-            gui->sel_box.raw[i] += forward_diff * forward_vec.raw[i];
+            gui->sel_box.raw[i] += forward_diff * horizontal_vec.raw[i];
             gui->sel_box.raw[i] += side_diff * right_vec.raw[i];
         }
 
@@ -117,6 +118,45 @@ void update_edit_mode(gui_state* gui) {
         gui->sel_box.y += (input.space && !gui->prev_input.space);
         gui->sel_box.y -= (input.shift && !gui->prev_input.shift);
     }
+    else {
+        // Same as horizontal vector but includes vertical component
+        vec3s forward_vec = {
+            // zero if it's not the largest element, otherwise 1 or -1 depending on direction
+            .x = ((cam_view.x < 0) ? -1 : 1) * (cam_abs.x > cam_abs.y && cam_abs.x > cam_abs.z),
+            .y = ((cam_view.y < 0) ? -1 : 1) * (cam_abs.y > cam_abs.z && cam_abs.y > cam_abs.x),
+            .z = ((cam_view.z < 0) ? -1 : 1) * (cam_abs.z > cam_abs.y && cam_abs.z > cam_abs.x),
+        };
+        vec3 right_vec = {horizontal_vec.z, 0, -horizontal_vec.x};
+        vec3s8 pos = {gui->sel_box.x, gui->sel_box.y, gui->sel_box.z};
+        part_entry* p = part_by_pos(gui->v, pos);
+
+        mat4 rot_matrix = {0};
+        mat4 part_rotation = {0};
+        glm_mat4_identity(rot_matrix);
+        glm_euler(p->rot, part_rotation);
+
+        glm_rotate(rot_matrix, glm_rad(90) * forward_diff, right_vec);
+        if (forward_vec.x == 0 && forward_vec.z == 0) {
+            // If the camera is facing mostly vertical, rotating side-to-side
+            // will rotate along the most dominant horizontal camera component
+            glm_rotate(rot_matrix, glm_rad(90) * side_diff, *(vec3*)&horizontal_vec);
+        }
+        else {
+            // If the camera is mostly facing horizontally, rotating
+            // side-to-side will rotate along the Y-axis
+            glm_rotate(rot_matrix, glm_rad(90) * side_diff, (vec3){0, 1, 0});
+        }
+
+        // Apply existing part rotation to matrix & update the part rotation
+        glm_mat4_mul(rot_matrix, part_rotation, rot_matrix);
+        glm_euler_angles(rot_matrix, p->rot);
+
+        // Update the bitmask(s) if needed
+        if (forward_diff != 0 || side_diff != 0) {
+            update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
+        }
+    }
+
 
     // Handle moving the selection, if applicable
     if (gui->sel_mode != SEL_NONE && !vec3s16_eq(gui->sel_box, sel_box_prev)) {
