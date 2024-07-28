@@ -1,6 +1,7 @@
 #include <stdbool.h>
 #include <malloc.h>
 
+#include <cglm/struct.h>
 #include "common/endian.h"
 #include "common/file.h"
 
@@ -167,17 +168,26 @@ void update_vehiclemask(vehicle* v, vehicle_bitmask* vacancy, vehicle_bitmask* s
 
     for (u16 i = 0; i < v->head.part_count; i++) {
         // Get the list of points relative to the origin this part occupies.
-        part_id id = v->parts[i].id;
+        part_entry p = v->parts[i];
+        part_id id = p.id;
         vec3s8* positions = part_get_info(id).relative_occupation;
+        // Get quaternion of part rotation
+        // Sorry for the ugly cast, this is just making it treat a vec3 as vec3s because they're the same
+        versors quaternion = glms_euler_xyz_quat(*(vec3s*)&p.rot);
 
-        vec3s8 origin = v->parts[i].pos;
+        vec3s8 origin = p.pos;
         while (1) {
+            // Rotate the relative point around the part's origin
+            vec3s rotated_point = glms_quat_rotatev(quaternion, vec3_from_vec3s8(*positions, 1.0f));
+
+            // Get the final coordinate by adding the rotated point to origin
             vec3s8 cell = {
-                MAX(origin.x + positions->x, 0),
-                MAX(origin.y + positions->y, 0),
-                MAX(origin.z + positions->z, 0),
+                MAX(origin.x + roundf(rotated_point.x), 0),
+                MAX(origin.y + roundf(rotated_point.y), 0),
+                MAX(origin.z + roundf(rotated_point.z), 0),
             };
-            bool selected = v->parts[i].selected;
+
+            bool selected = p.selected;
 
             // Remove selected parts from vacancy mask & add them to the
             // selection mask
@@ -257,14 +267,21 @@ part_entry* part_by_pos(vehicle* v, vec3s8 target) {
             continue; // The part is too far away, skip it
         }
 
-        // Loop over every cell this part occupies
         part_info part = part_get_info(p->id);
+        // Get quaternion of part rotation
+        // Sorry for the ugly cast, this is just making it treat a vec3 as vec3s because they're the same
+        versors quaternion = glms_euler_xyz_quat(*(vec3s*)&p->rot);
+
+        // Loop over every cell this part occupies
         while (1) {
-            // Array has relative positions, we need to add them to part origin
+            // Rotate the relative point around the part's origin
+            vec3s rotated_point = glms_quat_rotatev(quaternion, vec3_from_vec3s8(*part.relative_occupation, 1.0f));
+
+            // Get the final coordinate by adding the rotated point to origin
             vec3s8 cell = {
-                p->pos.x + part.relative_occupation->x,
-                p->pos.y + part.relative_occupation->y,
-                p->pos.z + part.relative_occupation->z,
+                MAX(p->pos.x + roundf(rotated_point.x), 0),
+                MAX(p->pos.y + roundf(rotated_point.y), 0),
+                MAX(p->pos.z + roundf(rotated_point.z), 0),
             };
 
             if (vec3s8_eq(cell, target)) {

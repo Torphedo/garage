@@ -10,21 +10,6 @@
 #include "gui_common.h"
 #include "render_garage.h"
 
-void render_cube(s32 idx_count, vec3s pos, vec4s color, float scale, mat4 pv, garage_state* state, gui_state* gui) {
-    mat4 model = {0};
-    glm_mat4_identity(model);
-    mat4 pvm = {0};
-
-    glm_translate(model, (float*)&pos);
-    glm_scale_uni(model, scale); // Draw the box a little larger than the part cubes
-    glm_mat4_mul(pv, model, pvm); // Compute pvm
-    glUniformMatrix4fv(gui->u_pvm, 1, GL_FALSE, (const float *) &pvm);
-
-    // Upload paint color & draw
-    glUniform4fv(gui->u_paint, 1, (const float *) &color);
-    glDrawElements(GL_TRIANGLES, idx_count, GL_UNSIGNED_SHORT, NULL);
-}
-
 model get_or_load_model(garage_state* state, part_id id) {
     for (u8 i = 0; i < ARRAY_SIZE(state->models); i++) {
         part_model* cur = &state->models[i];
@@ -95,19 +80,20 @@ void garage_render(garage_state* state, gui_state* gui) {
     vehicle* v = gui->v;
     vec3s center = vehicle_find_center(v);
     for (u16 i = 0; i < v->head.part_count; i++) {
+        part_entry* p = &v->parts[i];
         // Move the part
-        vec3s pos = vec3_from_vec3s8(v->parts[i].pos, PART_POS_SCALE);
+        vec3s pos = vec3_from_vec3s8(p->pos, PART_POS_SCALE);
         pos.x -= (center.x * PART_POS_SCALE);
         pos.z -= (center.z * PART_POS_SCALE);
 
         // Upload paint color & draw
-        vec4s paint_col = vec4_from_rgba8(v->parts[i].color);
+        vec4s paint_col = vec4_from_rgba8(p->color);
         if (v->parts[i].selected) {
             paint_col.a /= 3;
         }
 
         // Load a model for the part, if possible.
-        model m = get_or_load_model(state, v->parts[i].id);
+        model m = get_or_load_model(state, p->id);
         // Don't paint parts with custom models
         if (m.vao != cube.vao) {
             paint_col = (vec4s){.r = 1.0f, .g = 1.0f, .b = 1.0f, paint_col.a};
@@ -115,7 +101,21 @@ void garage_render(garage_state* state, gui_state* gui) {
 
         // Bind our part model and render
         glBindVertexArray(m.vao);
-        render_cube(m.idx_count, pos, paint_col, 1.0f, pv, state, gui);
+        mat4 model = {0};
+        mat4 pvm = {0};
+        glm_mat4_identity(model);
+
+        // Apply translation & rotation from part data
+        glm_translate(model, (float*)&pos);
+        glm_rotate_x(model, p->rot[0], model);
+        glm_rotate_y(model, p->rot[1], model);
+        glm_rotate_z(model, p->rot[2], model);
+        glm_mat4_mul(pv, model, pvm); // Compute pvm
+        glUniformMatrix4fv(gui->u_pvm, 1, GL_FALSE, (const float *) &pvm);
+
+        // Upload paint color & draw
+        glUniform4fv(gui->u_paint, 1, (const float *) &paint_col);
+        glDrawElements(GL_TRIANGLES, m.idx_count, GL_UNSIGNED_SHORT, NULL);
     }
 
     // Go back to the cube
@@ -147,7 +147,18 @@ void garage_render(garage_state* state, gui_state* gui) {
         color.r = 0;
         color.g = 0;
         // Render selection box
-        render_cube(cube.idx_count, pos, color, 1.2f, pv, state, gui);
+        mat4 model = {0};
+        glm_mat4_identity(model);
+        mat4 pvm = {0};
+
+        glm_translate(model, (float*)&pos);
+        glm_scale_uni(model, 1.2f); // Draw the box a little larger than the part cubes
+        glm_mat4_mul(pv, model, pvm); // Compute pvm
+        glUniformMatrix4fv(gui->u_pvm, 1, GL_FALSE, (const float *) &pvm);
+
+        // Upload paint color & draw
+        glUniform4fv(gui->u_paint, 1, (const float *) &color);
+        glDrawElements(GL_TRIANGLES, cube.idx_count, GL_UNSIGNED_SHORT, NULL);
     }
 
     // Lock camera onto selection box during editing
