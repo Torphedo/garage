@@ -97,6 +97,8 @@ void vehicle_unselect_all(vehicle* v);
 // Returns a boolean indicating if the vehicle had to be adjusted.
 bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff);
 
+bool vehicle_rotate_selection(vehicle* v, vehicle_bitmask* selection, s8 forward_diff, s8 side_diff, vec3s cam_view);
+
 // Check if the selected parts overlap with the rest of the vehicle
 bool vehicle_selection_overlap(vehicle* v, vehicle_bitmask* mask);
 
