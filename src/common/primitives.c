@@ -1,4 +1,3 @@
-#include "gui_common.h"
 #include "primitives.h"
 
 const vertex quad_vertices[] = {
@@ -86,4 +85,3 @@ model cube = {
     .vertices = cube_vertices,
     .indices = cube_indices,
 };
-

@@ -1,12 +1,12 @@
 #ifndef INPUT_H
 #define INPUT_H
 
-#include <common/int.h>
-#include <common/vector.h>
-
 #include <stdbool.h>
 
 #include <GLFW/glfw3.h>
+
+#include "int.h"
+#include "vector.h"
 
 // TLDR: We have to keep state ourselves because relying on the callback creates
 // a delay between pressing a button and it being considered "held", which feels

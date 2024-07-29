@@ -1,7 +1,9 @@
 #ifndef RENDER_TEXT_H
 #define RENDER_TEXT_H
 #include <stdbool.h>
+
 #include <cglm/cglm.h>
+
 #include <common/int.h>
 
 // All the information needed to render a text buffer (Please treat as opaque)

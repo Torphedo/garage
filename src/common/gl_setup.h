@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #include <GLFW/glfw3.h>
-#include <common/int.h>
+#include "int.h"
 
 typedef enum {
     DISABLE_DEBUG = false,

@@ -77,22 +77,13 @@ part_entry* part_by_pos(vehicle* v, vec3s8 target);
 // useful unless you adopt the same data structures.
 
 enum {
-  PART_SCALE = 1,
-  PART_POS_SCALE = 2, // Coordinate multiplier for rendering (can add spacing in the part grid)
-  SEL_BOX_SIZE = (PART_POS_SCALE * 2),
+      PART_SCALE = 1,
+      PART_POS_SCALE = 2, // Coordinate multiplier for rendering (can add spacing in the part grid)
+      SEL_BOX_SIZE = (PART_POS_SCALE * 2),
 
-  VEH_MAX_DIM = (INT8_MAX + 1),
-  VEH_MASK_BYTE_WIDTH = (VEH_MAX_DIM / 8),
+    VEH_MAX_DIM = (INT8_MAX + 1),
+    VEH_MASK_BYTE_WIDTH = (VEH_MAX_DIM / 8),
 };
-
-// Used to store a compact 3D grid of parts at 1 bit per cell.
-// The editor uses 2 of these, one for storing which cells are occupied and one
-// for storing which cells are selected.
-typedef u8 vehicle_bitmask[VEH_MAX_DIM][VEH_MAX_DIM][VEH_MASK_BYTE_WIDTH];
-
-// Safely get & set values from vehicle bitmask (with bounds checking)
-bool vehiclemask_get_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z);
-void vehiclemask_set_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z, u8 val);
 
 // Unselect all parts in a vehicle
 void vehicle_unselect_all(vehicle* v);
@@ -101,12 +92,4 @@ void vehicle_unselect_all(vehicle* v);
 // position will be the new zero and the other parts are adjusted accordingly.
 // Returns a boolean indicating if the vehicle had to be adjusted.
 bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff);
-
-bool vehicle_rotate_selection(vehicle* v, vehicle_bitmask* selection, vehicle_bitmask* vacancy, s8 forward_diff, s8 side_diff, vec3s cam_view);
-
-// Check if the selected parts overlap with the rest of the vehicle
-bool vehicle_selection_overlap(vehicle* v, vehicle_bitmask* mask);
-
-void update_vehiclemask(vehicle* v, vehicle_bitmask* vacancy, vehicle_bitmask* selection);
-
 #endif // VEHICLE_H

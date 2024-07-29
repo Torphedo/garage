@@ -1,5 +1,6 @@
 #ifndef RENDER_USER_H
 #define RENDER_USER_H
+// This file is for rendering the user interface
 
 #include "gui_common.h"
 

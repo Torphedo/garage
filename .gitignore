@@ -15,5 +15,5 @@ cmake_*/
 *.o
 
 # Auto-generated GLSL headers
-src/gui/shader/*.h
+src/editor/shader/*.h
 

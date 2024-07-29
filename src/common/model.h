@@ -1,6 +1,6 @@
 #ifndef MODEL_H
 #define MODEL_H
-#include "common/vector.h"
+#include "vector.h"
 
 // A vertex with only posiiton and color
 typedef struct {

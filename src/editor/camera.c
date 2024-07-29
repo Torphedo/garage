@@ -1,6 +1,7 @@
-#include <cglm/struct.h>
+#include <cglm/cglm.h>
 
-#include "input.h"
+#include <common/input.h>
+
 #include "camera.h"
 #include "gui_common.h"
 

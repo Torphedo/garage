@@ -1,7 +1,8 @@
 #ifndef CAMERA_H
 #define CAMERA_H
-#include "gui_common.h"
 #include <cglm/cglm.h>
+
+#include "gui_common.h"
 
 void camera_update(gui_state* gui, mat4 *view);
 

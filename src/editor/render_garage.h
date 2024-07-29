@@ -1,7 +1,7 @@
 #ifndef RENDER_GARAGE_H
 #define RENDER_GARAGE_H
 #include "gui_common.h"
-#include "parts.h"
+#include "../parts.h"
 
 typedef struct {
     part_id id;

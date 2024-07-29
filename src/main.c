@@ -1,19 +1,19 @@
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 #include <glad/glad.h>
-#include <string.h>
 
 #include "common/int.h"
 #include "common/logging.h"
+#include "common/gl_setup.h"
+#include "common/input.h"
 
-#include "gui/gl_setup.h"
-#include "gui/render_garage.h"
-#include "gui/render_debug.h"
-#include "gui/render_text.h"
-#include "gui/render_user.h"
-#include "gui/input.h"
-#include "gui/gui_common.h"
+#include "editor/render_garage.h"
+#include "editor/render_debug.h"
+#include "editor/render_text.h"
+#include "editor/render_user.h"
+#include "editor/gui_common.h"
 
 #include "vehicle.h"
 #include "parts.h"

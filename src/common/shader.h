@@ -1,11 +1,8 @@
 #ifndef SHADER_H
 #define SHADER_H
-
 #include <stdbool.h>
 
 #include <glad/glad.h>
-
-#include "gui_common.h"
 
 // Shader code is specific to each GPU, so we have to store the GLSL source
 // code as a string and compile it at runtime. Loading the shaders from a file
@@ -33,4 +30,3 @@ gl_obj program_compile(const char* vert_path, const char* frag_path);
 
 
 #endif // #ifndef SHADER_H
-

@@ -1,6 +1,8 @@
-#include <vehicle.h>
-#include <stfs.h>
 #include <common/logging.h>
+
+#include <stfs.h>
+#include <vehicle.h>
+#include <editor/vehicle_edit.h>
 
 #include "testing.h"
 

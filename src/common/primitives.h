@@ -1,7 +1,7 @@
 #ifndef PRIMITIVES_H
 #define PRIMITIVES_H
 
-#include "gui_common.h"
+#include "model.h"
 enum {
     QUAD_SIZE = 32,
     CUBE_SIZE = 1,

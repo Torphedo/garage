@@ -1,9 +1,8 @@
 #include <string.h>
 
-#include "parts.h"
+#include "../parts.h"
 #include "gui_common.h"
 #include "render_text.h"
-#include "vehicle.h"
 
 char partname_buf[32] = "Large Folding Propeller";
 text_state part_name = {0};

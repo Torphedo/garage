@@ -2,9 +2,11 @@
 #define GUI_COMMON_H
 #include <common/int.h>
 #include <common/vector.h>
-#include <vehicle.h>
-#include <model.h>
-#include "input.h"
+#include <common/input.h>
+
+#include "../vehicle.h"
+#include "common/model.h"
+#include "vehicle_edit.h"
 
 typedef enum {
     MODE_MOVCAM, // Selection box locked, camera unlocked (freecam)

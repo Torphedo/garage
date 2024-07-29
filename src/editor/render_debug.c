@@ -1,7 +1,7 @@
 #include <glad/glad.h>
 
-#include "primitives.h"
-#include "gui_common.h"
+#include <common/primitives.h>
+#include "render_debug.h"
 
 void debug_render(gui_state* gui) {
     // Bind our shader & buffers
@@ -20,4 +20,3 @@ void debug_render(gui_state* gui) {
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 }
-

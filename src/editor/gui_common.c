@@ -6,13 +6,13 @@
 
 #include <common/int.h>
 #include <common/logging.h>
+#include <common/shader.h>
+#include <common/primitives.h>
+#include <common/gl_setup.h>
 
+#include "../vehicle.h"
 #include "camera.h"
 #include "gui_common.h"
-#include "shader.h"
-#include "primitives.h"
-#include "gl_setup.h"
-#include "vehicle.h"
 
 const char* frag = {
 #include "shader/vcolor.frag.h"

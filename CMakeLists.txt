@@ -12,10 +12,10 @@ include_directories("src" "ext/glfw/include" "ext/glad/include" "ext/cglm/includ
 add_executable(txt2h "ext/txt2h.c")
 
 set(GLSL_SOURCES
-    src/gui/shader/vcolor.frag
-    src/gui/shader/vcolor.vert
-    src/gui/shader/text.vert
-    src/gui/shader/text.frag
+    src/editor/shader/vcolor.frag
+    src/editor/shader/vcolor.vert
+    src/editor/shader/text.vert
+    src/editor/shader/text.frag
 )
 
 # Autogenerate string constant headers for each GLSL source file using txt2h.c
@@ -38,26 +38,27 @@ add_library(common STATIC
     src/common/logging.c
     src/common/sha1.c
     src/common/image.c
+    src/common/gl_debug.c
+    src/common/gl_setup.c
+    src/common/input.c
+    src/common/shader.c
+    src/common/primitives.c
+    src/common/model.c
 )
 
 add_executable(garage
-    src/gui/gl_debug.c
-    src/gui/gl_setup.c
-    src/gui/input.c
-    src/gui/camera.c
-    src/gui/shader.c
-    src/gui/render_garage.c
-    src/gui/render_debug.c
-    src/gui/render_text.c
-    src/gui/render_user.c
-    src/gui/gui_common.c
-    src/gui/primitives.c
+    src/editor/camera.c
+    src/editor/render_garage.c
+    src/editor/render_debug.c
+    src/editor/render_text.c
+    src/editor/render_user.c
+    src/editor/gui_common.c
+    src/editor/vehicle_edit.c
 
     # Adding the GLSL headers here auto-generates them during the build
     ${glsl_headers}
 
     src/main.c
-    src/model.c
     src/vehicle.c
     src/parts.c
     src/stfs.c

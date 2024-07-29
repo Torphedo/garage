@@ -2,6 +2,7 @@
 #include <string.h>
 
 #include <glad/glad.h>
+#include <GLFW/glfw3.h>
 #include <stb_truetype.h>
 #include <stb_dxt.h>
 
@@ -9,8 +10,9 @@
 #include <common/logging.h>
 #include <common/image.h>
 #include <common/utf8.h>
-#include "shader.h"
-#include "primitives.h"
+#include <common/shader.h>
+#include <common/primitives.h>
+
 #include "render_text.h"
 
 // A vertex with position and texture coordinates

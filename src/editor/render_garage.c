@@ -4,9 +4,9 @@
 #include <cglm/cglm.h>
 
 #include <common/logging.h>
-#include "primitives.h"
+#include <common/primitives.h>
+
 #include "camera.h"
-#include "model.h"
 #include "gui_common.h"
 #include "render_garage.h"
 

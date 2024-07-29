@@ -4,9 +4,9 @@
 
 #include <glad/glad.h>
 
-#include <common/file.h>
-#include <common/int.h>
-#include <common/logging.h>
+#include "file.h"
+#include "int.h"
+#include "logging.h"
 #include "shader.h"
 
 // Only for the shader program (not the individual shader objects)

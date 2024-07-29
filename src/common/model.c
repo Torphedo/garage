@@ -3,9 +3,9 @@
 
 #include <glad/glad.h>
 
-#include "common/logging.h"
-#include "common/file.h"
-#include "gui/gui_common.h"
+#include <common/logging.h>
+#include <common/file.h>
+#include "model.h"
 
 void model_upload(model* m) {
     gl_obj buffers[2];
