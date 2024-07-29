@@ -28,14 +28,19 @@ typedef struct {
     vec3s8 pos;
     u16 pad;
     u8 modifier; // Used for part settings, if applicable (e.g. wheel steering mode)
-    union {
-        u8 pad2;
-        bool selected; // Used only in this editor, set to 0 before writing
-    };
+    u8 pad2;
     u32 id; // part_id enum
     vec3 rot; // Measured in radians
     rgba8 color; // Game stores arbitrary colors, but only the preset colors are allowed
-    u32 pad3;
+    union {
+        u32 pad3;
+        struct {
+            // Padding forces the selection flag to be the MSB, to try to reduce
+            // the data we destroy by re-using this space
+            u32 _selectflag_padding: 31;
+            bool selected: 1; // Used only in this editor, please set to 0 before writing
+        };
+    };
 }part_entry;
 
 // The flexible array member causes sizeof(vehicle) == sizeof(vehicle_header)!
@@ -97,7 +102,7 @@ void vehicle_unselect_all(vehicle* v);
 // Returns a boolean indicating if the vehicle had to be adjusted.
 bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff);
 
-bool vehicle_rotate_selection(vehicle* v, vehicle_bitmask* selection, s8 forward_diff, s8 side_diff, vec3s cam_view);
+bool vehicle_rotate_selection(vehicle* v, vehicle_bitmask* selection, vehicle_bitmask* vacancy, s8 forward_diff, s8 side_diff, vec3s cam_view);
 
 // Check if the selected parts overlap with the rest of the vehicle
 bool vehicle_selection_overlap(vehicle* v, vehicle_bitmask* mask);
