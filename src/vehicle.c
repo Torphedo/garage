@@ -2,6 +2,9 @@
 #include <malloc.h>
 
 #include <cglm/struct.h>
+#include "cglm/mat4.h"
+#include "cglm/quat.h"
+#include "cglm/struct/mat4.h"
 #include "common/endian.h"
 #include "common/file.h"
 #include "common/vector.h"
@@ -261,7 +264,7 @@ bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
 
 
 
-bool vehicle_rotate_selection(vehicle* v, vehicle_bitmask* selection, s8 forward_diff, s8 side_diff, vec3s cam_view) {
+bool vehicle_rotate_selection(vehicle* v, vehicle_bitmask* selection, vehicle_bitmask* vacancy, s8 forward_diff, s8 side_diff, vec3s cam_view) {
     // Absolute value of camera vector
     vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
 
@@ -298,6 +301,7 @@ bool vehicle_rotate_selection(vehicle* v, vehicle_bitmask* selection, s8 forward
         glm_rotate(rot_matrix, glm_rad(90) * side_diff, (vec3){0, 1, 0});
     }
 
+    // In this loop we just find part count & the selection bounding box
     vec3s8 sel_max = {0}; // Highest position in the selection
     vec3s8 sel_min = {127, 127, 127}; // Smallest position in the selection
     u16 part_count = 0;
@@ -308,42 +312,57 @@ bool vehicle_rotate_selection(vehicle* v, vehicle_bitmask* selection, s8 forward
         }
         part_count++;
 
-        mat4 part_rotation = {0};
-        glm_euler(p->rot, part_rotation);
-
-        // Apply existing part rotation to matrix & update the part rotation
-        glm_mat4_mul(rot_matrix, part_rotation, part_rotation);
-        glm_euler_angles(part_rotation, p->rot);
-
-
         // Check all the cells this part occupies to see if they form a corner of the selection
         vec3s8* positions = part_get_info(p->id).relative_occupation;
         // Get quaternion of part rotation
-        // Sorry for the ugly cast, this is just making it treat a vec3 as vec3s because they're the same
-        versors quaternion = glms_euler_xyz_quat(*(vec3s*)&p->rot);
+        vec4 part_rot = {0};
+        glm_euler_xyz_quat(p->rot, part_rot);
+        vec4 user_rot = {0};
+        glm_mat4_quat(rot_matrix, user_rot);
 
         while (1) {
-            // Rotate the relative point around the part's origin
-            vec3s rotated_point = glms_quat_rotatev(quaternion, vec3_from_vec3s8(*positions, 1.0f));
+            // Calculate offsets from new part rotation
+            vec4 new_rot = {0};
+            vec3 post_rot_offset = {0};
+            glm_quat_mul(user_rot, part_rot, new_rot);
+            glm_quat_rotatev(new_rot, (vec3){positions->x, positions->y, positions->z}, post_rot_offset);
+
+            // Calculate offsets from current part rotation
+            vec3 pre_rot_offset = {0};
+            glm_quat_rotatev(part_rot, (vec3){positions->x, positions->y, positions->z}, pre_rot_offset);
 
             // Get the final coordinate by adding the rotated point to origin
-            vec3s8 cell = {
-                MAX(p->pos.x + roundf(rotated_point.x), 0),
-                MAX(p->pos.y + roundf(rotated_point.y), 0),
-                MAX(p->pos.z + roundf(rotated_point.z), 0),
+            // These coordinates use the current part rotation
+            vec3s8 cur_cell = {
+                MAX(p->pos.x + roundf(pre_rot_offset[0]), 0),
+                MAX(p->pos.y + roundf(pre_rot_offset[1]), 0),
+                MAX(p->pos.z + roundf(pre_rot_offset[2]), 0),
+            };
+
+            // These coordinates use the new part rotation
+            vec3s8 new_cell = {
+                MAX(p->pos.x + roundf(post_rot_offset[0]), 0),
+                MAX(p->pos.y + roundf(post_rot_offset[1]), 0),
+                MAX(p->pos.z + roundf(post_rot_offset[2]), 0),
             };
 
             // Update selection min/max positions
             sel_max = (vec3s8) {
-                MAX(sel_max.x, cell.x),
-                MAX(sel_max.y, cell.y),
-                MAX(sel_max.z, cell.z),
+                MAX(sel_max.x, cur_cell.x),
+                MAX(sel_max.y, cur_cell.y),
+                MAX(sel_max.z, cur_cell.z),
             };
             sel_min = (vec3s8) {
-                MIN(sel_min.x, cell.x),
-                MIN(sel_min.y, cell.y),
-                MIN(sel_min.z, cell.z),
+                MIN(sel_min.x, cur_cell.x),
+                MIN(sel_min.y, cur_cell.y),
+                MIN(sel_min.z, cur_cell.z),
             };
+
+            // If applying the rotation will cause a collision, bail early.
+            if (vehiclemask_get_3d(vacancy, new_cell.x, new_cell.y, new_cell.z)) {
+                // LOG_MSG(debug, "rotation cancelled\n");
+                return false;
+            }
 
             // The position array ends with an all-zero entry (the origin)
             if (vec3s8_eq(*positions, (vec3s8){0})) {
@@ -358,14 +377,23 @@ bool vehicle_rotate_selection(vehicle* v, vehicle_bitmask* selection, s8 forward
         (float)(sel_max.z + sel_min.z) / 2,
     };
 
-    if (part_count < 2) {
-        return true;
-    }
-
     for (u16 i = 0; i < v->head.part_count; i++) {
         part_entry* p = &v->parts[i];
         if (!vehiclemask_get_3d(selection, p->pos.x, p->pos.y, p->pos.z)) {
             continue; // Skip unselected parts
+        }
+
+        // Get rotation matrix for the part rotation
+        mat4 part_rotation = {0};
+        glm_euler(p->rot, part_rotation);
+
+        // Combine rotation matrices & update the part rotation
+        glm_mat4_mul(rot_matrix, part_rotation, part_rotation);
+        glm_euler_angles(part_rotation, p->rot);
+
+        if (part_count < 2) {
+            // If there's only one part, we've already rotated it and shouldn't move it
+            return true;
         }
 
         vec3 offset = {

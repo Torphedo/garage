@@ -122,7 +122,7 @@ void update_edit_mode(gui_state* gui) {
 
         // Update the bitmask(s) if needed
         if (forward_diff != 0 || side_diff != 0) {
-            vehicle_rotate_selection(gui->v, gui->selected_mask, forward_diff, side_diff, cam_view);
+            vehicle_rotate_selection(gui->v, gui->selected_mask, gui->vacancy_mask, forward_diff, side_diff, cam_view);
             update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
         }
     }
