@@ -34,12 +34,7 @@ typedef struct {
     rgba8 color; // Game stores arbitrary colors, but only the preset colors are allowed
     union {
         u32 pad3;
-        struct {
-            // Padding forces the selection flag to be the MSB, to try to reduce
-            // the data we destroy by re-using this space
-            u32 _selectflag_padding: 31;
-            bool selected: 1; // Used only in this editor, please set to 0 before writing
-        };
+        bool selected;
     };
 }part_entry;
 
