@@ -69,9 +69,9 @@ const char frag_src[] = {
 
 bool initialized = false;
 stbtt_packedchar packed_chars[NUM_CHAR];
-u8* ttf_data;
-stbtt_fontinfo font_info;
 stbtt_pack_context pack_ctx;
+s32 font_height;
+s32 font_ascent;
 
 // OpenGL objects
 gl_obj font_atlas; // BC4 font atlas texture
@@ -85,18 +85,38 @@ bool text_renderer_setup(const char* ttf_path) {
         return NULL;
     }
 
-    ttf_data = file_load(ttf_path);
+    u8* ttf_data = file_load(ttf_path);
     u8 bitmap[TTF_TEX_HEIGHT][TTF_TEX_WIDTH] = {0};
     if (ttf_data == NULL) {
         LOG_MSG(error, "Failed to load TTF!\n");
+        return false;
+    }
+
+    stbtt_fontinfo font_info = {0};
+    if (!stbtt_InitFont(&font_info, ttf_data, 0)) {
         free(ttf_data);
         return false;
     }
-    stbtt_InitFont(&font_info, ttf_data, 0);
-    stbtt_PackBegin(&pack_ctx, (unsigned char*)bitmap, TTF_TEX_WIDTH, TTF_TEX_HEIGHT, 0, 1, NULL);
+    if (!stbtt_PackBegin(&pack_ctx, (unsigned char*)bitmap, TTF_TEX_WIDTH, TTF_TEX_HEIGHT, 0, 1, NULL)) {
+        free(ttf_data);
+        return false;
+    }
+
+    // Get font height data
+    {
+        int x0, x1, y0, y1;
+        stbtt_GetFontBoundingBox(&font_info, &x0, &y0, &x1, &y1);
+        font_height = y1 - y0;
+        font_ascent = y1;
+    }
     // stbtt_PackSetSkipMissingCodepoints(&state->pack_ctx, true);
-    float font_size = ((float)TTF_TEX_WIDTH / 8);
+
+    const float font_size = 64; // Characters will render up to 64 pixels high
+    // If you add multiple ranges, you'll have to fix the index calculation in the transform update function!
     stbtt_PackFontRange(&pack_ctx, ttf_data, 0, font_size, FIRST_CHAR, NUM_CHAR, packed_chars);
+
+    // After font packing, we can delete the TTF data
+    free(ttf_data);
 
     // BC4 is 0.5 bytes per pixel
     u32 size = (TTF_TEX_HEIGHT * TTF_TEX_WIDTH) / 2;
@@ -144,7 +164,6 @@ bool text_renderer_setup(const char* ttf_path) {
     if (!shader_link_check(shader)) {
         LOG_MSG(error, "Shader linker failure!\n");
         stbtt_PackEnd(&pack_ctx);
-        free(ttf_data);
         glDeleteTextures(1, &font_atlas);
         glDeleteProgram(shader);
         return NULL;
@@ -192,7 +211,6 @@ void text_renderer_cleanup() {
     // tex quad shares the regular quad's index buffer, no need to delete it
 
     stbtt_PackEnd(&pack_ctx);
-    free(ttf_data);
 }
 
 text_state text_render_prep(const char* text, u32 len, float scale, vec2 pos) {
@@ -261,6 +279,11 @@ void text_update_transforms(text_state* ctx) {
     // Get aspect ratio
     const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
     const float aspect = (float)mode->width / (float)mode->height;
+    // Scale characters 1/48th of the screen
+    float scale_factor = (((float)mode->height / 32) / (float)font_height);
+
+    const float ascent = (float)font_ascent / pack_ctx.height;
+
 
     const float scale = ctx->scale;
     float cur_x = ctx->pos[0];
@@ -274,57 +297,46 @@ void text_update_transforms(text_state* ctx) {
             // a control character that renders as a box.
             codepoint = 0x81;
         }
+        // This math will break if we have multiple non-contiguous ranges!
         const u32 idx = codepoint - FIRST_CHAR;
         // Find out the character's texture coords & put them in the array
         stbtt_aligned_quad packed_quad = {0};
-        {
-            // This function requires a valid float output address, even though I don't need that output.
-            float temp;
-            stbtt_GetPackedQuad(packed_chars, pack_ctx.width, pack_ctx.height, idx, &temp, &temp, &packed_quad, 0);
-        }
         mat4 model = {0};
         glm_mat4_identity(model);
-        float left_bearing = 0;
         float width = 0;
         float height = 0;
         float start_height = 0;
-        float line_height = 0;
-        float ascent = 0;
+        float x_advance = 0;
         {
-            // Get left bearing
-            int i_width, i_left; // The "i" is for "integer".
-            int i_ascent, i_descent, line_gap;
-            stbtt_GetCodepointHMetrics(&font_info, codepoint, &i_width, &i_left);
-            stbtt_GetFontVMetrics(&font_info, &i_ascent, &i_descent, &line_gap);
-            left_bearing = (float)i_left / pack_ctx.width;
-            line_height = (float)(i_ascent - i_descent) / pack_ctx.height;
-            ascent = (float)i_ascent / pack_ctx.height;
+            // This function requires a valid float output address, even though I don't need that output.
+            float temp = 0;
+            stbtt_GetPackedQuad(packed_chars, pack_ctx.width, pack_ctx.height, idx, &temp, &temp, &packed_quad, 0);
 
-            // Get width/height
-            int x0, y0, x1, y1;
-            stbtt_GetCodepointBox(&font_info, codepoint, &x0, &y0, &x1, &y1);
-            width = (float)(x1 - x0) / pack_ctx.width;
-            height = (float)(y1 - y0) / pack_ctx.height;
-            start_height = (float)y0 / pack_ctx.height; // Offset from baseline
+            x_advance = packed_chars[idx].xadvance * scale_factor;
+            width = (packed_quad.x1 - packed_quad.x0) * scale_factor;
+            height = ((packed_quad.y1 - packed_quad.y0) * scale_factor);
+            // Figure out how much we need to go below the baseline. Frankly I'm
+            // not sure why multiplying by 2 is needed, but it looks wrong if we
+            // don't do it. We should look into this math...
+            start_height = -(packed_quad.y1 * scale_factor * 2);
         }
-
-        float delta_x = (width + left_bearing + 0.25f);
 
         // Since quad origin is the middle, first character needs to advance
         // by half the quad width so its left edge matches the intended position.
+        // At some point we should adjust the quad origin and fix this.
         if (i == 0) {
-            delta_x /= 2;
+            x_advance /= 2;
         }
         // Advance on X by character width
-        cur_x += delta_x * scale;
+        cur_x += x_advance * scale;
 
         // Apply our transforms for this character
         vec3 pos_diff = {
             cur_x,
-            // Origin is top-left, so we go down by line height to be at the
-            // baseline. Then go down by the amount of empty space between the
-            // line top and character top, and go back up by double the offset from baseline.
-            cur_y - ((line_height - (start_height * 2) + (ascent - height)) * scale),
+            // Origin is top-left, so we go down by ascent to be at baseline.
+            // Then go down by the amount of empty space between the line top
+            // and character top, and go back up by the offset from baseline.
+            cur_y - ((ascent + (ascent - height) - start_height) * scale),
             0, // No depth needed
         };
         glm_translate(model, pos_diff);

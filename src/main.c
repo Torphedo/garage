@@ -37,7 +37,7 @@ int main(int argc, char** argv) {
         .vacancy_mask = calloc(1, sizeof(vehicle_bitmask)),
         .selected_mask = calloc(1, sizeof(vehicle_bitmask)),
     };
-    if (gui.vacancy_mask == NULL || gui.vacancy_mask == NULL) {
+    if (gui.vacancy_mask == NULL || gui.selected_mask == NULL) {
         LOG_MSG(error, "Failed to alloc a vehicle bitmask\n");
         return 1;
     }

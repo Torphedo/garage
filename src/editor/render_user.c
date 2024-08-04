@@ -13,7 +13,7 @@ void ui_update_render(gui_state* gui) {
     static bool initialized = false;
     if (!initialized) {
         part_name = text_render_prep(partname_buf, sizeof(partname_buf), 0.03f, (vec2){-1, -0.7f});
-        editing_mode = text_render_prep(NULL, 32, 0.03f, (vec2){-1, 0.9f});
+        editing_mode = text_render_prep(NULL, 32, 0.03f, (vec2){-1.01f, 0.85f});
         initialized = true;
     }
 
