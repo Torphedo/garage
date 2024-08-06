@@ -19,14 +19,9 @@ bool shader_link_check(gl_obj shader);
 // shader_type is GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, or GL_GEOMETRY_SHADER
 gl_obj shader_compile_src(const char* src, GLenum shader_type);
 
-// Load a GLSL source file from disk, then compile it with shader_compile_src()
-// shader_type is GL_VERTEX_SHADER, GL_FRAGMENT_SHADER, or GL_GEOMETRY_SHADER
-gl_obj shader_compile(const char* path, GLenum shader_type);
-
 // Corresponding wrappers to compile a whole shader program. You should call
 // shader_link_check() afterwards in case of failure.
 gl_obj program_compile_src(const char* vert_src, const char* frag_src);
-gl_obj program_compile(const char* vert_path, const char* frag_path);
 
 
 #endif // #ifndef SHADER_H

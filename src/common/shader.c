@@ -73,24 +73,6 @@ gl_obj program_compile_src(const char* vert_src, const char* frag_src) {
     return program;
 }
 
-gl_obj program_compile(const char* vert_path, const char* frag_path) {
-    char* vert_src = (char*)file_load(vert_path);
-    if (vert_src == NULL) {
-        LOG_MSG(error, "Failed to read vertex shader file %s\n", vert_path);
-        return 0;
-    }
-    char* frag_src = (char*)file_load(frag_path);
-    if (frag_src == NULL) {
-        LOG_MSG(error, "Failed to read fragment shader file %s\n", frag_path);
-        return 0;
-    }
-
-    gl_obj out = program_compile_src(vert_src, frag_src);
-    free(vert_src);
-    free(frag_src);
-    return out;
-}
-
 gl_obj shader_compile_src(const char* src, GLenum shader_type) {
     // Create & compile shader code
     gl_obj shader = glCreateShader(shader_type);
@@ -105,18 +87,6 @@ gl_obj shader_compile_src(const char* src, GLenum shader_type) {
         glGetShaderInfoLog(shader, sizeof(log), NULL, log);
         LOG_MSG(error, "Failed to compile shader:\n%s\n", log);
     }
-    return shader;
-}
-
-gl_obj shader_compile(const char* path, GLenum shader_type) {
-    // Load shader source code
-    u8* shader_source = file_load(path);
-    if (shader_source == NULL) {
-        LOG_MSG(error, "Failed to open GLSL source file %s\n", path);
-        return 0;
-    }
-    gl_obj shader = shader_compile_src((char*)shader_source, shader_type);
-    free(shader_source);
     return shader;
 }
 
