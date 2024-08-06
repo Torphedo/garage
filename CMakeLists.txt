@@ -8,27 +8,7 @@ add_subdirectory(ext/glfw)
 include_directories("src" "ext/glfw/include" "ext/glad/include" "ext/cglm/include" "ext" "ext/physfs/src")
 
 # Internal build tool to generate headers for GLSL shaders
-add_executable(txt2h "ext/txt2h.c")
-
-set(GLSL_SOURCES
-    src/editor/shader/vcolor.frag
-    src/editor/shader/vcolor.vert
-    src/editor/shader/text.vert
-    src/editor/shader/text.frag
-)
-
-# Autogenerate string constant headers for each GLSL source file using txt2h.c
-set(glsl_headers)
-foreach(glsl_src ${GLSL_SOURCES})
-    set(file_h "${glsl_src}.h") # Append ".h" to filename
-    list(APPEND glsl_headers ${file_h}) # Add to list of generated headers
-
-    add_custom_command(
-        OUTPUT  ${CMAKE_SOURCE_DIR}/${file_h}
-        COMMAND txt2h ${glsl_src} ${file_h}
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-    )
-endforeach()
+add_executable(incbin "ext/incbin.c")
 
 # Build PhysicsFS without docs, to reduce build time.
 set(PHYSFS_BUILD_DOCS FALSE CACHE BOOL "Build doxygen based documentation" )
@@ -78,7 +58,12 @@ add_executable(garage
     # Adding the GLSL headers here auto-generates them during the build
     ${glsl_headers}
 
+    # Adding this to the source lists forces the custom command to run every
+    # build
+    ${CMAKE_CURRENT_BINARY_DIR}/generate_datafile
+
     src/main.c
+    src/physfs_bundling.c
     src/vehicle.c
     src/parts.c
     src/stfs.c
@@ -89,6 +74,17 @@ add_executable(garage
 )
 
 target_link_libraries(garage PRIVATE glfw common physfs-static)
+
+# Generate a data.7z with our assets
+add_custom_command(
+    # This output file will never exist, which makes CMake run this command on
+    # every build.
+    OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generate_datafile
+    # Setting the working dir stops it from making ".." the archive root... this is really stupid.
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+    COMMAND "cmake"
+    ARGS -E tar c ${CMAKE_CURRENT_BINARY_DIR}/data.7z --format=7zip ${CMAKE_SOURCE_DIR}/bin/ ${CMAKE_SOURCE_DIR}/src/editor/shader/
+)
 
 # List of all test files
 set(test_sources

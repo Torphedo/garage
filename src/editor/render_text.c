@@ -61,14 +61,6 @@ model tex_quad = {
     .indices = quad_indices,
 };
 
-const char vert_src[] = {
-#include "shader/text.vert.h"
-};
-
-const char frag_src[] = {
-#include "shader/text.frag.h"
-};
-
 bool initialized = false;
 stbtt_packedchar packed_chars[NUM_CHAR];
 stbtt_pack_context pack_ctx;
@@ -160,7 +152,14 @@ bool text_renderer_setup(const char* ttf_path) {
     glGenerateMipmap(GL_TEXTURE_2D);
 
     // Compile shaders
+    char* vert_src = physfs_load_file("/src/editor/shader/text.vert");
+    char* frag_src = physfs_load_file("/src/editor/shader/text.frag");
+    if (vert_src == NULL || frag_src == NULL) {
+        return NULL;
+    }
     shader = program_compile_src(vert_src, frag_src);
+    free(vert_src);
+    free(frag_src);
 
     // Delete individual shader objects
     if (!shader_link_check(shader)) {

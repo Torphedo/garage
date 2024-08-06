@@ -1,0 +1,36 @@
+#include <malloc.h>
+
+#define INCNBIN_PREFIX
+#define INCBIN_STYLE INCBIN_STYLE_SNAKE
+#include <incbin.h>
+
+#include <physfs.h>
+#include <common/path.h>
+#include <common/logging.h>
+
+INCBIN(asset_archive, "data.7z");
+
+bool setup_physfs(const char* argv0) {
+    char* self_path = get_self_path(argv0);
+    PHYSFS_init(argv0);
+    if (PHYSFS_mount(self_path, "/", 0) == 0) {
+        LOG_MSG(error, "Failed to mount %s\n", self_path);
+        free(self_path);
+        return false;
+    }
+    else {
+        LOG_MSG(debug, "Mounted %s as virtual filesystem root\n", self_path);
+    }
+
+    // We give it a suggested filenames with a slash because it's invalid on all
+    // filesystems, so there'll never be a name conflict
+    if (PHYSFS_mountMemory(gasset_archive_data, gasset_archive_size, NULL, "/garage_data.7z", "/", 1) == 0) {
+        LOG_MSG(error, "Somehow failed to mount bundled assets!\n");
+        return  false;
+    }
+
+    free(self_path);
+
+    return true;
+}
+

@@ -5,22 +5,16 @@
 #include <cglm/cglm.h>
 
 #include <common/int.h>
+#include <common/file.h>
 #include <common/logging.h>
 #include <common/shader.h>
 #include <common/primitives.h>
 #include <common/gl_setup.h>
 
-#include "../vehicle.h"
+#include <vehicle.h>
+#include <physfs_bundling.h>
 #include "camera.h"
 #include "gui_common.h"
-
-const char* frag = {
-#include "shader/vcolor.frag.h"
-};
-
-const char* vert = {
-#include "shader/vcolor.vert.h"
-};
 
 // This doesn't enforce what the bound VAO is... make sure to only call it with
 // the cube VAO bound.
@@ -252,10 +246,19 @@ bool gui_init(gui_state* gui) {
     // Initialize part bitmask
     update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
 
+    char* vert = physfs_load_file("/src/editor/shader/vcolor.vert");
+    char* frag = physfs_load_file("/src/editor/shader/vcolor.frag");
+    if (vert == NULL || frag == NULL) {
+        return NULL;
+    }
     gui->vcolor_shader = program_compile_src(vert, frag);
     if (!shader_link_check(gui->vcolor_shader)) {
+        free(vert);
+        free(frag);
         return false;
     }
+    free(vert);
+    free(frag);
 
     // Get our uniform locations
     gui->u_pvm = glGetUniformLocation(gui->vcolor_shader, "pvm");

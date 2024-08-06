@@ -19,6 +19,7 @@
 
 #include "vehicle.h"
 #include "parts.h"
+#include "physfs_bundling.h"
 
 int main(int argc, char** argv) {
     enable_win_ansi(); // Enable color & extra terminal features on Windows
@@ -29,15 +30,9 @@ int main(int argc, char** argv) {
     }
 
     // Setup PhysicsFS
-    char* self_path = get_self_path(argv[0]);
-    PHYSFS_init(argv[0]);
-    if (PHYSFS_mount(self_path, "/", 0) == 0) {
-        LOG_MSG(error, "Failed to mount %s\n", self_path);
-        free(self_path);
+    if (!setup_physfs(argv[0])) {
         return 1;
     }
-    LOG_MSG(debug, "Mounted %s as virtual filesystem root\n", self_path);
-    free(self_path);
 
     char* path = argv[1]; // Give our first argument a convenient name
     vehicle* v = vehicle_load(path);
