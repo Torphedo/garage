@@ -1,31 +1,15 @@
+#include <stdio.h>
 #include <string.h>
+
+#include <common/endian.h>
+
 #include "parts.h"
 
-id_str part_get_id_str(part_id id) {
-    id_str out = {0};
-    for (u8 i = 0; i < sizeof(id); i++) {
-        u8 byte = id >> (i * 8);
-        u8 high = byte >> 4;
-        u8 low = byte & 0x0F;
-
-        // Get the ASCII character of the hex digit. '9' is separated from 'A'
-        // by 0x10 bytes, so we can't just add the value.
-        out.c[i * 2] = '0' + high + (high > 0x9) * 0x7;
-        out.c[i * 2 + 1] |= '0' + low + (low > 0x9) * 0x7;
-    }
-
-    return out;
-}
-
-obj_path part_get_obj_path(part_id id) {
+obj_path part_get_obj_path(u32 id) {
     obj_path out = {0};
 
-    // Initialize path
-    strcpy(out.str, "bin/00000000.obj");
-
-    // Overwrite all the '0' characters with the hex ID in ASCII
-    id_str hex = part_get_id_str(id);
-    strncpy(&out.str[4], hex.c, sizeof(hex));
+    ENDIAN_FLIP(u32, id);
+    snprintf(out.str, sizeof(out.str), "bin/%08X.obj", id);
 
     return out;
 }

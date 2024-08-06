@@ -192,14 +192,6 @@ enum {
     CONNECT_MASK = 8,
 };
 
-// The 32-bit ID value, written in ASCII hexidecimal digits.
-// We need one character for each of the 8 hex digits
-// Must be a union, to convince the compiler we're not returning an array.
-typedef union {
-    u64 _val;
-    char c[8];
-}id_str;
-
 // This only exists to let us return an array without the compiler complaining
 typedef struct {
     // String in the format "bin/00000000.obj" (with numbers matching a part ID)
@@ -220,12 +212,7 @@ typedef struct {
 // 300+ line switch statements
 part_info part_get_info(part_id id);
 
-// Outputs 8 ASCII character representing a 32-bit number in hexidecimal
-// For example, part ID 0x1F207106 would output "1F207106"
-// (May be backwards due to endian-ness, but consistent throughout the program)
-id_str part_get_id_str(part_id id);
-
 // Get the path to an OBJ file in a "bin" folder named with the hex ID. For
 // example, part ID 0x1F207106 would output "bin/1F207106.obj"
-obj_path part_get_obj_path(part_id id);
+obj_path part_get_obj_path(u32 id);
 #endif // PART_IDS_H

@@ -137,6 +137,9 @@ char* get_self_path(const char* argv_0) {
             }
 
             // We found it :)
+            // Chop off executable filename
+            path_truncate(out, len);
+            out[strlen(out) - 1] = 0; // Remove the final trailing slash
             return out;
         }
     #endif
