@@ -109,12 +109,28 @@ char* get_self_path(const char* argv_0) {
         return out;
     #endif
 
-    // On most Unixes we can use the /proc/self/exe symlink. On BSD, we have to
-    // search the PATH and hope for the best.
+    // On most Unixes we can use the /proc/self/exe symlink. On OpenBSD, we'd
+    // have to search the PATH and hope for the best.
     #if defined(PLATFORM_POSIX)
-        if (file_exists("/proc/self/exe")) {
+        // Symlink pointing to the location of our own executable
+        char* selflink = "/proc/self/exe"; // Default to Linux 
+        if (!file_exists(selflink)) {
+            // DragonFlyBSD, FreeBSD if /proc is enabled
+            selflink = "/proc/curproc/file";
+        }
+        if (!file_exists(selflink)) {
+            // NetBSD
+            selflink = "/proc/curproc/exe";
+        }
+        if (!file_exists(selflink)) {
+            // Solaris
+            // We could also use getexecname() on Solaris, but this should work.
+            selflink = "/proc/self/path/a.out";
+        }
+
+        if (file_exists(selflink)) {
             // Find out where the symlink points
-            ssize_t len = readlink("/proc/self/exe", out, size - 1);
+            ssize_t len = readlink(selflink, out, size - 1);
             if (len == -1) {
                 LOG_MSG(error, "Failed to read symlink to get executable location (probably was over %d bytes)\n", size);
                 return out;
@@ -157,8 +173,8 @@ char* get_self_path(const char* argv_0) {
         return out;
     }
     else {
-        if (!file_exists("/proc/self/exe")) {
-            LOG_MSG(error, "Unimplemented: We've been run from the PATH, but /proc/self/exe doesn't exist (we're probably on BSD).\n");
+        if (!file_exists(selflink)) {
+            LOG_MSG(error, "Unimplemented: We've been run from the PATH, but no usable /proc symlinks for finding our location exist (we're probably on OpenBSD).\n");
             LOG_MSG(info, "Run this program with an absolute or relative path to bypass this issue.\n");
             return out;
         }
