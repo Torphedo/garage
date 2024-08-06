@@ -10,6 +10,7 @@ out/
 cmake-*/
 cmake_*/
 *.exe
+*.pdb
 *.lib
 *.a
 *.o
