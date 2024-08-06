@@ -1,12 +1,11 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.18)
 project(garage C)
 
 set(CMAKE_C_STANDARD 99)
 
 add_subdirectory(ext/glfw)
-add_subdirectory(ext/glad)
 
-include_directories("src" "ext/glfw/include" "ext/glad/include" "ext/cglm/include" "ext")
+include_directories("src" "ext/glfw/include" "ext/glad/include" "ext/cglm/include" "ext" "ext/physfs/src")
 
 # Internal build tool to generate headers for GLSL shaders
 add_executable(txt2h "ext/txt2h.c")
@@ -30,6 +29,26 @@ foreach(glsl_src ${GLSL_SOURCES})
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
 endforeach()
+
+# Build PhysicsFS without docs, to reduce build time.
+set(PHYSFS_BUILD_DOCS FALSE CACHE BOOL "Build doxygen based documentation" )
+set(PHYSFS_BUILD_SHARED FALSE CACHE BOOL "Build shared library")
+set(PHYSFS_BUILD_TEST FALSE CACHE BOOL "Build stdio test program")
+set(PHYSFS_DISABLE_INSTALL FALSE CACHE BOOL "Disable installing PhysFS")
+
+# Disable everything but zip and 7z support. This saves 12KiB (ish).
+set(PHYSFS_ARCHIVE_GRP FALSE CACHE BOOL "GRP support")
+set(PHYSFS_ARCHIVE_WAD FALSE CACHE BOOL "WAD support")
+set(PHYSFS_ARCHIVE_CSM FALSE CACHE BOOL "CSM support")
+set(PHYSFS_ARCHIVE_HOG FALSE CACHE BOOL "HOG support")
+set(PHYSFS_ARCHIVE_MVL FALSE CACHE BOOL "MVL support")
+set(PHYSFS_ARCHIVE_QPAK FALSE CACHE BOOL "QPAK support")
+set(PHYSFS_ARCHIVE_SLB FALSE CACHE BOOL "SLB support")
+set(PHYSFS_ARCHIVE_VDF FALSE CACHE BOOL "VDF support")
+set(PHYSFS_ARCHIVE_ISO9660 FALSE CACHE BOOL "ISO9660 support")
+# Fix "uninstall" target name conflict with GLFW
+set(PHYSFS_TARGETNAME_UNINSTALL "physfs_uninstall" CACHE STRING "Name of 'uninstall' build target")
+add_subdirectory(ext/physfs)
 
 add_library(common STATIC
     src/common/int.c
@@ -64,11 +83,12 @@ add_executable(garage
     src/parts.c
     src/stfs.c
 
+    ext/glad/src/glad.c
     ext/stb_dxt.c
     ext/stb_truetype.c
 )
 
-target_link_libraries(garage PRIVATE glfw glad common)
+target_link_libraries(garage PRIVATE glfw common physfs-static)
 
 # List of all test files
 set(test_sources

@@ -76,7 +76,7 @@ GLFWwindow* setup_opengl(s32 width, s32 height, const char* window_name, bool en
     // Create the OpenGL context
     glfwMakeContextCurrent(window);
     if (!gladLoadGLLoader((GLADloadproc) glfwGetProcAddress)) {
-        LOG_MSG(error, "failed to initialize GLAD for OpenGL Core 3.3.\n");
+        LOG_MSG(error, "failed to initialize GLAD for OpenGL Core 3.3\n");
         glfwTerminate();
         return NULL;
     }
@@ -94,3 +94,4 @@ GLFWwindow* setup_opengl(s32 width, s32 height, const char* window_name, bool en
 
     return window;
 }
+
