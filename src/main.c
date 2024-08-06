@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
     enable_win_ansi(); // Enable color & extra terminal features on Windows
     if (argc != 2) {
         LOG_MSG(error, "No input files.\n");
-        LOG_MSG(info, "Usage: garage [vehicle file]");
+        LOG_MSG(info, "Usage: garage [vehicle file]\n");
         return 1;
     }
     char* path = argv[1]; // Give our first argument a convenient name

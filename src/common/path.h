@@ -24,6 +24,8 @@ void path_make_physfs_friendly(char* path);
 
 void path_get_filename(const char* path, char* output);
 
-// Find the parent directory of this executable (argv[0] helps but isn't required)
+// Find the parent directory of this executable. argv[0] is only needed on BSD,
+// but you should provide it anyway.
+// Caller is responsible for freeing the output string
 char* get_self_path(const char* argv_0);
 
