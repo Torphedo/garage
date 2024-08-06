@@ -39,15 +39,8 @@ u32 model_size(model m) {
     return sizeof(m) - (2 * sizeof(void*)) + (m.vert_count * sizeof(vertex)) + (m.idx_count * sizeof(u16));
 }
 
-model obj_load(const char* path) {
+model obj_load(u8* txt) {
     model out = {0};
-    // Load the whole file into a text buffer so we don't need to read it twice
-    char* txt = (char*)file_load(path);
-    if (txt == NULL) {
-        // file_load() already prints an error message. No need to spam log
-        // LOG_MSG(error, "Failed to load \"%s\"\n", path);
-        return out;
-    }
 
     // We parse the file in 2 passes. The first pass tallies the vertex/face
     // counts to allocate the vertex/index buffers, and the second loads the
@@ -119,6 +112,6 @@ model obj_load(const char* path) {
         }
     }
 
-    free(txt);
     return out;
 }
+

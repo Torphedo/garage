@@ -1,10 +1,12 @@
 #include <stddef.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb_truetype.h>
 #include <stb_dxt.h>
+#include <physfs.h>
 
 #include <common/file.h>
 #include <common/logging.h>
@@ -85,10 +87,8 @@ bool text_renderer_setup(const char* ttf_path) {
         return NULL;
     }
 
-    u8* ttf_data = file_load(ttf_path);
-    u8 bitmap[TTF_TEX_HEIGHT][TTF_TEX_WIDTH] = {0};
+    u8* ttf_data = physfs_load_file(ttf_path);
     if (ttf_data == NULL) {
-        LOG_MSG(error, "Failed to load TTF!\n");
         return false;
     }
 
@@ -97,6 +97,8 @@ bool text_renderer_setup(const char* ttf_path) {
         free(ttf_data);
         return false;
     }
+
+    u8 bitmap[TTF_TEX_HEIGHT][TTF_TEX_WIDTH] = {0};
     if (!stbtt_PackBegin(&pack_ctx, (unsigned char*)bitmap, TTF_TEX_WIDTH, TTF_TEX_HEIGHT, 0, 1, NULL)) {
         free(ttf_data);
         return false;

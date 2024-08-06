@@ -21,7 +21,8 @@ typedef struct {
 void model_upload(model* m);
 u32 model_size(model m);
 
-// Load an OBJ file. Assumes vertex colors are stored as RGB values on each vertex.
-model obj_load(const char* path);
+// Load OBJ data into a model struct.
+// Assumes vertex colors are stored as RGB values on each vertex.
+model obj_load(u8* txt);
 
 #endif // MODEL_H

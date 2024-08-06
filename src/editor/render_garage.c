@@ -5,6 +5,7 @@
 
 #include <common/logging.h>
 #include <common/primitives.h>
+#include <common/file.h>
 
 #include "camera.h"
 #include "gui_common.h"
@@ -21,7 +22,10 @@ model get_or_load_model(garage_state* state, part_id id) {
             cur->id = id;
             // Path is on the stack, so we don't need to free it
             const char* obj_path = part_get_obj_path(id).str;
-            cur->model = obj_load(obj_path);
+            u8* obj_data = physfs_load_file(obj_path);
+            if (obj_data != NULL) {
+                cur->model = obj_load(obj_data);
+            }
 
             if (cur->model.vertices == NULL || cur->model.indices == NULL) {
                 LOG_MSG(error, "Failed to load \"%s\" (0x%X)\n\n", part_get_info(id).name, id);

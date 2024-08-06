@@ -3,11 +3,13 @@
 #include <string.h>
 
 #include <glad/glad.h>
+#include <physfs.h>
 
 #include "common/int.h"
 #include "common/logging.h"
 #include "common/gl_setup.h"
 #include "common/input.h"
+#include "common/path.h"
 
 #include "editor/render_garage.h"
 #include "editor/render_debug.h"
@@ -25,6 +27,18 @@ int main(int argc, char** argv) {
         LOG_MSG(info, "Usage: garage [vehicle file]\n");
         return 1;
     }
+
+    // Setup PhysicsFS
+    char* self_path = get_self_path(argv[0]);
+    PHYSFS_init(argv[0]);
+    if (PHYSFS_mount(self_path, "/", 0) == 0) {
+        LOG_MSG(error, "Failed to mount %s\n", self_path);
+        free(self_path);
+        return 1;
+    }
+    LOG_MSG(debug, "Mounted %s as virtual filesystem root\n", self_path);
+    free(self_path);
+
     char* path = argv[1]; // Give our first argument a convenient name
     vehicle* v = vehicle_load(path);
     if (v == NULL) {

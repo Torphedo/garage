@@ -4,6 +4,8 @@
 
 #include <sys/stat.h>
 
+#include <physfs.h>
+
 // MSVC doesn't define S_ISREG() or S_ISDIR() in stat.h, so we have to do it.
 #if !defined(S_ISREG) && defined(S_IFMT) && defined(S_IFREG)
     #define S_ISREG(m) (((m) & S_IFMT) == S_IFREG)
@@ -85,5 +87,27 @@ bool file_load_existing(const char* path, u8* buf, u32 size) {
     fread(buf, size, 1, resource);
     fclose(resource);
     return true;
+}
+
+u8* physfs_load_file(const char* path) {
+    PHYSFS_File* resource = PHYSFS_openRead(path);
+    if (resource == NULL) {
+        LOG_MSG(error, "Failed to open \"%s\" via PHYSFS!\n", path);
+        return NULL;
+    }
+    s64 filesize = PHYSFS_fileLength(resource);
+    if (filesize == -1) {
+        LOG_MSG(debug, "Couldn't get size of file!\n");
+        return NULL;
+    }
+    u8* data = calloc(1, filesize);
+    if (data == NULL) {
+        LOG_MSG(error, "Failed to load \"%s\" via PHYSFS!\n", path);
+        return NULL;
+    }
+    PHYSFS_readBytes(resource, data, filesize);
+    PHYSFS_close(resource);
+
+    return data;
 }
 
