@@ -185,7 +185,7 @@ part_entry* part_by_pos(vehicle* v, vec3s8 target) {
             }
 
             // Move on when we find the final entry (all zeroes, the origin)
-            if (vec3s8_eq(*part.relative_occupation, (vec3s8){})) {
+            if (vec3s8_eq(*part.relative_occupation, (vec3s8){0})) {
                 break; // Breaks from the while() loop, not the for()
             }
             part.relative_occupation++; // Go to next entry

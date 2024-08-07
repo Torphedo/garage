@@ -100,7 +100,8 @@ u8* physfs_load_file(const char* path) {
         LOG_MSG(debug, "Couldn't get size of file!\n");
         return NULL;
     }
-    u8* data = calloc(1, filesize);
+    // We add an extra byte here for the null terminator, in case of text data
+    u8* data = calloc(1, filesize + 1);
     if (data == NULL) {
         LOG_MSG(error, "Failed to load \"%s\" via PHYSFS!\n", path);
         return NULL;

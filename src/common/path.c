@@ -175,6 +175,7 @@ char* get_self_path(const char* argv_0) {
         out[strlen(out) - 1] = 0; // Remove the final trailing slash
         return out;
     }
+    #if defined(PLATFORM_POSIX)
     else {
         if (!file_exists(selflink)) {
             LOG_MSG(error, "Unimplemented: We've been run from the PATH, but no usable /proc symlinks for finding our location exist (we're probably on OpenBSD).\n");
@@ -183,6 +184,7 @@ char* get_self_path(const char* argv_0) {
         }
 
     }
+    #endif
 
     // Oh well.
     return out;
