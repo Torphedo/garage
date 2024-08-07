@@ -55,9 +55,6 @@ add_executable(garage
     src/editor/gui_common.c
     src/editor/vehicle_edit.c
 
-    # Adding the GLSL headers here auto-generates them during the build
-    ${glsl_headers}
-
     # Adding this to the source lists forces the custom command to run every
     # build
     ${CMAKE_CURRENT_BINARY_DIR}/generate_datafile
@@ -98,6 +95,4 @@ add_executable(test
     test/main.c
 )
 target_link_libraries(test PRIVATE common)
-
-file(COPY "bin/" DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/bin)
 

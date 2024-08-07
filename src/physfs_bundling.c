@@ -1,4 +1,5 @@
 #include <malloc.h>
+#include <stdio.h>
 
 #define INCNBIN_PREFIX
 #define INCBIN_STYLE INCBIN_STYLE_SNAKE
@@ -32,5 +33,15 @@ bool setup_physfs(const char* argv0) {
     free(self_path);
 
     return true;
+}
+
+void dump_assets() {
+    FILE* dump = fopen("data.7z", "wb");
+    if (dump == NULL) {
+        return;
+    }
+
+    fwrite(gasset_archive_data, gasset_archive_size, 1, dump);
+    fclose(dump);
 }
 

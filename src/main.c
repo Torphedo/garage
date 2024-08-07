@@ -1,5 +1,3 @@
-#include <math.h>
-#include <stdio.h>
 #include <string.h>
 
 #include <glad/glad.h>
@@ -32,6 +30,11 @@ int main(int argc, char** argv) {
     // Setup PhysicsFS
     if (!setup_physfs(argv[0])) {
         return 1;
+    }
+
+    if (strcmp(argv[1], "--dump-assets") == 0) {
+        dump_assets();
+        return 0;
     }
 
     char* path = argv[1]; // Give our first argument a convenient name

@@ -15,6 +15,6 @@ cmake_*/
 *.a
 *.o
 
-# Auto-generated GLSL headers
-src/editor/shader/*.h
+# Extra files
+*.dds
 

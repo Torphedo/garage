@@ -132,6 +132,7 @@ bool text_renderer_setup(const char* ttf_path) {
         }
     }
 
+    /*
     texture out = {
         .channels = 1,
         .data = (u8*)bc4_bitmap,
@@ -142,6 +143,7 @@ bool text_renderer_setup(const char* ttf_path) {
         .mip_level = 0,
     };
     img_write(out, "font_atlas.dds"); // For debugging
+    */
 
     // Upload font texture
     glGenTextures(1, &font_atlas);
