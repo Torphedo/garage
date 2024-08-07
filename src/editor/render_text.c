@@ -76,7 +76,7 @@ gl_obj u_texcoords;
 bool text_renderer_setup(const char* ttf_path) {
     if (TTF_TEX_WIDTH % 4 != 0 || TTF_TEX_HEIGHT % 4 != 0) {
         LOG_MSG(error, "Assert fail, texture size isn't a multiple of block size!\n");
-        return NULL;
+        return false;
     }
 
     u8* ttf_data = physfs_load_file(ttf_path);
@@ -157,7 +157,7 @@ bool text_renderer_setup(const char* ttf_path) {
     char* vert_src = physfs_load_file("/src/editor/shader/text.vert");
     char* frag_src = physfs_load_file("/src/editor/shader/text.frag");
     if (vert_src == NULL || frag_src == NULL) {
-        return NULL;
+        return false;
     }
     shader = program_compile_src(vert_src, frag_src);
     free(vert_src);
@@ -169,7 +169,7 @@ bool text_renderer_setup(const char* ttf_path) {
         stbtt_PackEnd(&pack_ctx);
         glDeleteTextures(1, &font_atlas);
         glDeleteProgram(shader);
-        return NULL;
+        return false;
     }
     glUseProgram(shader); // Needed to set uniforms
 

@@ -105,8 +105,8 @@ model obj_load(u8* txt) {
             out.indices = calloc(out.idx_count, sizeof(u16));
             if (out.vertices == NULL || out.indices == NULL) {
                 LOG_MSG(error, "Buffer alloc failure!\n");
-                printf("\tVertex buffer %p (0x%lx bytes)\n", out.vertices, out.vert_count * sizeof(vertex));
-                printf("\tIndex buffer %p (0x%lx bytes)\n", out.indices, out.idx_count * sizeof(u16));
+                printf("\tVertex buffer %p (0x%hx bytes)\n", out.vertices, out.vert_count * (u16)sizeof(vertex));
+                printf("\tIndex buffer %p (0x%hx bytes)\n", out.indices, out.idx_count * (u16)sizeof(u16));
                 break;
             }
         }

@@ -249,7 +249,7 @@ bool gui_init(gui_state* gui) {
     char* vert = physfs_load_file("/src/editor/shader/vcolor.vert");
     char* frag = physfs_load_file("/src/editor/shader/vcolor.frag");
     if (vert == NULL || frag == NULL) {
-        return NULL;
+        return false;
     }
     gui->vcolor_shader = program_compile_src(vert, frag);
     if (!shader_link_check(gui->vcolor_shader)) {
