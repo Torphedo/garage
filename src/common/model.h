@@ -18,6 +18,7 @@ typedef struct {
     gl_obj ibuf;
 }model;
 
+// Upload a model to the GPU, writing the OpenGL IDs to the struct
 void model_upload(model* m);
 u32 model_size(model m);
 

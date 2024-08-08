@@ -1,4 +1,5 @@
-#pragma once
+#ifndef PLATFORM_H
+#define PLATFORM_H
 
 #if (defined(__APPLE__) && defined(__MACH__))
     #define PLATFORM_APPLE 1
@@ -25,3 +26,5 @@
 #else
     #define PLATFORM_DIRSEP ('/')
 #endif
+
+#endif // #ifndef PLATFORM_H

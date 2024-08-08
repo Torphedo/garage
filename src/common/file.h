@@ -21,12 +21,6 @@ u8* file_load(const char* path);
 /// \param size Size of buffer
 bool file_load_existing(const char* path, u8* buf, u32 size);
 
-/// Read an entire file into a buffer using PhysicsFS.
-/// Caller must free the resource.
-/// \param path Filepath
-/// \return Pointer to buffer, or NULL on failure.
-u8* physfs_load_file(const char* path);
-
 static inline u32 magic(char a, char b, char c, char d) {
     return a | (b << 8) | (c << 16) | (d << 24);
 }

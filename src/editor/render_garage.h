@@ -1,7 +1,10 @@
 #ifndef RENDER_GARAGE_H
 #define RENDER_GARAGE_H
 #include "gui_common.h"
-#include "../parts.h"
+#include <common/model.h>
+#include <parts.h>
+
+// This file renders the garage "floor" and all of the vehicle parts.
 
 typedef struct {
     part_id id;

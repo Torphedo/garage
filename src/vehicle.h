@@ -1,8 +1,9 @@
 #ifndef VEHICLE_H
 #define VEHICLE_H
-
 #include "common/int.h"
 #include "common/vector.h"
+// Vehicle data structures for Nuts & Bolts. The header has a lot of holes, but
+// the part entries are mostly complete.
 
 typedef struct {
     u64 magic; // VEHICLE_MAGIC
@@ -20,9 +21,11 @@ typedef struct {
 }vehicle_header;
 
 enum {
+    // No idea why they chose these numbers or if they mean anything.
     VEHICLE_MAGIC = 0x3F9AE14840547AE1,
 };
 
+// Just a heads-up: The "padding" in here is probably not actually padding.
 typedef struct {
     u32 unknown;
     vec3s8 pos;
@@ -30,9 +33,10 @@ typedef struct {
     u8 modifier; // Used for part settings, if applicable (e.g. wheel steering mode)
     u8 pad2;
     u32 id; // part_id enum
-    vec3 rot; // Measured in radians
+    vec3 rot; // 3D Euler rotation in radians. The preview will render w/ arbitrary angles, but upon loading rounds to 90 degrees
     rgba8 color; // Game stores arbitrary colors, but only the preset colors are allowed
     union {
+        // I'm trying not to trample on important data with this selection flag
         u32 pad3;
         bool selected;
     };
@@ -88,3 +92,4 @@ void vehicle_unselect_all(vehicle* v);
 // Returns a boolean indicating if the vehicle had to be adjusted.
 bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff);
 #endif // VEHICLE_H
+

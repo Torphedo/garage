@@ -8,6 +8,7 @@
 #include <physfs.h>
 #include <common/path.h>
 #include <common/logging.h>
+#include <common/int.h>
 
 INCBIN(asset_archive, "data.7z");
 
@@ -43,5 +44,28 @@ void dump_assets() {
 
     fwrite(gasset_archive_data, gasset_archive_size, 1, dump);
     fclose(dump);
+}
+
+u8* physfs_load_file(const char* path) {
+    PHYSFS_File* resource = PHYSFS_openRead(path);
+    if (resource == NULL) {
+        LOG_MSG(error, "Failed to open \"%s\" via PHYSFS!\n", path);
+        return NULL;
+    }
+    s64 filesize = PHYSFS_fileLength(resource);
+    if (filesize == -1) {
+        LOG_MSG(debug, "Couldn't get size of file!\n");
+        return NULL;
+    }
+    // We add an extra byte here for the null terminator, in case of text data
+    u8* data = calloc(1, filesize + 1);
+    if (data == NULL) {
+        LOG_MSG(error, "Failed to load \"%s\" via PHYSFS!\n", path);
+        return NULL;
+    }
+    PHYSFS_readBytes(resource, data, filesize);
+    PHYSFS_close(resource);
+
+    return data;
 }
 

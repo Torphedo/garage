@@ -14,6 +14,7 @@
 #include <common/utf8.h>
 #include <common/shader.h>
 #include <common/primitives.h>
+#include <physfs_bundling.h>
 
 #include "render_text.h"
 

@@ -6,14 +6,15 @@
 
 #include <common/int.h>
 
-// All the information needed to render a text buffer (Please treat as opaque)
+// All the information needed to render a text buffer
+// (Please treat the transforms & texcoords as opaque)
 typedef struct {
     mat4* transforms; // 3D transform of each character's quad
     vec4* texcoords;  // Top-left & bottom right UVs of each character's quad
     u32 num_chars;
     float scale; // Text scale
     vec2 pos;    // X/Y pos of the first character
-    char* text;
+    char* text;  // UTF-8 text data, or NULL
 }text_state;
 
 // Call these at program startup/shutdown.

@@ -216,3 +216,4 @@ part_info part_get_info(part_id id);
 // example, part ID 0x1F207106 would output "bin/1F207106.obj"
 obj_path part_get_obj_path(u32 id);
 #endif // PART_IDS_H
+

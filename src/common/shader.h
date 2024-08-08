@@ -23,5 +23,4 @@ gl_obj shader_compile_src(const char* src, GLenum shader_type);
 // shader_link_check() afterwards in case of failure.
 gl_obj program_compile_src(const char* vert_src, const char* frag_src);
 
-
 #endif // #ifndef SHADER_H

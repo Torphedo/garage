@@ -4,8 +4,8 @@
 #include <common/vector.h>
 #include <common/input.h>
 
-#include "../vehicle.h"
-#include "common/model.h"
+#include <vehicle.h>
+#include <common/model.h>
 #include "vehicle_edit.h"
 
 typedef enum {

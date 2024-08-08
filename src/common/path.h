@@ -1,3 +1,6 @@
+#ifndef PATH_H
+#define PATH_H
+
 #include <stdbool.h>
 #include <stdint.h>
 
@@ -23,4 +26,6 @@ void path_get_filename(const char* path, char* output);
 // but you should provide it anyway.
 // Caller is responsible for freeing the output string
 char* get_self_path(const char* argv_0);
+
+#endif // #ifndef PATH_H
 

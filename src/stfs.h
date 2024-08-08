@@ -245,3 +245,4 @@ void stfs_filetable_byteswap(stfs_filetable* f);
 void stfs_hashtable_byteswap(stfs_hash_table* table);
 
 #endif // STFS_H
+
