@@ -148,7 +148,7 @@ void garage_render(garage_state* state, gui_state* gui) {
     pos.x -= (center.x * PART_POS_SCALE);
     pos.z -= (center.z * PART_POS_SCALE);
 
-    if (gui->sel_mode == SEL_NONE) {
+    {
         color.r = 0;
         color.g = 0;
         // Render selection box

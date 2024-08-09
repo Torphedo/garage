@@ -15,6 +15,7 @@
 #include <physfs_bundling.h>
 #include "camera.h"
 #include "gui_common.h"
+#include "vehicle_edit.h"
 
 // This doesn't enforce what the bound VAO is... make sure to only call it with
 // the cube VAO bound.
@@ -88,6 +89,7 @@ void update_edit_mode(gui_state* gui) {
 
     s8 forward_diff = ((input.w && !gui->prev_input.w) - (input.s && !gui->prev_input.s));
     s8 side_diff = ((input.d && !gui->prev_input.d) - (input.a && !gui->prev_input.a));
+    s8 roll_diff = ((input.e && !gui->prev_input.e) - (input.q && !gui->prev_input.q));
 
     vec3s16 sel_box_prev = gui->sel_box;
 
@@ -115,9 +117,9 @@ void update_edit_mode(gui_state* gui) {
     else {
 
         // Update the bitmask(s) if needed
-        if (forward_diff != 0 || side_diff != 0) {
-            vehicle_rotate_selection(gui->v, gui->selected_mask, gui->vacancy_mask, forward_diff, side_diff, cam_view);
-            update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
+        if (forward_diff != 0 || side_diff != 0 || roll_diff != 0) {
+            vehicle_rotate_selection(gui, forward_diff, side_diff, roll_diff);
+            // update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
         }
     }
 
@@ -161,7 +163,7 @@ void update_edit_mode(gui_state* gui) {
     gui->sel_box.z = CLAMP(0, gui->sel_box.z, 127);
 
     // Handle user trying to select a part (unless the selection has overlaps).
-    if (input.e && !gui->prev_input.e && gui->sel_mode != SEL_BAD) {
+    if (input.e && !gui->prev_input.e && gui->sel_mode != SEL_BAD && !input.control) {
         // Convert to vec3s8
         vec3s8 pos = {gui->sel_box.x, gui->sel_box.y, gui->sel_box.z};
         part_entry *p = part_by_pos(gui->v, pos);
@@ -178,6 +180,8 @@ void update_edit_mode(gui_state* gui) {
                 // already-selected part, which means they want to start moving them.
                 gui->sel_mode = SEL_ACTIVE;
                 update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
+                vec3s8 sel_center = vehicle_selection_center(gui->v);
+                gui->sel_box = (vec3s16){sel_center.x, sel_center.y, sel_center.z};
             }
             else {
                 // Select the part (unless it's a blank)
@@ -192,6 +196,7 @@ void update_edit_mode(gui_state* gui) {
 
 // Update the GUI state according to new user input.
 bool gui_update_with_input(gui_state* gui, GLFWwindow* window) {
+    update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
     static bool cursor_lock = false;
     update_mods(window); // Update input.shift, input.ctrl, etc.
 

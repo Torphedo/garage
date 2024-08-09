@@ -4,6 +4,7 @@
 
 #include "../parts.h"
 #include "vehicle_edit.h"
+#include "camera.h"
 
 bool vehiclemask_get_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z) {
     u8* mask_addr = (u8*)&(*mask)[x][y];
@@ -119,7 +120,40 @@ void update_vehiclemask(vehicle* v, vehicle_bitmask* vacancy, vehicle_bitmask* s
     }
 }
 
-bool vehicle_rotate_selection(vehicle* v, vehicle_bitmask* selection, vehicle_bitmask* vacancy, s8 forward_diff, s8 side_diff, vec3s cam_view) {
+vec3s8 vehicle_selection_center(vehicle* v) {
+    vec3s8 sel_max = {0}; // Highest position in the selection
+    vec3s8 sel_min = {127, 127, 127}; // Smallest position in the selection
+    for (u16 i = 0; i < v->head.part_count; i++) {
+        part_entry* p = &v->parts[i];
+        if (!p->selected) {
+            continue;
+        }
+
+        // Update selection min/max positions
+        sel_max = (vec3s8) {
+            MAX(sel_max.x, p->pos.x),
+            MAX(sel_max.y, p->pos.y),
+            MAX(sel_max.z, p->pos.z),
+        };
+        sel_min = (vec3s8) {
+            MIN(sel_min.x, p->pos.x),
+            MIN(sel_min.y, p->pos.y),
+            MIN(sel_min.z, p->pos.z),
+        };
+    }
+    vec3s8 sel_center = {
+        floorf((float)(sel_max.x + sel_min.x) / 2),
+        floorf((float)(sel_max.y + sel_min.y) / 2),
+        floorf((float)(sel_max.z + sel_min.z) / 2),
+    };
+
+    return sel_center;
+}
+
+bool vehicle_rotate_selection(gui_state* gui, s8 forward_diff, s8 side_diff, s8 roll_diff) {
+    vehicle* v = gui->v;
+
+    vec3s cam_view = glms_normalize(camera_facing());
     // Absolute value of camera vector
     vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
 
@@ -155,86 +189,27 @@ bool vehicle_rotate_selection(vehicle* v, vehicle_bitmask* selection, vehicle_bi
         // side-to-side will rotate along the Y-axis
         glm_rotate(rot_matrix, glm_rad(90) * side_diff, (vec3){0, 1, 0});
     }
+    glm_rotate(rot_matrix, glm_rad(90) * roll_diff, *(vec3*)&forward_vec);
 
-    // In this loop we just find part count & the selection bounding box
-    vec3s8 sel_max = {0}; // Highest position in the selection
-    vec3s8 sel_min = {127, 127, 127}; // Smallest position in the selection
+    // In this loop we just find selected part count
     u16 part_count = 0;
     for (u16 i = 0; i < v->head.part_count; i++) {
         part_entry* p = &v->parts[i];
-        if (!vehiclemask_get_3d(selection, p->pos.x, p->pos.y, p->pos.z)) {
+        if (!vehiclemask_get_3d(gui->selected_mask, p->pos.x, p->pos.y, p->pos.z)) {
             continue; // Skip unselected parts
         }
         part_count++;
-
-        // Check all the cells this part occupies to see if they form a corner of the selection
-        vec3s8* positions = part_get_info(p->id).relative_occupation;
-        // Get quaternion of part rotation
-        vec4 part_rot = {0};
-        glm_euler_xyz_quat(p->rot, part_rot);
-        vec4 user_rot = {0};
-        glm_mat4_quat(rot_matrix, user_rot);
-
-        while (1) {
-            // Calculate offsets from new part rotation
-            vec4 new_rot = {0};
-            vec3 post_rot_offset = {0};
-            glm_quat_mul(user_rot, part_rot, new_rot);
-            glm_quat_rotatev(new_rot, (vec3){positions->x, positions->y, positions->z}, post_rot_offset);
-
-            // Calculate offsets from current part rotation
-            vec3 pre_rot_offset = {0};
-            glm_quat_rotatev(part_rot, (vec3){positions->x, positions->y, positions->z}, pre_rot_offset);
-
-            // Get the final coordinate by adding the rotated point to origin
-            // These coordinates use the current part rotation
-            vec3s8 cur_cell = {
-                MAX(p->pos.x + roundf(pre_rot_offset[0]), 0),
-                MAX(p->pos.y + roundf(pre_rot_offset[1]), 0),
-                MAX(p->pos.z + roundf(pre_rot_offset[2]), 0),
-            };
-
-            // These coordinates use the new part rotation
-            vec3s8 new_cell = {
-                MAX(p->pos.x + roundf(post_rot_offset[0]), 0),
-                MAX(p->pos.y + roundf(post_rot_offset[1]), 0),
-                MAX(p->pos.z + roundf(post_rot_offset[2]), 0),
-            };
-
-            // Update selection min/max positions
-            sel_max = (vec3s8) {
-                MAX(sel_max.x, cur_cell.x),
-                MAX(sel_max.y, cur_cell.y),
-                MAX(sel_max.z, cur_cell.z),
-            };
-            sel_min = (vec3s8) {
-                MIN(sel_min.x, cur_cell.x),
-                MIN(sel_min.y, cur_cell.y),
-                MIN(sel_min.z, cur_cell.z),
-            };
-
-            // If applying the rotation will cause a collision, bail early.
-            if (vehiclemask_get_3d(vacancy, new_cell.x, new_cell.y, new_cell.z)) {
-                // LOG_MSG(debug, "rotation cancelled\n");
-                return false;
-            }
-
-            // The position array ends with an all-zero entry (the origin)
-            if (vec3s8_eq(*positions, (vec3s8){0})) {
-                break;
-            }
-            positions++;
-        }
     }
-    vec3s sel_center = {
-        (float)(sel_max.x + sel_min.x) / 2,
-        (float)(sel_max.y + sel_min.y) / 2,
-        (float)(sel_max.z + sel_min.z) / 2,
+    vec3s8 sel_center = (vec3s8){
+        MAX(gui->sel_box.x, 0),
+        MAX(gui->sel_box.y, 0),
+        MAX(gui->sel_box.z, 0),
     };
+    vehiclemask_set_3d(gui->vacancy_mask, sel_center.x, sel_center.y, sel_center.z, 1);
 
     for (u16 i = 0; i < v->head.part_count; i++) {
         part_entry* p = &v->parts[i];
-        if (!vehiclemask_get_3d(selection, p->pos.x, p->pos.y, p->pos.z)) {
+        if (!vehiclemask_get_3d(gui->selected_mask, p->pos.x, p->pos.y, p->pos.z)) {
             continue; // Skip unselected parts
         }
 
@@ -252,9 +227,9 @@ bool vehicle_rotate_selection(vehicle* v, vehicle_bitmask* selection, vehicle_bi
         }
 
         vec3 offset = {
-            p->pos.x - sel_center.x,
-            p->pos.y - sel_center.y,
-            p->pos.z - sel_center.z,
+            (float)p->pos.x - sel_center.x,
+            (float)p->pos.y - sel_center.y,
+            (float)p->pos.z - sel_center.z,
         };
         vec3 rotated_offset = {0};
         vec4 quaternion = {0};

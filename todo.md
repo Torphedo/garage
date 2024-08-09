@@ -10,8 +10,29 @@
   2-axis joysticks.
 - Consider making a 6-axis snapping camera view like the game
 - Try to improve ease of depth perception (maybe some shadows?)
-- Research the file format more to figure out if parts are stored in a heap
-  structure or any sort of predictable order that could speed up searches. I've
-  noticed the game will change the order of some parts while saving, even when 
-  it seems unnecessary...
+
+# Selection
+Selection is a mess. The way it's set up right now can only work with our
+selection flag, which is hard to not overlap with real data. Right now these
+are the obstacles to removing the selection flag:
+- The only way to check if a part is selected is to check all its cells against
+  the selection grid. If a selected part overlaps a non-selected one, both of
+  them appear selected. If all their cells are both occupied and selected, the
+  parts are completely indistinguishable. As far as I can tell, this problem
+  is unsolvable using just grids.
+
+Some ideas to solve the issue:
+- Keep 2 lists of parts, one for selected and one for unselected. If we want to
+  avoid copying around the part data, they could just be arrays of indices into
+  the part array. For the reasons mentioned, we can't rely on the grid at all
+  to tell if something is selected. The only way to find out selection is to do
+  a part_by_pos() check, then search for the index in the selected list. We
+  should remove selected parts from occupancy and delete the selection mask
+  completely.
+
+Other tweaks:
+- In scenarios where we move the entire bitmask, we could implement it with
+  bitshifts & memcpy()
+- When a part is selected, just delete all its cells from occupancy. Why are we
+  clearing the entire grid??
 

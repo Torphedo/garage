@@ -6,7 +6,6 @@
 
 #include <vehicle.h>
 #include <common/model.h>
-#include "vehicle_edit.h"
 
 typedef enum {
     MODE_MOVCAM, // Selection box locked, camera unlocked (freecam)
@@ -20,6 +19,11 @@ typedef enum {
     SEL_ACTIVE, // User is moving parts around, and the selection isn't overlapping anything.
     SEL_BAD,    // User is moving parts around, but placing it down now would cause an overlap.
 }selection_state;
+
+// Used to store a compact 3D grid of parts at 1 bit per cell.
+// The editor uses 2 of these, one for storing which cells are occupied and one
+// for storing which cells are selected.
+typedef u8 vehicle_bitmask[VEH_MAX_DIM][VEH_MAX_DIM][VEH_MASK_BYTE_WIDTH];
 
 // Current state of the vehicle editor & GUI in general
 typedef struct {
