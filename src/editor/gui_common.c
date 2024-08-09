@@ -138,7 +138,6 @@ void update_edit_mode(gui_state* gui) {
             if (gui->v->parts[i].selected) {
                 // vehicle_move_part() returns false when a part moves out of bounds
                 vehicle_adjusted &= vehicle_move_part(gui->v, i, diff);
-                update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
 
                 // Check for overlaps and block the placement if needed
                 if (vehicle_selection_overlap(gui->v, gui->vacancy_mask)) {
@@ -149,6 +148,7 @@ void update_edit_mode(gui_state* gui) {
                 }
             }
         }
+        update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
 
         // Move the selection box to the part's new location, if it moved out
         // of bounds and forced the vehicle to be adjusted.
@@ -200,8 +200,8 @@ bool gui_update_with_input(gui_state* gui, GLFWwindow* window) {
     static bool cursor_lock = false;
     update_mods(window); // Update input.shift, input.ctrl, etc.
 
-    // Quit when q is pressed
-    if (input.q) {
+    // Quit on quit keybind
+    if (input.shift && input.escape) {
         return false;
     }
 
