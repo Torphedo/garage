@@ -66,7 +66,14 @@ void garage_render(garage_state* state, gui_state* gui) {
     // All our matrices for rendering, only PVM is uploaded to GPU
     mat4 pvm = {0};
     mat4 pv = {0};
-    camera_proj_view(gui, &pv);
+    float move_speed = gui->cam.move_speed;
+    if (gui->mode == MODE_MENU) {
+        gui->cam.move_speed = 0;
+    }
+    camera_proj_view(&gui->cam, gui->delta_time, &pv);
+    // Put move speed back to normal
+    gui->cam.move_speed = move_speed;
+
     mat4 mdl = {0};
     glm_mat4_identity(mdl);
 
@@ -172,7 +179,7 @@ void garage_render(garage_state* state, gui_state* gui) {
         // TODO: This locks to the last selected part while moving parts. We
         // might want to calculate the centerpoint of the selection and lock
         // to that instead.
-        camera_set_target(pos);
+        camera_set_target(&gui->cam, pos);
     }
 
     // Reset state

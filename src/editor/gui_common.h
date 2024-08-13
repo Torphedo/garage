@@ -6,6 +6,7 @@
 
 #include <vehicle.h>
 #include <common/model.h>
+#include "camera.h"
 
 typedef enum {
     MODE_MOVCAM, // Selection box locked, camera unlocked (freecam)
@@ -29,6 +30,7 @@ typedef u8 vehicle_bitmask[VEH_MAX_DIM][VEH_MAX_DIM][VEH_MASK_BYTE_WIDTH];
 typedef struct {
     // Vehicle/part data
     vehicle* v;
+    camera cam;
     // Bitmask for whether a space is occupied by a part, at 1 bit per cell.
     vehicle_bitmask* vacancy_mask;
     // Bitmask for whether a cell is selected

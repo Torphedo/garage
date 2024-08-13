@@ -14,6 +14,7 @@
 #include "editor/render_text.h"
 #include "editor/render_user.h"
 #include "editor/gui_common.h"
+#include "editor/camera.h"
 
 #include "vehicle.h"
 #include "parts.h"
@@ -48,6 +49,7 @@ int main(int argc, char** argv) {
         .vsync = true,
         .vacancy_mask = calloc(1, sizeof(vehicle_bitmask)),
         .selected_mask = calloc(1, sizeof(vehicle_bitmask)),
+        .cam = camera_default(),
     };
     if (gui.vacancy_mask == NULL || gui.selected_mask == NULL) {
         LOG_MSG(error, "Failed to alloc a vehicle bitmask\n");

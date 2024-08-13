@@ -27,8 +27,15 @@ void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask) {
     vec3s max = glms_vec3_adds(glms_vec3_scale(center, PART_POS_SCALE), 5.0f);
 
     // Tranformation matrices
+    float move_speed = gui->cam.move_speed;
+    if (gui->mode == MODE_MENU) {
+        gui->cam.move_speed = 0;
+    }
     mat4 pv = {0};
-    camera_proj_view(gui, &pv);
+    camera_proj_view(&gui->cam, gui->delta_time, &pv);
+    // Put move speed back to normal
+    gui->cam.move_speed = move_speed;
+
     mat4 model = {0};
     glm_mat4_identity(model);
 
@@ -87,12 +94,13 @@ void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask) {
     if (culling_was_enabled == GL_TRUE) {
         glEnable(GL_CULL_FACE);
     }
+
 }
 
 
 void update_edit_mode(gui_state* gui) {
     // Handle moving the selector box
-    vec3s cam_view = glms_normalize(camera_facing());
+    vec3s cam_view = glms_normalize(camera_facing(&gui->cam));
     // Absolute value of camera vector
     vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
 
@@ -212,6 +220,14 @@ bool gui_update_with_input(gui_state* gui, GLFWwindow* window) {
     // Quit on quit keybind
     if (input.shift && input.escape) {
         return false;
+    }
+
+    if (input.f && !gui->prev_input.f) {
+        // Cycle through camera modes
+        camera_mode mode = gui->cam.mode + 1;
+        mode %= CAMERA_MODE_ENUM_MAX;
+        // This function handles the special camera settings per mode
+        camera_set_mode(&gui->cam, mode);
     }
 
     // Allow infinite cursor movement when clicking to pan the camera

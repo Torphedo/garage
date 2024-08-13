@@ -153,7 +153,7 @@ vec3s8 vehicle_selection_center(vehicle* v) {
 bool vehicle_rotate_selection(gui_state* gui, s8 forward_diff, s8 side_diff, s8 roll_diff) {
     vehicle* v = gui->v;
 
-    vec3s cam_view = glms_normalize(camera_facing());
+    vec3s cam_view = glms_normalize(camera_facing(&gui->cam));
     // Absolute value of camera vector
     vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
 
