@@ -105,33 +105,24 @@ void camera_update(camera* cam, double delta_time, mat4 *view) {
     };
 
     vec3s cam_dir = glms_normalize(camera_facing(cam));
-    vec3s cam_abs = {fabsf(cam_dir.x), fabsf(cam_dir.y), fabsf(cam_dir.z)};
-    // Set our view direction to have a magnitude of 1 on the horizontal axis
-    // we're facing the most strongly, and 0 in all other directions.
-    vec3s right_vec = {
-        // zero if it's not the largest element, otherwise 1 or -1 depending on direction
-        ((cam_dir.z < 0) ? -1 : 1) * (cam_abs.z > cam_abs.x),
-        0, // Vertical component ignored
-        ((cam_dir.x < 0) ? -1 : 1) * (cam_abs.x > cam_abs.z),
-    };
-
     float multiplier = delta_time * cam->move_speed;
     float forward  = multiplier * (input.w - input.s);
     float side     = multiplier * (input.a - input.d);
-
-    // Nullify vertical movement unless enabled
     float vertical = multiplier * (input.space - input.shift);
-    vec3s pos_delta = glms_vec3_scale(cam_dir, forward); // [Camera dir] * forward movement
 
-    // Add [Camera dir rotated by 90 degrees] * side movement to get net movement
-    vec3s cam_side = cam_dir;
-    cam_side.y = 0; // Moving side-to-side shouldn't change height
-    cam_side = glms_normalize(glms_vec3_rotate(cam_side, glm_rad(90), camera_up));
-    pos_delta = glms_vec3_add(pos_delta, glms_vec3_scale(cam_side, side));
-
-    if (cam->mode != CAMERA_POV) {
-        pos_delta.y = vertical;
+    // Exclude vertical view component so it doesn't affect horizontal movement
+    vec3s horizontal = glms_normalize((vec3s){cam_dir.x, 0, cam_dir.z});
+    vec3s cam_side = glms_vec3_rotate(horizontal, glm_rad(90), camera_up);
+    // Make forward/back move along camera vector in fly mode
+    if (cam->mode == CAMERA_FLY) {
+        horizontal = cam_dir;
+        vertical = 0; // Ignore the normal vertical movement keys
     }
+
+    vec3s pos_delta = glms_vec3_scale(horizontal, forward); // [Camera dir] * forward movement
+    // Add [Camera dir rotated by 90 degrees] * side movement
+    pos_delta = glms_vec3_add(pos_delta, glms_vec3_scale(cam_side, side));
+    pos_delta.y += vertical;
 
     // Save state so we can find the delta next time we're called
     last_scroll = input.scroll;
@@ -173,8 +164,6 @@ void camera_set_mode(camera* cam, camera_mode mode) {
         return;
     }
 
-    // Set mode
-    cam->mode = mode;
     switch (mode) {
         case CAMERA_ORBIT:
             cam->invert_mouse_x = true; 
@@ -188,6 +177,16 @@ void camera_set_mode(camera* cam, camera_mode mode) {
             cam->mouse_sens = 0.005f;
             break;
     }
+    // If endering or leaving orbit mode, the target will be swapped with the
+    // camera. We need to face the opposite direction to correct for the change
+    bool needs_view_flip = (cam->mode == CAMERA_ORBIT || mode == CAMERA_ORBIT);
+    if (needs_view_flip) {
+        cam->orbit_angles.x = fmodf(cam->orbit_angles.x + glm_rad(180), 360);
+        cam->orbit_angles.y = -cam->orbit_angles.y;
+    }
+    
+    // Set mode
+    cam->mode = mode;
 }
 
 void camera_set_target(camera* cam, vec3s pos) {
