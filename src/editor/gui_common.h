@@ -3,9 +3,10 @@
 #include <common/int.h>
 #include <common/vector.h>
 #include <common/input.h>
+#include <common/model.h>
+#include <common/list.h>
 
 #include <vehicle.h>
-#include <common/model.h>
 #include "camera.h"
 
 typedef enum {
@@ -30,6 +31,7 @@ typedef u8 vehicle_bitmask[VEH_MAX_DIM][VEH_MAX_DIM][VEH_MASK_BYTE_WIDTH];
 typedef struct {
     // Vehicle/part data
     vehicle* v;
+    list selected_parts;
     camera cam;
     // Bitmask for whether a space is occupied by a part, at 1 bit per cell.
     vehicle_bitmask* vacancy_mask;

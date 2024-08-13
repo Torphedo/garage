@@ -92,12 +92,6 @@ vehicle* vehicle_load(const char* path) {
     return v;
 }
 
-void vehicle_unselect_all(vehicle* v) {
-    for (u16 i = 0; i < v->head.part_count; i++) {
-        v->parts[i].selected = false;
-    }
-}
-
 bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
     if (idx > v->head.part_count - 1) {
         // We can't move a part that doesn't exist.
@@ -147,7 +141,7 @@ bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
 
 part_entry empty_part = {0};
 
-part_entry* part_by_pos(vehicle* v, vec3s8 target) {
+s32 part_by_pos(vehicle* v, vec3s8 target) {
     // Linearly search for the part
     // TODO: When moving a selection through other parts, the detected part can
     // suddenly switch to one of the parts you're moving through. Maybe we
@@ -181,7 +175,7 @@ part_entry* part_by_pos(vehicle* v, vec3s8 target) {
 
             if (vec3s8_eq(cell, target)) {
                 // Found it!
-                return p;
+                return i;
             }
 
             // Move on when we find the final entry (all zeroes, the origin)
@@ -193,5 +187,5 @@ part_entry* part_by_pos(vehicle* v, vec3s8 target) {
     }
 
     // Nothing here...
-    return &empty_part;
+    return -1;
 }

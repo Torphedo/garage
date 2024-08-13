@@ -13,17 +13,19 @@
 bool vehiclemask_get_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z);
 void vehiclemask_set_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z, u8 val);
 
-vec3s8 vehicle_selection_center(vehicle* v);
+bool cell_is_selected(gui_state* gui, vec3s8 cell);
+
+vec3s8 vehicle_selection_center(gui_state* gui);
 
 // Rotate all selected parts about their centerpoint. Forward & side diff
 // represent user inputs on a joystick/D-Pad/keyboard X/Y axes.
 bool vehicle_rotate_selection(gui_state* gui, s8 forward_diff, s8 side_diff, s8 roll_diff);
 
 // Check if the selected parts overlap with the rest of the vehicle
-bool vehicle_selection_overlap(vehicle* v, vehicle_bitmask* mask);
+bool vehicle_selection_overlap(gui_state* gui);
 
 // Update the vacancy & selection masks based on the current part data
-void update_vehiclemask(vehicle* v, vehicle_bitmask* vacancy, vehicle_bitmask* selection);
+void update_vehiclemask(vehicle* v, list selected_parts, vehicle_bitmask* vacancy, vehicle_bitmask* selection);
 
 #endif // VEHICLE_EDIT_H
 

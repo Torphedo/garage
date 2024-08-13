@@ -9,6 +9,7 @@
 #include <physfs_bundling.h>
 
 #include "camera.h"
+#include "vehicle_edit.h"
 #include "gui_common.h"
 #include "render_garage.h"
 
@@ -100,7 +101,7 @@ void garage_render(garage_state* state, gui_state* gui) {
 
         // Upload paint color & draw
         vec4s paint_col = vec4_from_rgba8(p->color);
-        if (v->parts[i].selected) {
+        if (cell_is_selected(gui, p->pos)) {
             paint_col.a /= 3;
         }
 

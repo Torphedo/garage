@@ -35,11 +35,7 @@ typedef struct {
     u32 id; // part_id enum
     vec3 rot; // 3D Euler rotation in radians. The preview will render w/ arbitrary angles, but upon loading rounds to 90 degrees
     rgba8 color; // Game stores arbitrary colors, but only the preset colors are allowed
-    union {
-        // I'm trying not to trample on important data with this selection flag
-        u32 pad3;
-        bool selected;
-    };
+    u32 pad3;
 }part_entry;
 
 // The flexible array member causes sizeof(vehicle) == sizeof(vehicle_header)!
@@ -69,7 +65,7 @@ vec3s vehicle_find_center(vehicle* v);
 
 // Look up a part by its origin position.
 // This will never return NULL, if a part isn't found the struct will be all 0.
-part_entry* part_by_pos(vehicle* v, vec3s8 target);
+s32 part_by_pos(vehicle* v, vec3s8 target);
 
 // Everything after this point involves runtime data structures for the editor.
 // If you're using this header to write your own program, the rest won't be

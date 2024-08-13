@@ -151,21 +151,20 @@ void update_edit_mode(gui_state* gui) {
 
         bool vehicle_adjusted = false;
         // Move all selected parts
-        for (u16 i = 0; i < gui->v->head.part_count; i++) {
-            if (gui->v->parts[i].selected) {
-                // vehicle_move_part() returns false when a part moves out of bounds
-                vehicle_adjusted &= vehicle_move_part(gui->v, i, diff);
+        for (u32 i = 0; i < gui->selected_parts.end_idx; i++) {
+            u16 idx = gui->selected_parts.data[i];
+            // vehicle_move_part() returns false when a part moves out of bounds
+            vehicle_adjusted &= vehicle_move_part(gui->v, idx, diff);
 
-                // Check for overlaps and block the placement if needed
-                if (vehicle_selection_overlap(gui->v, gui->vacancy_mask)) {
-                    gui->sel_mode = SEL_BAD;
-                }
-                else {
-                    gui->sel_mode = SEL_ACTIVE;
-                }
+            // Check for overlaps and block the placement if needed
+            if (vehicle_selection_overlap(gui)) {
+                gui->sel_mode = SEL_BAD;
+            }
+            else {
+                gui->sel_mode = SEL_ACTIVE;
             }
         }
-        update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
+        update_vehiclemask(gui->v, gui->selected_parts, gui->vacancy_mask, gui->selected_mask);
 
         // Move the selection box to the part's new location, if it moved out
         // of bounds and forced the vehicle to be adjusted.
@@ -183,28 +182,26 @@ void update_edit_mode(gui_state* gui) {
     if (input.e && !gui->prev_input.e && gui->sel_mode != SEL_BAD && !input.control) {
         // Convert to vec3s8
         vec3s8 pos = {gui->sel_box.x, gui->sel_box.y, gui->sel_box.z};
-        part_entry *p = part_by_pos(gui->v, pos);
+        s32 idx = part_by_pos(gui->v, pos);
         if (gui->sel_mode == SEL_ACTIVE) {
             // User pressed the button while moving parts, which means
             // we should put them down.
-            vehicle_unselect_all(gui->v);
-            update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
+            update_vehiclemask(gui->v, gui->selected_parts, gui->vacancy_mask, gui->selected_mask);
+            list_clear(&gui->selected_parts);
             gui->sel_mode = SEL_NONE; // Now you can start moving the parts
-        }
-        else {
-            if (p->selected) {
+        } else if (idx != -1) {
+            if (cell_is_selected(gui, gui->v->parts[idx].pos)) {
                 // User pressed the button while selecting parts on an
                 // already-selected part, which means they want to start moving them.
                 gui->sel_mode = SEL_ACTIVE;
-                update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
-                vec3s8 sel_center = vehicle_selection_center(gui->v);
+                update_vehiclemask(gui->v, gui->selected_parts, gui->vacancy_mask, gui->selected_mask);
+
+                // Set cursor to the selection center
+                vec3s8 sel_center = vehicle_selection_center(gui);
                 gui->sel_box = (vec3s16){sel_center.x, sel_center.y, sel_center.z};
-            }
-            else {
-                // Select the part (unless it's a blank)
-                if (p->id > 0) {
-                    p->selected = true;
-                }
+            } else {
+                // Select the part
+                list_add(&gui->selected_parts, idx);
                 gui->sel_mode = SEL_NONE;
             }
         }
@@ -213,7 +210,7 @@ void update_edit_mode(gui_state* gui) {
 
 // Update the GUI state according to new user input.
 bool gui_update_with_input(gui_state* gui, GLFWwindow* window) {
-    update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
+    update_vehiclemask(gui->v, gui->selected_parts, gui->vacancy_mask, gui->selected_mask);
     static bool cursor_lock = false;
     update_mods(window); // Update input.shift, input.ctrl, etc.
 
@@ -274,7 +271,7 @@ bool gui_update_with_input(gui_state* gui, GLFWwindow* window) {
 
 bool gui_init(gui_state* gui) {
     // Initialize part bitmask
-    update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
+    update_vehiclemask(gui->v, gui->selected_parts, gui->vacancy_mask, gui->selected_mask);
 
     char* vert = physfs_load_file("/src/editor/shader/vcolor.vert");
     char* frag = physfs_load_file("/src/editor/shader/vcolor.frag");
@@ -310,6 +307,7 @@ void gui_teardown(gui_state* gui) {
     glDeleteBuffers(1, &cube.vbuf);
     glDeleteBuffers(1, &cube.ibuf);
     free(gui->v);
+    free(gui->selected_parts.data);
     free(gui->vacancy_mask);
     free(gui->selected_mask);
 }

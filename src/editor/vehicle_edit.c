@@ -32,6 +32,24 @@ void vehiclemask_set_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z, u8 val) {
     // Oh well.
 }
 
+bool cell_is_selected(gui_state* gui, vec3s8 cell) {
+    if (!vehiclemask_get_3d(gui->selected_mask, cell.x, cell.y, cell.z)) {
+        return false;
+    }
+    // Even if the cell is marked as selected, it might just be overlapping a
+    // selected part. We need to double-check.
+    u16 idx = part_by_pos(gui->v, cell);
+    for (u32 i = 0; i < gui->selected_parts.end_idx; i++) {
+        if (idx == gui->selected_parts.data[i]) {
+            // It's in the list of selected parts, so it's definitely selected
+            return true;
+        }
+    }
+
+    // Found nothing, it was just an overlap.
+    return false;
+}
+
 bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry* p) {
     part_id id = p->id;
     // Find all the cells this part contains
@@ -66,19 +84,18 @@ bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry* p) {
     return result;
 }
 
-bool vehicle_selection_overlap(vehicle* v, vehicle_bitmask* vacancy_mask) {
-    for (u16 i = 0; i < v->head.part_count; i++) {
-        if (!v->parts[i].selected) {
-            continue;
-        }
-        if (vehicle_part_conflict(vacancy_mask, &v->parts[i])) {
+bool vehicle_selection_overlap(gui_state* gui) {
+    vehicle* v = gui->v;
+    for (u32 i = 0; i < gui->selected_parts.end_idx; i++) {
+        u16 idx = gui->selected_parts.data[i];
+        if (vehicle_part_conflict(gui->vacancy_mask, &v->parts[idx])) {
             return true;
         }
     }
     return false;
 }
 
-void update_vehiclemask(vehicle* v, vehicle_bitmask* vacancy, vehicle_bitmask* selection) {
+void update_vehiclemask(vehicle* v, list selected_parts, vehicle_bitmask* vacancy, vehicle_bitmask* selection) {
     // Erase the bitmask
     memset(vacancy, 0x00, sizeof(vehicle_bitmask));
     memset(selection, 0x00, sizeof(vehicle_bitmask));
@@ -87,6 +104,9 @@ void update_vehiclemask(vehicle* v, vehicle_bitmask* vacancy, vehicle_bitmask* s
         // Get the list of points relative to the origin this part occupies.
         part_entry p = v->parts[i];
         part_id id = p.id;
+        // This is kind of inefficient, but it should be ok...
+        bool selected = list_contains(&selected_parts, i);
+
         vec3s8* positions = part_get_info(id).relative_occupation;
         // Get quaternion of part rotation
         // Sorry for the ugly cast, this is just making it treat a vec3 as vec3s because they're the same
@@ -104,8 +124,6 @@ void update_vehiclemask(vehicle* v, vehicle_bitmask* vacancy, vehicle_bitmask* s
                 MAX(origin.z + roundf(rotated_point.z), 0),
             };
 
-            bool selected = p.selected;
-
             // Remove selected parts from vacancy mask & add them to the
             // selection mask
             vehiclemask_set_3d(vacancy, cell.x, cell.y, cell.z, !selected);
@@ -120,14 +138,13 @@ void update_vehiclemask(vehicle* v, vehicle_bitmask* vacancy, vehicle_bitmask* s
     }
 }
 
-vec3s8 vehicle_selection_center(vehicle* v) {
+vec3s8 vehicle_selection_center(gui_state* gui) {
+    vehicle* v = gui->v;
     vec3s8 sel_max = {0}; // Highest position in the selection
     vec3s8 sel_min = {127, 127, 127}; // Smallest position in the selection
-    for (u16 i = 0; i < v->head.part_count; i++) {
-        part_entry* p = &v->parts[i];
-        if (!p->selected) {
-            continue;
-        }
+    for (u32 i = 0; i < gui->selected_parts.end_idx; i++) {
+        u16 idx = gui->selected_parts.data[i];
+        part_entry* p = &v->parts[idx];
 
         // Update selection min/max positions
         sel_max = (vec3s8) {
@@ -191,27 +208,15 @@ bool vehicle_rotate_selection(gui_state* gui, s8 forward_diff, s8 side_diff, s8 
     }
     glm_rotate(rot_matrix, glm_rad(90) * roll_diff, *(vec3*)&forward_vec);
 
-    // In this loop we just find selected part count
-    u16 part_count = 0;
-    for (u16 i = 0; i < v->head.part_count; i++) {
-        part_entry* p = &v->parts[i];
-        if (!vehiclemask_get_3d(gui->selected_mask, p->pos.x, p->pos.y, p->pos.z)) {
-            continue; // Skip unselected parts
-        }
-        part_count++;
-    }
-    vec3s8 sel_center = (vec3s8){
+    vec3s8 sel_center = (vec3s8) {
         MAX(gui->sel_box.x, 0),
         MAX(gui->sel_box.y, 0),
         MAX(gui->sel_box.z, 0),
     };
-    vehiclemask_set_3d(gui->vacancy_mask, sel_center.x, sel_center.y, sel_center.z, 1);
 
-    for (u16 i = 0; i < v->head.part_count; i++) {
-        part_entry* p = &v->parts[i];
-        if (!vehiclemask_get_3d(gui->selected_mask, p->pos.x, p->pos.y, p->pos.z)) {
-            continue; // Skip unselected parts
-        }
+    for (u32 i = 0; i < gui->selected_parts.end_idx; i++) {
+        // Selected parts list stores indices, sorry it's a little confusing
+        part_entry* p = &v->parts[gui->selected_parts.data[i]];
 
         // Get rotation matrix for the part rotation
         mat4 part_rotation = {0};
@@ -220,11 +225,6 @@ bool vehicle_rotate_selection(gui_state* gui, s8 forward_diff, s8 side_diff, s8 
         // Combine rotation matrices & update the part rotation
         glm_mat4_mul(rot_matrix, part_rotation, part_rotation);
         glm_euler_angles(part_rotation, p->rot);
-
-        if (part_count < 2) {
-            // If there's only one part, we've already rotated it and shouldn't move it
-            return true;
-        }
 
         vec3 offset = {
             (float)p->pos.x - sel_center.x,

@@ -4,6 +4,7 @@
 #include <physfs.h>
 
 #include "common/int.h"
+#include "common/list.h"
 #include "common/logging.h"
 #include "common/gl_setup.h"
 #include "common/input.h"
@@ -46,6 +47,7 @@ int main(int argc, char** argv) {
     }
     gui_state gui = {
         .v = v,
+        .selected_parts = list_create(sizeof(u16) * v->head.part_count),
         .vsync = true,
         .vacancy_mask = calloc(1, sizeof(vehicle_bitmask)),
         .selected_mask = calloc(1, sizeof(vehicle_bitmask)),

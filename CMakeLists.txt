@@ -44,6 +44,7 @@ add_library(common STATIC
     src/common/primitives.c
     src/common/model.c
     src/common/path.c
+    src/common/list.c
 )
 
 add_executable(garage

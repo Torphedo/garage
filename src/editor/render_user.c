@@ -24,8 +24,12 @@ void ui_update_render(gui_state* gui) {
 
     // We can skip updating the part name if the cursor hasn't moved
     if (!vec3s16_eq(last_selbox, gui->sel_box)) {
-        part_entry* p = part_by_pos(gui->v, (vec3s8){gui->sel_box.x, gui->sel_box.y, gui->sel_box.z});
-        part_info cur_part = part_get_info(p->id);
+        s32 idx = part_by_pos(gui->v, (vec3s8){gui->sel_box.x, gui->sel_box.y, gui->sel_box.z});
+        u32 part_id = 0;
+        if (idx != -1) {
+            part_id = gui->v->parts[idx].id;
+        }
+        part_info cur_part = part_get_info(part_id);
         strncpy(partname_buf, cur_part.name, sizeof(partname_buf));
         // Update part name & selection box
         text_update_transforms(&part_name);
