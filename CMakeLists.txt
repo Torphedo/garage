@@ -11,7 +11,7 @@ include_directories("src" "ext/glfw/include" "ext/glad/include" "ext/cglm/includ
 add_executable(incbin "ext/incbin.c")
 
 # Build PhysicsFS without docs, to reduce build time.
-set(PHYSFS_BUILD_DOCS FALSE CACHE BOOL "Build doxygen based documentation" )
+set(PHYSFS_BUILD_DOCS FALSE CACHE BOOL "Build doxygen based documentation")
 set(PHYSFS_BUILD_SHARED FALSE CACHE BOOL "Build shared library")
 set(PHYSFS_BUILD_TEST FALSE CACHE BOOL "Build stdio test program")
 set(PHYSFS_DISABLE_INSTALL FALSE CACHE BOOL "Disable installing PhysFS")

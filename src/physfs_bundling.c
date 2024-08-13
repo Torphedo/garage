@@ -26,7 +26,7 @@ bool setup_physfs(const char* argv0) {
 
     // We give it a suggested filenames with a slash because it's invalid on all
     // filesystems, so there'll never be a name conflict
-    if (PHYSFS_mountMemory(gasset_archive_data, gasset_archive_size, NULL, "/garage_data.7z", "/", 1) == 0) {
+    if (PHYSFS_mountMemory(gasset_archive_data, gasset_archive_size, NULL, "/embedded_data.7z", "/", 1) == 0) {
         LOG_MSG(error, "Somehow failed to mount bundled assets!\n");
         return  false;
     }
@@ -65,6 +65,7 @@ u8* physfs_load_file(const char* path) {
     }
     PHYSFS_readBytes(resource, data, filesize);
     PHYSFS_close(resource);
+    // LOG_MSG(debug, "Loaded %s from real path %s\n", path, PHYSFS_getRealDir(path));
 
     return data;
 }

@@ -29,6 +29,7 @@ Some ideas to solve the issue:
   a part_by_pos() check, then search for the index in the selected list. We
   should remove selected parts from occupancy and delete the selection mask
   completely.
+- We don't need the unselected list, doing just a selected list is easier
 
 Other tweaks:
 - In scenarios where we move the entire bitmask, we could implement it with

@@ -37,7 +37,7 @@ model get_or_load_model(garage_state* state, part_id id) {
             }
             model_upload(&cur->model);
 
-            LOG_MSG(info, "Loaded \"%s\" in %.2fKiB\n\n", part_get_info(id).name, (float)model_size(cur->model) / 1024.0f);
+            LOG_MSG(info, "Loaded \"%s\" from \"%s\" in %.2fKiB\n\n", part_get_info(id).name, obj_path, (float)model_size(cur->model) / 1024.0f);
             return cur->model;
         }
     }
@@ -126,8 +126,9 @@ void garage_render(garage_state* state, gui_state* gui) {
     // Go back to the cube
     glBindVertexArray(cube.vao);
 
-    // Draw the selection box in wireframe mode
+    // Draw the selection box in wireframe mode (no backface culling)
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    glDisable(GL_CULL_FACE);
 
     vec3s pos = {0};
     vec4s color = {.a = 1.0f};
@@ -178,6 +179,7 @@ void garage_render(garage_state* state, gui_state* gui) {
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glEnable(GL_CULL_FACE);
 }
 
 void garage_destroy(garage_state* state) {

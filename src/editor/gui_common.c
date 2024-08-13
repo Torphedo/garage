@@ -32,6 +32,10 @@ void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask) {
     mat4 model = {0};
     glm_mat4_identity(model);
 
+    // Disable backface culling, it doesn't make sense for a wireframe
+    GLboolean culling_was_enabled = false;
+    glGetBooleanv(GL_CULL_FACE, &culling_was_enabled);
+    glDisable(GL_CULL_FACE);
     // Loop over the bitmask & render everything within the vehicle bounds
     for (u16 i = 0; i < VEH_MAX_DIM && i < max.x; i++) {
         for (u16 j = 0; j < VEH_MAX_DIM && j < max.y; j++) {
@@ -77,6 +81,11 @@ void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask) {
                 }
             }
         }
+    }
+
+    // Re-enable backface culling if needed
+    if (culling_was_enabled == GL_TRUE) {
+        glEnable(GL_CULL_FACE);
     }
 }
 
