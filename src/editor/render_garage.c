@@ -28,6 +28,7 @@ model get_or_load_model(garage_state* state, part_id id) {
             if (obj_data != NULL) {
                 cur->model = obj_load(obj_data);
             }
+            free(obj_data);
 
             if (cur->model.vertices == NULL || cur->model.indices == NULL) {
                 LOG_MSG(error, "Failed to load \"%s\" (0x%X)\n\n", part_get_info(id).name, id);
