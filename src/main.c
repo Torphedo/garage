@@ -109,6 +109,8 @@ int main(int argc, char** argv) {
             break;
         }
 
+        camera_update(&gui.cam, gui.delta_time);
+
         // Render
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         garage_render(&garage, &gui);

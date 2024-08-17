@@ -69,10 +69,7 @@ void garage_render(garage_state* state, gui_state* gui) {
     mat4 pvm = {0};
     mat4 pv = {0};
     float move_speed = gui->cam.move_speed;
-    if (gui->mode == MODE_MENU) {
-        gui->cam.move_speed = 0;
-    }
-    camera_proj_view(&gui->cam, gui->delta_time, &pv);
+    camera_proj_view(gui->cam, pv);
     // Put move speed back to normal
     gui->cam.move_speed = move_speed;
 

@@ -40,7 +40,6 @@ typedef struct {
 
     // Editor state data
     vec3s16 sel_box; // Selection box position
-    bool cam_allow_vertical; // Allow vertical movement with WASD in freecam?
     editor_mode mode;
     selection_state sel_mode;
 

@@ -94,7 +94,7 @@ void update_roll(float delta_time, float angle_diff) {
     camera_up = glms_vec3_rotate(camera_up, roll, axis_forward);
 }
 
-void camera_update(camera* cam, double delta_time, mat4 *view) {
+void camera_update(camera* cam, double delta_time) {
     static vec2s last_scroll = {0};
 
     const vec2s cursor_delta = get_cursor_delta(cam, input.cursor);
@@ -104,7 +104,7 @@ void camera_update(camera* cam, double delta_time, mat4 *view) {
         .y = input.scroll.y - last_scroll.y
     };
 
-    vec3s cam_dir = glms_normalize(camera_facing(cam));
+    vec3s cam_dir = glms_normalize(camera_facing(*cam));
     float multiplier = delta_time * cam->move_speed;
     float forward  = multiplier * (input.w - input.s);
     float side     = multiplier * (input.a - input.d);
@@ -140,22 +140,14 @@ void camera_update(camera* cam, double delta_time, mat4 *view) {
     
     // Add target position to relative orbit position
     cam->pos = glms_vec3_add(cam->target, orbit_pos_by_angles(cam, cam->orbit_angles, cam->radius));
-    
-    // Update view matrix
-    if (cam->mode == CAMERA_ORBIT) {
-        glm_lookat((float*)&cam->pos, (float*)&cam->target, (float*)&camera_up, *view);
-    } else {
-        // In fly mode, the target & camera are swapped
-        glm_lookat((float*)&cam->target, (float*)&cam->pos, (float*)&camera_up, *view);
-    }
 }
 
-vec3s camera_facing(camera* cam) {
-    if (cam->mode == CAMERA_ORBIT) {
-        return glms_vec3_sub(cam->target, cam->pos);
+vec3s camera_facing(camera cam) {
+    if (cam.mode == CAMERA_ORBIT) {
+        return glms_vec3_sub(cam.target, cam.pos);
     } else {
         // In fly mode, the target & camera are swapped
-        return glms_vec3_sub(cam->pos, cam->target);
+        return glms_vec3_sub(cam.pos, cam.target);
     }
 }
 
@@ -197,7 +189,16 @@ void camera_set_target(camera* cam, vec3s pos) {
     };
 }
 
-void camera_proj_view(camera* cam, double delta_time, mat4* out) {
+void camera_view_matrix(camera cam, mat4 view) {
+    if (cam.mode == CAMERA_ORBIT) {
+        glm_lookat((float*)&cam.pos, (float*)&cam.target, (float*)&camera_up, view);
+    } else {
+        // In fly mode, the target & camera are swapped
+        glm_lookat((float*)&cam.target, (float*)&cam.pos, (float*)&camera_up, view);
+    }
+}
+
+void camera_proj_view(camera cam, mat4 out) {
     // Pre-multiply the projection & view components of the PVM matrix
 
     // Projection matrix
@@ -208,7 +209,7 @@ void camera_proj_view(camera* cam, double delta_time, mat4* out) {
 
     // Camera matrix
     mat4 view = {0};
-    glm_mat4_identity(view);
-    camera_update(cam, delta_time, &view);
+    camera_view_matrix(cam, view);
     glm_mat4_mul(projection, view, (vec4*)out);
 }
+

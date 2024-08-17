@@ -28,7 +28,7 @@ typedef struct {
 static camera camera_default() {
     return (camera) {
         .radius = 4.0f,
-        .move_speed = 10.0f,
+        .move_speed = 15.0f,
         .mouse_sens = 0.015f,
         .invert_mouse_x = true,
     };
@@ -36,15 +36,17 @@ static camera camera_default() {
 
 void camera_set_mode(camera* cam, camera_mode mode);
 
-void camera_update(camera* cam, double delta_time, mat4 *view);
+void camera_update(camera* cam, double delta_time);
 
 // Vector of the direction the camera is looking
-vec3s camera_facing(camera* cam);
+vec3s camera_facing(camera cam);
 
 void camera_set_target(camera* cam, vec3s pos);
 
+void camera_view_matrix(camera cam, mat4 view);
+
 // Get combined projection & view matrix for the current camera position
-void camera_proj_view(camera* cam, double delta_time, mat4* out);
+void camera_proj_view(camera cam, mat4 out);
 
 #endif // #ifndef CAMERA_H
 

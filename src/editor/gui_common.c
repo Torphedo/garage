@@ -32,7 +32,7 @@ void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask) {
         gui->cam.move_speed = 0;
     }
     mat4 pv = {0};
-    camera_proj_view(&gui->cam, gui->delta_time, &pv);
+    camera_proj_view(gui->cam, pv);
     // Put move speed back to normal
     gui->cam.move_speed = move_speed;
 
@@ -100,7 +100,7 @@ void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask) {
 
 void update_edit_mode(gui_state* gui) {
     // Handle moving the selector box
-    vec3s cam_view = glms_normalize(camera_facing(&gui->cam));
+    vec3s cam_view = glms_normalize(camera_facing(gui->cam));
     // Absolute value of camera vector
     vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
 
@@ -251,9 +251,8 @@ bool gui_update_with_input(gui_state* gui, GLFWwindow* window) {
         gui->vsync = !gui->vsync;
         set_vsync(gui->vsync);
     }
-    if (input.u && !gui->prev_input.u) {
-        gui->cam_allow_vertical = !gui->cam_allow_vertical;
-    }
+
+    editor_mode old_mode = gui->mode;
     if (input.tab && !gui->prev_input.tab) {
         // Cycle through modes. Ctrl-Tab goes backwards.
         gui->mode = (gui->mode + (input.control ? -1 : 1)) % 2;
@@ -264,6 +263,22 @@ bool gui_update_with_input(gui_state* gui, GLFWwindow* window) {
 
     if (gui->mode == MODE_EDIT) {
         update_edit_mode(gui);
+        gui->cam.move_speed = 0;
+    }
+
+    // Only allow the camera to move in certain modes
+    switch (gui->mode) {
+    case MODE_MOVCAM:
+        gui->cam.move_speed = camera_default().move_speed;
+        gui->cam.mouse_sens = camera_default().mouse_sens;
+        break;
+    case MODE_MENU:
+        gui->cam.move_speed = 0;
+        gui->cam.mouse_sens = 0;
+        break;
+    default:
+        gui->cam.move_speed = 0;
+        gui->cam.mouse_sens = camera_default().mouse_sens;
     }
 
     return true;
