@@ -18,46 +18,16 @@ float clampf(float x, float min, float max) {
     }
 }
 
-// Lengthen/shorten a vector by an arbitrary amount.
-vec2s vec2_addmag(vec2s v, float amount) {
-    float magnitude = glms_vec2_norm(v);
-    // Turn our amount into a scalar we can multiply the vector by
-    float scalar = 1.0f - (amount / magnitude);
-    
-    // Scale the vector.
-    v = glms_vec2_scale(v, scalar);
-    return v;
-}
-
 // Get the camera position relative to an orbit center-point based on the
 // rotation angles
-vec3s orbit_pos_by_angles(camera* cam, vec2s angles, float orbit_radius) {
-    // Get XYZ positions using trig on our angles
-    cam->pos = (vec3s){
-        .x = sinf(cam->orbit_angles.x),
-        .z = cosf(cam->orbit_angles.x),
-        .y = sinf(cam->orbit_angles.y)
-    };
+vec3s orbit_pos_by_angles(camera cam) {
+    // Get combined quaternion of rotation about Y & Z axes
+    versors xrot = glms_quatv(cam.orbit_angles.x, (vec3s){0,1,0});
+    versors yrot = glms_quatv(cam.orbit_angles.y, (vec3s){0,0,1});
+    versors total_rot = glms_quat_mul(xrot, yrot);
 
-    // To keep the camera at a constant distance we need to move our horizontal
-    // position vector towards (0, 0) by the distance between the radius and the
-    // Z position of our Y angle.
-    float z_diff = (1.0f - cosf(cam->orbit_angles.y));
-
-    // Make sure we're SHORTENING the vector, not adding to it.
-    z_diff = fabsf(z_diff); 
-    
-    // Shorten our horizontal vector by the calculated amount.
-    vec2s horizontal_pos = {cam->pos.x, cam->pos.z};
-    horizontal_pos = vec2_addmag(horizontal_pos, z_diff);
-    
-    cam->pos.x = horizontal_pos.x;
-    cam->pos.z = horizontal_pos.y;
-    
-    // Scale our position to the orbit radius
-    cam->pos = glms_vec3_scale_as(cam->pos, orbit_radius);
-
-    return cam->pos;
+    vec3s pos_difference = glms_quat_rotatev(total_rot, (vec3s){cam.radius,0,0});
+    return pos_difference;
 }
 
 vec2s get_cursor_delta(camera* cam, vec2s cursor_pos) {
@@ -137,9 +107,9 @@ void camera_update(camera* cam, double delta_time) {
 
     // Rendering breaks at exactly 90 and we don't want to be upside-down
     cam->orbit_angles.y = clampf(cam->orbit_angles.y, glm_rad(-89.999f), glm_rad(89.999f));
-    
+
     // Add target position to relative orbit position
-    cam->pos = glms_vec3_add(cam->target, orbit_pos_by_angles(cam, cam->orbit_angles, cam->radius));
+    cam->pos = glms_vec3_add(cam->target, orbit_pos_by_angles(*cam));
 }
 
 vec3s camera_facing(camera cam) {
