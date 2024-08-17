@@ -49,7 +49,7 @@ u8* file_load(const char* path) {
         LOG_MSG(error, "File \"%s\" doesn't exist.\n", path);
         return NULL;
     }
-    u32 size = file_size(path);
+    const u32 size = file_size(path);
     // 1 extra byte for a bit of wiggle room
     // (prevents some out of bounds reads while looping over file contents)
     u8* buffer = calloc(1, size + 1);
@@ -63,15 +63,15 @@ u8* file_load(const char* path) {
 
 bool file_load_existing(const char* path, u8* buf, u32 size) {
     if (buf == NULL) {
-        LOG_MSG(error, "Caller provided NULL buffer. Check your allocations!\n");
+        LOG_MSG(error, "Caller gave a NULL buffer. Check your allocations!\n");
         return false;
     }
     if (!file_exists(path)) {
-        LOG_MSG(error, "Requested file %s does not exist.\n", path);
+        LOG_MSG(error, "Requested file \"%s\" does not exist.\n", path);
         return false;
     }
 
-    u32 filesize = file_size(path);
+    const u32 filesize = file_size(path);
     if (filesize > size) {
         LOG_MSG(error, "Not enough space for file %s\n", path);
         return false;

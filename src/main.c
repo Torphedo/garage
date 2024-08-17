@@ -39,7 +39,7 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    char* path = argv[1]; // Give our first argument a convenient name
+    const char* path = argv[1]; // Give our first argument a convenient name
     vehicle* v = vehicle_load(path);
     if (v == NULL) {
         // Loader function will print the error message for us, so just exit

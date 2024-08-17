@@ -5,11 +5,11 @@
 #include "logging.h"
 #include "list.h"
 
-u32 list_maxidx(list* l) {
+u32 list_maxidx(const list* l) {
     return (l->alloc_size / sizeof(*l->data)) - 1;
 }
 
-bool list_full(list* l) {
+bool list_full(const list* l) {
     return l->end_idx >= list_maxidx(l);
 }
 
@@ -58,11 +58,11 @@ void list_remove(list* l, u32 idx) {
     }
 
     // Shift the rest of the list back to fill the empty space
-    u32 size = (l->end_idx - idx) * sizeof(*l->data);
+    const u32 size = (l->end_idx - idx) * sizeof(*l->data);
     memmove(&l->data[idx], &l->data[idx + 1], size);
 }
 
-bool list_contains(list* l, u16 val) {
+bool list_contains(const list* l, u16 val) {
     for (u32 i = 0; i < l->end_idx; i++) {
         if (l->data[i] == val) {
             return true;
@@ -77,7 +77,7 @@ void list_clear(list* l) {
     l->end_idx = 0;
 }
 
-bool list_empty(list* l) {
+bool list_empty(const list* l) {
     return (l->end_idx == 0);
 }
 

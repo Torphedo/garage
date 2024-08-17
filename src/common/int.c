@@ -5,7 +5,7 @@
 
 // Get a value from a bitmask like it's an array
 u8 mask_get(u8* mask, u8 idx) {
-    u8* addr = mask + (idx / 8);
+    const u8* addr = mask + (idx / 8);
 
     // Adjust for index not divisible by 8, and return only 1 bit.
     return (*addr >> (idx % 8)) & 1;
@@ -54,3 +54,4 @@ void print_c16s(const c16* str) {
         str++;
     }
 }
+

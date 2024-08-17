@@ -202,7 +202,7 @@ void img_write(texture img, const char* path) {
     fclose(out);
 }
 
-bool is_dds(char* filename) {
+bool is_dds(const char* filename) {
     if (!file_exists(filename)) {
         return false;
     }
@@ -217,7 +217,7 @@ bool is_dds(char* filename) {
     return (magic == DDS_BEGIN);
 }
 
-texture image_buf_load(char* filename) {
+texture image_buf_load(const char* filename) {
     texture img = {
         .data = img_buf,
         .width = 512,
@@ -240,7 +240,7 @@ texture image_buf_load(char* filename) {
         return img;
     }
 
-    u32 size = file_size(filename);
+    const u32 size = file_size(filename);
     FILE* f = fopen(filename, "rb");
     if (f == NULL) {
         return img;
@@ -278,3 +278,4 @@ texture image_buf_load(char* filename) {
     // TODO: set channel count for uncompressed textures
     return img;
 }
+

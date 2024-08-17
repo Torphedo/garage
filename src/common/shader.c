@@ -55,13 +55,13 @@ bool shader_link_check(gl_obj shader) {
 
 gl_obj program_compile_src(const char* vert_src, const char* frag_src) {
     // Compile shaders
-    gl_obj vertex_shader = shader_compile_src(vert_src, GL_VERTEX_SHADER);
-    gl_obj fragment_shader = shader_compile_src(frag_src, GL_FRAGMENT_SHADER);
+    const gl_obj vertex_shader = shader_compile_src(vert_src, GL_VERTEX_SHADER);
+    const gl_obj fragment_shader = shader_compile_src(frag_src, GL_FRAGMENT_SHADER);
     if (vertex_shader == 0 || fragment_shader == 0) {
         LOG_MSG(error, "Failed to compile shaders\n");
         return 0;
     }
-    gl_obj program = glCreateProgram();
+    const gl_obj program = glCreateProgram();
     glAttachShader(program, vertex_shader);
     glAttachShader(program, fragment_shader);
     glLinkProgram(program);
@@ -75,7 +75,7 @@ gl_obj program_compile_src(const char* vert_src, const char* frag_src) {
 
 gl_obj shader_compile_src(const char* src, GLenum shader_type) {
     // Create & compile shader code
-    gl_obj shader = glCreateShader(shader_type);
+    const gl_obj shader = glCreateShader(shader_type);
     glShaderSource(shader, 1, (const GLchar* const *) &src, NULL);
     glCompileShader(shader);
 

@@ -2,7 +2,7 @@
 #define PATH_H
 
 #include <stdbool.h>
-#include <stdint.h>
+#include "int.h"
 
 bool path_has_extension(const char* path, const char* extension);
 
@@ -15,7 +15,7 @@ void path_fix_forward_slashes(char* path);
 /// Truncates a filename or folder name from a path, leaving a trailing "\\" or "/".
 /// \param path The path to truncate. This string will be edited. If the string does not contain any slashes or backslashes, it will be completely filled with null characters.
 /// \param pos The position to start searching for directory separators. This should usually be the string's length + 1.
-void path_truncate(char* path, uint16_t pos);
+void path_truncate(char* path, u16 pos);
 
 // Checks if a path has any forward or backslashes
 bool path_has_slashes(const char* path);

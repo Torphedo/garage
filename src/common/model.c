@@ -35,22 +35,29 @@ void model_upload(model* m) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-u32 model_size(model m) {
+u32 model_size(const model m) {
     return sizeof(m) - (2 * sizeof(void*)) + (m.vert_count * sizeof(vertex)) + (m.idx_count * sizeof(u16));
 }
 
 model obj_load(u8* txt) {
-    model out = {0};
+    vertex* vertices = NULL;
+    u16* indices = NULL;
+    u16 vert_count = 0;
+    u16 idx_count = 0;
 
     // We parse the file in 2 passes. The first pass tallies the vertex/face
     // counts to allocate the vertex/index buffers, and the second loads the
     // actual data.
     for (u8 i = 1; i < 3; i++) {
-        // Used to track current position in buffer. We discard const-ness here
-        vertex* vpos = (vertex*)out.vertices;
-        u16* ipos = (u16*)out.indices;
-        // Loop over the already-loaded OBJ file.
-        // Final null terminator indicates end of file
+        const bool tally_pass = (i == 1);
+        const bool read_pass = (i == 2);
+
+        // Used to track current position in buffer.
+        vertex* vpos = vertices;
+        u16* ipos = indices;
+
+        // Loop over the already-loaded OBJ data.
+        // Final null terminator indicates end of data
         char* line = txt;
         while (*line != 0x00) {
             // Get pointer to end of line (NUL or newline)
@@ -60,15 +67,15 @@ model obj_load(u8* txt) {
             }
             // Replace newline with NUL, so we only search the current line in
             // strstr(). Save original character so we can undo the change.
-            char end = *line_end;
+            const char end = *line_end;
             *line_end = 0x00; 
 
             if (line[0] != '#') {
                 // Faces
                 if (line[0] == 'f') {
-                    if (i == 1) {
+                    if (tally_pass) {
                         // Each face requires 3 indices
-                        out.idx_count += 3;
+                        idx_count += 3;
                     }
                     else {
                         // Read the index data
@@ -82,8 +89,8 @@ model obj_load(u8* txt) {
                 }
                 // Vertex position
                 if (strstr(line, "v ") != NULL) {
-                    if (i == 1) {
-                        out.vert_count++;
+                    if (tally_pass) {
+                        vert_count++;
                     }
                     else {
                         // Read the vertex data
@@ -100,18 +107,20 @@ model obj_load(u8* txt) {
         }
 
         // Before the second pass, we need to alloc the vertex & index buffers.
-        if (i == 1) {
-            out.vertices = calloc(out.vert_count, sizeof(vertex));
-            out.indices = calloc(out.idx_count, sizeof(u16));
-            if (out.vertices == NULL || out.indices == NULL) {
+        if (tally_pass) {
+            vertices = calloc(vert_count, sizeof(vertex));
+            indices = calloc(idx_count, sizeof(u16));
+            if (vertices == NULL || indices == NULL) {
                 LOG_MSG(error, "Buffer alloc failure!\n");
-                printf("\tVertex buffer %p (0x%hx bytes)\n", out.vertices, out.vert_count * (u16)sizeof(vertex));
-                printf("\tIndex buffer %p (0x%hx bytes)\n", out.indices, out.idx_count * (u16)sizeof(u16));
+                printf("\tVertex buffer %p (0x%hx bytes)\n", vertices, vert_count * (u16)sizeof(vertex));
+                printf("\tIndex buffer %p (0x%hx bytes)\n", indices, idx_count * (u16)sizeof(u16));
                 break;
             }
         }
     }
 
-    return out;
+    return (model) {
+        vertices, indices, vert_count, idx_count,
+    };
 }
 

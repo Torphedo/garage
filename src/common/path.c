@@ -18,8 +18,8 @@
 #endif
 
 bool path_has_extension(const char* path, const char* extension) {
-    uint32_t pos = strlen(path);
-    uint16_t ext_length = strlen(extension);
+    const u32 pos = strlen(path);
+    const u16 ext_length = strlen(extension);
 
     // File extension is longer than input string.
     if (ext_length > pos) {
@@ -29,7 +29,7 @@ bool path_has_extension(const char* path, const char* extension) {
 }
 
 void path_fix_backslashes(char* path) {
-    uint16_t pos = strlen(path) - 1; // Subtract 1 so that we don't need to check null terminator
+    u16 pos = strlen(path) - 1; // Subtract 1 so that we don't need to check null terminator
     while (pos > 0) {
         if (path[pos] == '\\') {
             path[pos] = '/';
@@ -39,7 +39,7 @@ void path_fix_backslashes(char* path) {
 }
 
 void path_fix_forward_slashes(char* path) {
-    uint16_t pos = strlen(path) - 1; // Subtract 1 so that we don't need to check null terminator
+    u16 pos = strlen(path) - 1; // Subtract 1 so that we don't need to check null terminator
     while (pos > 0) {
         if (path[pos] == '/') {
             path[pos] = '\\';
@@ -61,7 +61,7 @@ bool path_has_slashes(const char* path) {
     return false;
 }
 
-void path_truncate(char* path, uint16_t pos) {
+void path_truncate(char* path, u16 pos) {
     path[--pos] = 0; // Removes last character to take care of trailing "\\" or "/".
     while(path[pos] != '\\' && path[pos] != '/' && pos >= 0) {
         path[pos--] = 0;
@@ -69,7 +69,7 @@ void path_truncate(char* path, uint16_t pos) {
 }
 
 void path_get_filename(const char* path, char* output) {
-    uint16_t pos = strlen(path);
+    u16 pos = strlen(path);
     while(path[pos] != '\\' && path[pos] != '/') {
         pos--;
     }
@@ -130,7 +130,7 @@ char* get_self_path(const char* argv_0) {
 
         if (file_exists(selflink)) {
             // Find out where the symlink points
-            ssize_t len = readlink(selflink, out, size - 1);
+            const ssize_t len = readlink(selflink, out, size - 1);
             if (len == -1) {
                 LOG_MSG(error, "Failed to read symlink to get executable location (probably was over %d bytes)\n", size);
                 return out;
@@ -157,7 +157,7 @@ char* get_self_path(const char* argv_0) {
     // If there's no slashes, it must be a program that has a matching filename
     // in the current folder, but was actually invoked from a copy on the PATH.
     if (file_exists(argv_0) && path_has_slashes(argv_0)) {
-        u64 len = strlen(argv_0);
+        const u64 len = strlen(argv_0);
         if (len > size) {
             // Realloc if the argv[0] is absolutely massive for some reason
             free(out);

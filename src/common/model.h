@@ -20,7 +20,7 @@ typedef struct {
 
 // Upload a model to the GPU, writing the OpenGL IDs to the struct
 void model_upload(model* m);
-u32 model_size(model m);
+u32 model_size(const model m);
 
 // Load OBJ data into a model struct.
 // Assumes vertex colors are stored as RGB values on each vertex.

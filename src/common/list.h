@@ -23,14 +23,14 @@ void list_add(list* l, u16 val);
 // Remove an element from the list. Every element after it is moved backwards.
 void list_remove(list* l, u32 idx);
 
-// Whether the list contains a certain value
-bool list_contains(list* l, u16 val);
-
 // Reset to initial state and fill buffer with 0. Does not free buffer.
 void list_clear(list* l);
 
+// Whether the list contains a certain value
+bool list_contains(const list* l, u16 val);
+
 // Whether the list is empty
-bool list_empty(list* l);
+bool list_empty(const list* l);
 
 #endif // #ifndef LIST_H
 

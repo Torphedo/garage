@@ -27,14 +27,14 @@ unsigned short enable_win_ansi() {
     return 1;
 }
 
-int logging_print(char* type, char* function, char* format_str, ...) {
+int logging_print(const char* type, const char* function, const char* format_str, ...) {
     // Print "__func__(): " with function name in color and the rest in white
     printf("\033[%sm%s\033[0m(): ", type, function);
 
     // We use helpers from stdarg.h to handle the variadic (...) arguments.
     va_list arg_list = {0};
     va_start(arg_list, format_str);
-    int return_code = vprintf(format_str, arg_list);
+    const int return_code = vprintf(format_str, arg_list);
     va_end(arg_list);
 
     return return_code;
