@@ -99,7 +99,7 @@ void garage_render(garage_state* state, editor_state* editor) {
 
         // Upload paint color & draw
         vec4s paint_col = vec4_from_rgba8(p->color);
-        if (cell_is_selected(editor, p->pos)) {
+        if (list_contains(editor->selected_parts, i)) {
             paint_col.a /= 3;
         }
 
@@ -139,26 +139,13 @@ void garage_render(garage_state* state, editor_state* editor) {
     vec3s pos = {0};
     vec4s color = {.a = 1.0f};
 
-    // Draw green boxes around all selected parts as we move them
-    // Set selection box color
-    if (editor->sel_mode == SEL_BAD) {
-        color.r = 1.0f;
-    }
-    else {
-        color.g = 1.0f;
-    }
-    glUniform4fv(editor->u_paint, 1, (const float*)&color);
-    render_vehicle_bitmask(editor, editor->selected_mask);
-
-    // Get selection position
+    // Get cursor position
     pos = vec3_from_vec3s16(editor->sel_box, PART_POS_SCALE);
     pos.x -= (center.x * PART_POS_SCALE);
     pos.z -= (center.z * PART_POS_SCALE);
 
     {
-        color.r = 0;
-        color.g = 0;
-        // Render selection box
+        // Render cursor box
         mat4 model = {0};
         glm_mat4_identity(model);
         mat4 pvm = {0};
@@ -175,9 +162,6 @@ void garage_render(garage_state* state, editor_state* editor) {
 
     // Lock camera onto selection box during editing
     if (editor->mode == MODE_EDIT) {
-        // TODO: This locks to the last selected part while moving parts. We
-        // might want to calculate the centerpoint of the selection and lock
-        // to that instead.
         camera_set_target(&editor->cam, pos);
     }
 

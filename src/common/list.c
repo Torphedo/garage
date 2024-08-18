@@ -62,9 +62,9 @@ void list_remove(list* l, u32 idx) {
     memmove(&l->data[idx], &l->data[idx + 1], size);
 }
 
-bool list_contains(const list* l, u16 val) {
-    for (u32 i = 0; i < l->end_idx; i++) {
-        if (l->data[i] == val) {
+bool list_contains(list l, u16 val) {
+    for (u32 i = 0; i < l.end_idx; i++) {
+        if (l.data[i] == val) {
             return true;
         }
     }
@@ -77,7 +77,7 @@ void list_clear(list* l) {
     l->end_idx = 0;
 }
 
-bool list_empty(const list* l) {
-    return (l->end_idx == 0);
+bool list_empty(list l) {
+    return (l.end_idx == 0);
 }
 

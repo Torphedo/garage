@@ -40,16 +40,9 @@ bool cell_is_selected(editor_state* editor, vec3s8 cell) {
     }
     // Even if the cell is marked as selected, it might just be overlapping a
     // selected part. We need to double-check.
+    // TODO: part_by_pos() can't distinguish between 2 parts in the same spot...
     u16 idx = part_by_pos(editor->v, cell);
-    for (u32 i = 0; i < editor->selected_parts.end_idx; i++) {
-        if (idx == editor->selected_parts.data[i]) {
-            // It's in the list of selected parts, so it's definitely selected
-            return true;
-        }
-    }
-
-    // Found nothing, it was just an overlap.
-    return false;
+    return list_contains(editor->selected_parts, idx);
 }
 
 bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry* p) {
@@ -107,7 +100,7 @@ void update_vehiclemask(vehicle* v, list selected_parts, vehicle_bitmask* vacanc
         part_entry p = v->parts[i];
         part_id id = p.id;
         // This is kind of inefficient, but it should be ok...
-        bool selected = list_contains(&selected_parts, i);
+        bool selected = list_contains(selected_parts, i);
 
         vec3s8* positions = part_get_info(id).relative_occupation;
         // Get quaternion of part rotation

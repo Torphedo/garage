@@ -27,10 +27,10 @@ void list_remove(list* l, u32 idx);
 void list_clear(list* l);
 
 // Whether the list contains a certain value
-bool list_contains(const list* l, u16 val);
+bool list_contains(list l, u16 val);
 
 // Whether the list is empty
-bool list_empty(const list* l);
+bool list_empty(list l);
 
 #endif // #ifndef LIST_H
 
