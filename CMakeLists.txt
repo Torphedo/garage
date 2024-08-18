@@ -53,7 +53,7 @@ add_executable(garage
     src/editor/render_debug.c
     src/editor/render_text.c
     src/editor/render_user.c
-    src/editor/gui_common.c
+    src/editor/editor.c
     src/editor/vehicle_edit.c
 
     # Adding this to the source lists forces the custom command to run every

@@ -34,15 +34,15 @@ void vehiclemask_set_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z, u8 val) {
     // Oh well.
 }
 
-bool cell_is_selected(gui_state* gui, vec3s8 cell) {
-    if (!vehiclemask_get_3d(gui->selected_mask, cell.x, cell.y, cell.z)) {
+bool cell_is_selected(editor_state* editor, vec3s8 cell) {
+    if (!vehiclemask_get_3d(editor->selected_mask, cell.x, cell.y, cell.z)) {
         return false;
     }
     // Even if the cell is marked as selected, it might just be overlapping a
     // selected part. We need to double-check.
-    u16 idx = part_by_pos(gui->v, cell);
-    for (u32 i = 0; i < gui->selected_parts.end_idx; i++) {
-        if (idx == gui->selected_parts.data[i]) {
+    u16 idx = part_by_pos(editor->v, cell);
+    for (u32 i = 0; i < editor->selected_parts.end_idx; i++) {
+        if (idx == editor->selected_parts.data[i]) {
             // It's in the list of selected parts, so it's definitely selected
             return true;
         }
@@ -86,11 +86,11 @@ bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry* p) {
     return result;
 }
 
-bool vehicle_selection_overlap(gui_state* gui) {
-    vehicle* v = gui->v;
-    for (u32 i = 0; i < gui->selected_parts.end_idx; i++) {
-        u16 idx = gui->selected_parts.data[i];
-        if (vehicle_part_conflict(gui->vacancy_mask, &v->parts[idx])) {
+bool vehicle_selection_overlap(editor_state* editor) {
+    vehicle* v = editor->v;
+    for (u32 i = 0; i < editor->selected_parts.end_idx; i++) {
+        u16 idx = editor->selected_parts.data[i];
+        if (vehicle_part_conflict(editor->vacancy_mask, &v->parts[idx])) {
             return true;
         }
     }
@@ -140,12 +140,12 @@ void update_vehiclemask(vehicle* v, list selected_parts, vehicle_bitmask* vacanc
     }
 }
 
-vec3s16 vehicle_selection_center(gui_state* gui) {
-    vehicle* v = gui->v;
+vec3s16 vehicle_selection_center(editor_state* editor) {
+    vehicle* v = editor->v;
     vec3s8 sel_max = {0}; // Highest position in the selection
     vec3s8 sel_min = {127, 127, 127}; // Smallest position in the selection
-    for (u32 i = 0; i < gui->selected_parts.end_idx; i++) {
-        u16 idx = gui->selected_parts.data[i];
+    for (u32 i = 0; i < editor->selected_parts.end_idx; i++) {
+        u16 idx = editor->selected_parts.data[i];
         part_entry* p = &v->parts[idx];
 
         // Update selection min/max positions
@@ -169,10 +169,10 @@ vec3s16 vehicle_selection_center(gui_state* gui) {
     return sel_center;
 }
 
-bool vehicle_rotate_selection(gui_state* gui, s8 forward_diff, s8 side_diff, s8 roll_diff) {
-    vehicle* v = gui->v;
+bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_diff, s8 roll_diff) {
+    vehicle* v = editor->v;
 
-    vec3s cam_view = glms_normalize(camera_facing(gui->cam));
+    vec3s cam_view = glms_normalize(camera_facing(editor->cam));
     // Absolute value of camera vector
     vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
 
@@ -210,9 +210,9 @@ bool vehicle_rotate_selection(gui_state* gui, s8 forward_diff, s8 side_diff, s8 
     }
     glm_rotate(rot_matrix, glm_rad(90) * roll_diff, *(vec3*)&forward_vec);
 
-    for (u32 i = 0; i < gui->selected_parts.end_idx; i++) {
+    for (u32 i = 0; i < editor->selected_parts.end_idx; i++) {
         // Selected parts list stores indices, sorry it's a little confusing
-        part_entry* p = &v->parts[gui->selected_parts.data[i]];
+        part_entry* p = &v->parts[editor->selected_parts.data[i]];
 
         // Get rotation matrix for the part rotation
         mat4 part_rotation = {0};
@@ -223,9 +223,9 @@ bool vehicle_rotate_selection(gui_state* gui, s8 forward_diff, s8 side_diff, s8 
         glm_euler_angles(part_rotation, p->rot);
 
         vec3 offset = {
-            (float)p->pos.x - gui->sel_box.x,
-            (float)p->pos.y - gui->sel_box.y,
-            (float)p->pos.z - gui->sel_box.z,
+            (float)p->pos.x - editor->sel_box.x,
+            (float)p->pos.y - editor->sel_box.y,
+            (float)p->pos.z - editor->sel_box.z,
         };
         vec3 rotated_offset = {0};
         vec4 quaternion = {0};
@@ -234,9 +234,9 @@ bool vehicle_rotate_selection(gui_state* gui, s8 forward_diff, s8 side_diff, s8 
 
         // Part position after rotation
         vec3s16 new_pos = {
-            roundf(gui->sel_box.x + rotated_offset[0]),
-            roundf(gui->sel_box.y + rotated_offset[1]),
-            roundf(gui->sel_box.z + rotated_offset[2]),
+            roundf(editor->sel_box.x + rotated_offset[0]),
+            roundf(editor->sel_box.y + rotated_offset[1]),
+            roundf(editor->sel_box.z + rotated_offset[2]),
         };
         vec3s16 diff = {
             new_pos.x - p->pos.x,
@@ -244,12 +244,12 @@ bool vehicle_rotate_selection(gui_state* gui, s8 forward_diff, s8 side_diff, s8 
             new_pos.z - p->pos.z,
         };
         vec3s16 adjustment = {0};
-        vehicle_move_part(gui->v, gui->selected_parts.data[i], diff, &adjustment);
+        vehicle_move_part(editor->v, editor->selected_parts.data[i], diff, &adjustment);
         // If we tried to cross the edge and parts were adjusted, we need to
         // adjust the centerpoint. (will be zero if no adjustment was needed)
-        gui->sel_box.x -= adjustment.x;
-        gui->sel_box.y -= adjustment.y;
-        gui->sel_box.z -= adjustment.z;
+        editor->sel_box.x -= adjustment.x;
+        editor->sel_box.y -= adjustment.y;
+        editor->sel_box.z -= adjustment.z;
     }
 
     return true;

@@ -5,7 +5,6 @@
 #include <cglm/cglm.h>
 
 #include <common/int.h>
-#include <common/file.h>
 #include <common/logging.h>
 #include <common/shader.h>
 #include <common/primitives.h>
@@ -14,27 +13,27 @@
 #include <vehicle.h>
 #include <physfs_bundling.h>
 #include "camera.h"
-#include "gui_common.h"
+#include "editor.h"
 #include "vehicle_edit.h"
 
 // This doesn't enforce what the bound VAO is... make sure to only call it with
 // the cube VAO bound.
-void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask) {
-    vec3s center = vehicle_find_center(gui->v);
+void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
+    vec3s center = vehicle_find_center(editor->v);
 
     // Highest XYZ coords in the vehicle. We add 1 to include the highest
     // index, then 4 to avoid cutting off large parts with up to 4 cells radius
     vec3s max = glms_vec3_adds(glms_vec3_scale(center, PART_POS_SCALE), 5.0f);
 
     // Tranformation matrices
-    float move_speed = gui->cam.move_speed;
-    if (gui->mode == MODE_MENU) {
-        gui->cam.move_speed = 0;
+    float move_speed = editor->cam.move_speed;
+    if (editor->mode == MODE_MENU) {
+        editor->cam.move_speed = 0;
     }
     mat4 pv = {0};
-    camera_proj_view(gui->cam, pv);
+    camera_proj_view(editor->cam, pv);
     // Put move speed back to normal
-    gui->cam.move_speed = move_speed;
+    editor->cam.move_speed = move_speed;
 
     mat4 model = {0};
     glm_mat4_identity(model);
@@ -82,7 +81,7 @@ void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask) {
                     // TODO: The iteration seems to cause a heavy CPU bottleneck,
                     // but it's probably still worth doing a single instanced
                     // draw call instead of this.
-                    glUniformMatrix4fv(gui->u_pvm, 1, GL_FALSE, (const float*)&pvm);
+                    glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float*)&pvm);
                     glDrawElements(GL_TRIANGLES, cube.idx_count, GL_UNSIGNED_SHORT, NULL);
                     glm_mat4_identity(model);
                 }
@@ -98,18 +97,18 @@ void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask) {
 }
 
 
-void update_edit_mode(gui_state* gui) {
+void update_edit_mode(editor_state* editor) {
     bool rotation = input.control;
     // Handle moving the selector box
-    vec3s cam_view = glms_normalize(camera_facing(gui->cam));
+    vec3s cam_view = glms_normalize(camera_facing(editor->cam));
     // Absolute value of camera vector
     vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
 
-    s8 forward_diff = ((input.w && !gui->prev_input.w) - (input.s && !gui->prev_input.s));
-    s8 side_diff = ((input.d && !gui->prev_input.d) - (input.a && !gui->prev_input.a));
-    s8 roll_diff = ((input.e && !gui->prev_input.e) - (input.q && !gui->prev_input.q));
+    s8 forward_diff = ((input.w && !editor->prev_input.w) - (input.s && !editor->prev_input.s));
+    s8 side_diff = ((input.d && !editor->prev_input.d) - (input.a && !editor->prev_input.a));
+    s8 roll_diff = ((input.e && !editor->prev_input.e) - (input.q && !editor->prev_input.q));
 
-    vec3s16 sel_box_prev = gui->sel_box;
+    vec3s16 sel_box_prev = editor->sel_box;
 
     // Set our view direction to have a magnitude of 1 on the horizontal axis
     // we're facing the most strongly, and 0 in all other directions.
@@ -123,96 +122,96 @@ void update_edit_mode(gui_state* gui) {
     if (rotation) {
         // Update the bitmask(s) if needed
         if (forward_diff != 0 || side_diff != 0 || roll_diff != 0) {
-            vehicle_rotate_selection(gui, forward_diff, side_diff, roll_diff);
-            // update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
+            vehicle_rotate_selection(editor, forward_diff, side_diff, roll_diff);
+            // update_vehiclemask(editor->v, editor->vacancy_mask, editor->selected_mask);
         }
     } else {
         vec3s right_vec = {-horizontal_vec.z, 0, horizontal_vec.x};
 
         for (u8 i = 0; i < 3; i++) {
-            gui->sel_box.raw[i] += forward_diff * horizontal_vec.raw[i];
-            gui->sel_box.raw[i] += side_diff * right_vec.raw[i];
+            editor->sel_box.raw[i] += forward_diff * horizontal_vec.raw[i];
+            editor->sel_box.raw[i] += side_diff * right_vec.raw[i];
         }
 
         // Handle vertical movement
-        gui->sel_box.y += (input.space && !gui->prev_input.space);
-        gui->sel_box.y -= (input.shift && !gui->prev_input.shift);
+        editor->sel_box.y += (input.space && !editor->prev_input.space);
+        editor->sel_box.y -= (input.shift && !editor->prev_input.shift);
     }
 
 
     // Handle moving the selection, if applicable
-    if (gui->sel_mode != SEL_NONE && !vec3s16_eq(gui->sel_box, sel_box_prev) && !rotation) {
+    if (editor->sel_mode != SEL_NONE && !vec3s16_eq(editor->sel_box, sel_box_prev) && !rotation) {
         vec3s16 diff = {
-            .x = gui->sel_box.x - sel_box_prev.x,
-            .y = gui->sel_box.y - sel_box_prev.y,
-            .z = gui->sel_box.z - sel_box_prev.z,
+            .x = editor->sel_box.x - sel_box_prev.x,
+            .y = editor->sel_box.y - sel_box_prev.y,
+            .z = editor->sel_box.z - sel_box_prev.z,
         };
 
         // Move all selected parts
-        for (u32 i = 0; i < gui->selected_parts.end_idx; i++) {
-            u16 idx = gui->selected_parts.data[i];
+        for (u32 i = 0; i < editor->selected_parts.end_idx; i++) {
+            u16 idx = editor->selected_parts.data[i];
             // vehicle_move_part() returns false when a part moves out of bounds
             vec3s16 adjustment = {0};
-            vehicle_move_part(gui->v, idx, diff, &adjustment);
+            vehicle_move_part(editor->v, idx, diff, &adjustment);
             // Move the selection box to the part's new location, if it moved out
             // of bounds and forced the vehicle to be adjusted.
-            gui->sel_box.x -= adjustment.x;
-            gui->sel_box.y -= adjustment.y;
-            gui->sel_box.z -= adjustment.z;
+            editor->sel_box.x -= adjustment.x;
+            editor->sel_box.y -= adjustment.y;
+            editor->sel_box.z -= adjustment.z;
 
             // Check for overlaps and block the placement if needed
-            if (vehicle_selection_overlap(gui)) {
-                gui->sel_mode = SEL_BAD;
+            if (vehicle_selection_overlap(editor)) {
+                editor->sel_mode = SEL_BAD;
             }
             else {
-                gui->sel_mode = SEL_ACTIVE;
+                editor->sel_mode = SEL_ACTIVE;
             }
         }
-        update_vehiclemask(gui->v, gui->selected_parts, gui->vacancy_mask, gui->selected_mask);
+        update_vehiclemask(editor->v, editor->selected_parts, editor->vacancy_mask, editor->selected_mask);
     }
 
     // Handle user trying to select a part (unless the selection has overlaps).
-    if (input.e && !gui->prev_input.e && gui->sel_mode != SEL_BAD && !rotation) {
+    if (input.e && !editor->prev_input.e && editor->sel_mode != SEL_BAD && !rotation) {
         // Convert to vec3s8
-        vec3s8 pos = {gui->sel_box.x, gui->sel_box.y, gui->sel_box.z};
-        s32 idx = part_by_pos(gui->v, pos);
-        if (gui->sel_mode == SEL_ACTIVE) {
+        vec3s8 pos = {editor->sel_box.x, editor->sel_box.y, editor->sel_box.z};
+        s32 idx = part_by_pos(editor->v, pos);
+        if (editor->sel_mode == SEL_ACTIVE) {
             // User pressed the button while moving parts, which means
             // we should put them down.
-            update_vehiclemask(gui->v, gui->selected_parts, gui->vacancy_mask, gui->selected_mask);
-            list_clear(&gui->selected_parts);
-            gui->sel_mode = SEL_NONE; // Now you can start moving the parts
+            update_vehiclemask(editor->v, editor->selected_parts, editor->vacancy_mask, editor->selected_mask);
+            list_clear(&editor->selected_parts);
+            editor->sel_mode = SEL_NONE; // Now you can start moving the parts
         } else if (idx != -1) {
-            if (cell_is_selected(gui, gui->v->parts[idx].pos)) {
+            if (cell_is_selected(editor, editor->v->parts[idx].pos)) {
                 // User pressed the button while selecting parts on an
                 // already-selected part, which means they want to start moving them.
-                gui->sel_mode = SEL_ACTIVE;
-                update_vehiclemask(gui->v, gui->selected_parts, gui->vacancy_mask, gui->selected_mask);
+                editor->sel_mode = SEL_ACTIVE;
+                update_vehiclemask(editor->v, editor->selected_parts, editor->vacancy_mask, editor->selected_mask);
 
                 // Set cursor to the selection center
-                gui->sel_box = vehicle_selection_center(gui);
+                editor->sel_box = vehicle_selection_center(editor);
             } else {
                 // Select the part
-                list_add(&gui->selected_parts, idx);
-                gui->sel_mode = SEL_NONE;
+                list_add(&editor->selected_parts, idx);
+                editor->sel_mode = SEL_NONE;
             }
         }
     }
 }
 
 // Update the GUI state according to new user input.
-bool gui_update_with_input(gui_state* gui, GLFWwindow* window) {
+bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
     static bool cursor_lock = false;
     // TODO: Why are we updating this every frame? This need some serious cleanup.
-    update_vehiclemask(gui->v, gui->selected_parts, gui->vacancy_mask, gui->selected_mask);
+    update_vehiclemask(editor->v, editor->selected_parts, editor->vacancy_mask, editor->selected_mask);
     update_mods(window); // Update input.shift, input.ctrl, etc.
 
-    if (input.f && !gui->prev_input.f) {
+    if (input.f && !editor->prev_input.f) {
         // Cycle through camera modes
-        camera_mode mode = gui->cam.mode + 1;
+        camera_mode mode = editor->cam.mode + 1;
         mode %= CAMERA_MODE_ENUM_MAX;
         // This function handles the special camera settings per mode
-        camera_set_mode(&gui->cam, mode);
+        camera_set_mode(&editor->cam, mode);
     }
 
     // Allow infinite cursor movement when clicking to pan the camera
@@ -234,55 +233,55 @@ bool gui_update_with_input(gui_state* gui, GLFWwindow* window) {
         cursor_lock = false;
     }
 
-    if (input.v && !gui->prev_input.v) {
+    if (input.v && !editor->prev_input.v) {
         // Toggle vsync
-        gui->vsync = !gui->vsync;
-        set_vsync(gui->vsync);
+        editor->vsync = !editor->vsync;
+        set_vsync(editor->vsync);
     }
 
-    editor_mode old_mode = gui->mode;
-    if (input.tab && !gui->prev_input.tab) {
+    editor_mode old_mode = editor->mode;
+    if (input.tab && !editor->prev_input.tab) {
         // Cycle through modes. Ctrl-Tab goes backwards.
-        gui->mode = (gui->mode + (input.control ? -1 : 1)) % 2;
+        editor->mode = (editor->mode + (input.control ? -1 : 1)) % 2;
     }
-    if (input.escape && !gui->prev_input.escape) {
-        gui->mode = MODE_MENU;
+    if (input.escape && !editor->prev_input.escape) {
+        editor->mode = MODE_MENU;
     }
 
-    if (gui->mode == MODE_EDIT) {
-        update_edit_mode(gui);
-        gui->cam.move_speed = 0;
+    if (editor->mode == MODE_EDIT) {
+        update_edit_mode(editor);
+        editor->cam.move_speed = 0;
     }
 
     // Only allow the camera to move in certain modes
-    switch (gui->mode) {
+    switch (editor->mode) {
     case MODE_MOVCAM:
-        gui->cam.move_speed = camera_default().move_speed;
-        gui->cam.mouse_sens = camera_default().mouse_sens;
+        editor->cam.move_speed = camera_default().move_speed;
+            editor->cam.mouse_sens = camera_default().mouse_sens;
         break;
     case MODE_MENU:
-        gui->cam.move_speed = 0;
-        gui->cam.mouse_sens = 0;
+        editor->cam.move_speed = 0;
+            editor->cam.mouse_sens = 0;
         break;
     default:
-        gui->cam.move_speed = 0;
-        gui->cam.mouse_sens = camera_default().mouse_sens;
+        editor->cam.move_speed = 0;
+            editor->cam.mouse_sens = camera_default().mouse_sens;
     }
 
     return true;
 }
 
-bool gui_init(gui_state* gui) {
+bool editor_init(editor_state* editor) {
     // Initialize part bitmask
-    update_vehiclemask(gui->v, gui->selected_parts, gui->vacancy_mask, gui->selected_mask);
+    update_vehiclemask(editor->v, editor->selected_parts, editor->vacancy_mask, editor->selected_mask);
 
     char* vert = physfs_load_file("/src/editor/shader/vcolor.vert");
     char* frag = physfs_load_file("/src/editor/shader/vcolor.frag");
     if (vert == NULL || frag == NULL) {
         return false;
     }
-    gui->vcolor_shader = program_compile_src(vert, frag);
-    if (!shader_link_check(gui->vcolor_shader)) {
+    editor->vcolor_shader = program_compile_src(vert, frag);
+    if (!shader_link_check(editor->vcolor_shader)) {
         free(vert);
         free(frag);
         return false;
@@ -291,8 +290,8 @@ bool gui_init(gui_state* gui) {
     free(frag);
 
     // Get our uniform locations
-    gui->u_pvm = glGetUniformLocation(gui->vcolor_shader, "pvm");
-    gui->u_paint = glGetUniformLocation(gui->vcolor_shader, "paint");
+    editor->u_pvm = glGetUniformLocation(editor->vcolor_shader, "pvm");
+    editor->u_paint = glGetUniformLocation(editor->vcolor_shader, "paint");
 
     model_upload(&quad);
     model_upload(&cube);
@@ -300,8 +299,8 @@ bool gui_init(gui_state* gui) {
     return true;
 }
 
-void gui_teardown(gui_state* gui) {
-    glDeleteProgram(gui->vcolor_shader);
+void editor_teardown(editor_state* editor) {
+    glDeleteProgram(editor->vcolor_shader);
     glDeleteVertexArrays(1, &quad.vao);
     glDeleteBuffers(1, &quad.vbuf);
     glDeleteBuffers(1, &quad.ibuf);
@@ -309,9 +308,9 @@ void gui_teardown(gui_state* gui) {
     glDeleteVertexArrays(1, &cube.vao);
     glDeleteBuffers(1, &cube.vbuf);
     glDeleteBuffers(1, &cube.ibuf);
-    free(gui->v);
-    free(gui->selected_parts.data);
-    free(gui->vacancy_mask);
-    free(gui->selected_mask);
+    free(editor->v);
+    free(editor->selected_parts.data);
+    free(editor->vacancy_mask);
+    free(editor->selected_mask);
 }
 

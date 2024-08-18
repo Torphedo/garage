@@ -3,7 +3,7 @@
 #include <common/input.h>
 
 #include "camera.h"
-#include "gui_common.h"
+#include "editor.h"
 
 // Restrict a number to a certain range
 float clampf(float x, float min, float max) {

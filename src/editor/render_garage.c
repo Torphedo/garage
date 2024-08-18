@@ -10,7 +10,7 @@
 
 #include "camera.h"
 #include "vehicle_edit.h"
-#include "gui_common.h"
+#include "editor.h"
 #include "render_garage.h"
 
 model get_or_load_model(garage_state* state, part_id id) {
@@ -48,47 +48,47 @@ model get_or_load_model(garage_state* state, part_id id) {
     return state->models[0].model;
 }
 
-garage_state garage_init(gui_state* gui) {
+garage_state garage_init(editor_state* editor) {
     garage_state state = {0};
 
     // ID 0 will just render a cube
     state.models[0] = (part_model){.id = 0, .model = cube};
 
-    for (u16 i = 0; i < gui->v->head.part_count; i++) {
-        get_or_load_model(&state, gui->v->parts[i].id);
+    for (u16 i = 0; i < editor->v->head.part_count; i++) {
+        get_or_load_model(&state, editor->v->parts[i].id);
     }
 
     return state;
 }
 
-void garage_render(garage_state* state, gui_state* gui) {
+void garage_render(garage_state* state, editor_state* editor) {
     // We need to bind the shader program before uploading uniforms
-    glUseProgram(gui->vcolor_shader);
+    glUseProgram(editor->vcolor_shader);
 
     // All our matrices for rendering, only PVM is uploaded to GPU
     mat4 pvm = {0};
     mat4 pv = {0};
-    float move_speed = gui->cam.move_speed;
-    camera_proj_view(gui->cam, pv);
+    float move_speed = editor->cam.move_speed;
+    camera_proj_view(editor->cam, pv);
     // Put move speed back to normal
-    gui->cam.move_speed = move_speed;
+    editor->cam.move_speed = move_speed;
 
     mat4 mdl = {0};
     glm_mat4_identity(mdl);
 
     glm_mat4_mul(pv, mdl, pvm); // Compute pvm
-    glUniformMatrix4fv(gui->u_pvm, 1, GL_FALSE, (const float*)&pvm);
+    glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float*)&pvm);
 
     // "Paint" the floor orange
     vec4 quad_paint = {1.0f, 0.5f, 0.2f, 1.0f};
-    glUniform4fv(gui->u_paint, 1, (const float*)&quad_paint);
+    glUniform4fv(editor->u_paint, 1, (const float*)&quad_paint);
 
     // Draw the floor
     glBindVertexArray(quad.vao);
     glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
 
     // Draw all our parts
-    vehicle* v = gui->v;
+    vehicle* v = editor->v;
     vec3s center = vehicle_find_center(v);
     for (u16 i = 0; i < v->head.part_count; i++) {
         part_entry* p = &v->parts[i];
@@ -99,7 +99,7 @@ void garage_render(garage_state* state, gui_state* gui) {
 
         // Upload paint color & draw
         vec4s paint_col = vec4_from_rgba8(p->color);
-        if (cell_is_selected(gui, p->pos)) {
+        if (cell_is_selected(editor, p->pos)) {
             paint_col.a /= 3;
         }
 
@@ -122,10 +122,10 @@ void garage_render(garage_state* state, gui_state* gui) {
         glm_rotate_y(model, p->rot[1], model);
         glm_rotate_z(model, p->rot[2], model);
         glm_mat4_mul(pv, model, pvm); // Compute pvm
-        glUniformMatrix4fv(gui->u_pvm, 1, GL_FALSE, (const float *) &pvm);
+        glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float *) &pvm);
 
         // Upload paint color & draw
-        glUniform4fv(gui->u_paint, 1, (const float *) &paint_col);
+        glUniform4fv(editor->u_paint, 1, (const float *) &paint_col);
         glDrawElements(GL_TRIANGLES, m.idx_count, GL_UNSIGNED_SHORT, NULL);
     }
 
@@ -141,17 +141,17 @@ void garage_render(garage_state* state, gui_state* gui) {
 
     // Draw green boxes around all selected parts as we move them
     // Set selection box color
-    if (gui->sel_mode == SEL_BAD) {
+    if (editor->sel_mode == SEL_BAD) {
         color.r = 1.0f;
     }
     else {
         color.g = 1.0f;
     }
-    glUniform4fv(gui->u_paint, 1, (const float*)&color);
-    render_vehicle_bitmask(gui, gui->selected_mask);
+    glUniform4fv(editor->u_paint, 1, (const float*)&color);
+    render_vehicle_bitmask(editor, editor->selected_mask);
 
     // Get selection position
-    pos = vec3_from_vec3s16(gui->sel_box, PART_POS_SCALE);
+    pos = vec3_from_vec3s16(editor->sel_box, PART_POS_SCALE);
     pos.x -= (center.x * PART_POS_SCALE);
     pos.z -= (center.z * PART_POS_SCALE);
 
@@ -166,19 +166,19 @@ void garage_render(garage_state* state, gui_state* gui) {
         glm_translate(model, (float*)&pos);
         glm_scale_uni(model, 1.2f); // Draw the box a little larger than the part cubes
         glm_mat4_mul(pv, model, pvm); // Compute pvm
-        glUniformMatrix4fv(gui->u_pvm, 1, GL_FALSE, (const float *) &pvm);
+        glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float *) &pvm);
 
         // Upload paint color & draw
-        glUniform4fv(gui->u_paint, 1, (const float *) &color);
+        glUniform4fv(editor->u_paint, 1, (const float *) &color);
         glDrawElements(GL_TRIANGLES, cube.idx_count, GL_UNSIGNED_SHORT, NULL);
     }
 
     // Lock camera onto selection box during editing
-    if (gui->mode == MODE_EDIT) {
+    if (editor->mode == MODE_EDIT) {
         // TODO: This locks to the last selected part while moving parts. We
         // might want to calculate the centerpoint of the selection and lock
         // to that instead.
-        camera_set_target(&gui->cam, pos);
+        camera_set_target(&editor->cam, pos);
     }
 
     // Reset state

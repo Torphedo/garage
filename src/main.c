@@ -14,7 +14,7 @@
 #include "editor/render_debug.h"
 #include "editor/render_text.h"
 #include "editor/render_user.h"
-#include "editor/gui_common.h"
+#include "editor/editor.h"
 #include "editor/camera.h"
 
 #include "vehicle.h"
@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
         // Loader function will print the error message for us, so just exit
         return 1;
     }
-    gui_state gui = {
+    editor_state editor = {
         .v = v,
         .selected_parts = list_create(sizeof(u16) * v->head.part_count),
         .vsync = true,
@@ -53,12 +53,12 @@ int main(int argc, char** argv) {
         .selected_mask = calloc(1, sizeof(vehicle_bitmask)),
         .cam = camera_default(),
     };
-    if (gui.vacancy_mask == NULL || gui.selected_mask == NULL) {
+    if (editor.vacancy_mask == NULL || editor.selected_mask == NULL) {
         LOG_MSG(error, "Failed to alloc a vehicle bitmask\n");
         return 1;
     }
 
-    GLFWwindow* window = setup_opengl(680, 480, "Garage Opener", ENABLE_DEBUG, GLFW_CURSOR_NORMAL, gui.vsync);
+    GLFWwindow* window = setup_opengl(680, 480, "Garage Opener", ENABLE_DEBUG, GLFW_CURSOR_NORMAL, editor.vsync);
     if (window == NULL) {
         return 1;
     }
@@ -72,7 +72,7 @@ int main(int argc, char** argv) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_BLEND);
 
-    if (!gui_init(&gui)) {
+    if (!editor_init(&editor)) {
         return 1;
     }
     if (!text_renderer_setup("bin/ProFontIIxNerdFontPropo-Regular.ttf")) {
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    garage_state garage = garage_init(&gui);
+    garage_state garage = garage_init(&editor);
 
     char fps_text[32] = "FPS: 0 [0.00ms]";
     text_state fps_display = text_render_prep(fps_text, sizeof(fps_text), 0.03f, (vec2){-1, 1});
@@ -92,30 +92,30 @@ int main(int argc, char** argv) {
     // Main loop for rendering, UI, etc.
     while (!glfwWindowShouldClose(window)) {
         // Update delta time and our last 2 frame times
-        gui.delta_time = one_frame_ago - two_frames_ago;
+        editor.delta_time = one_frame_ago - two_frames_ago;
         two_frames_ago = one_frame_ago;
         one_frame_ago = glfwGetTime();
 
         // Shift over all the frame times and add in the last one
         memmove(&frame_times[1], frame_times, sizeof(frame_times) - sizeof(*frame_times));
-        frame_times[0] = gui.delta_time;
+        frame_times[0] = editor.delta_time;
 
         // Poll for input
         glfwPollEvents();
 
         // All UI/navigation/keybinds are implemented here
-        if (!gui_update_with_input(&gui, window)) {
+        if (!editor_update_with_input(&editor, window)) {
             // Returns false when the program should exit (for quit keybind)
             break;
         }
 
-        camera_update(&gui.cam, gui.delta_time);
+        camera_update(&editor.cam, editor.delta_time);
 
         // Render
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        garage_render(&garage, &gui);
-        debug_render(&gui);
-        ui_update_render(&gui);
+        garage_render(&garage, &editor);
+        debug_render(&editor);
+        ui_update_render(&editor);
 
         // Update FPS counter 4 times a second
         if (fmod(one_frame_ago, 0.25) < 0.01) {
@@ -127,7 +127,7 @@ int main(int argc, char** argv) {
         glfwSwapBuffers(window);
 
         // Update the last frame's input to this frame's input
-        gui.prev_input = input;
+        editor.prev_input = input;
 
         // Calculate framerate from average frame time
         float avg_time = 0.0f;
@@ -160,7 +160,7 @@ int main(int argc, char** argv) {
     ui_teardown();
 
     text_renderer_cleanup();
-    gui_teardown(&gui);
+    editor_teardown(&editor);
     glfwTerminate(); // Auto-closes the window if we exited via the quit button
 
     return 0;

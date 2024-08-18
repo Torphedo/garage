@@ -1,5 +1,5 @@
-#ifndef GUI_COMMON_H
-#define GUI_COMMON_H
+#ifndef EDITOR_COMMON_H
+#define EDITOR_COMMON_H
 #include <common/int.h>
 #include <common/vector.h>
 #include <common/input.h>
@@ -53,16 +53,16 @@ typedef struct {
     // Uniforms for the shader
     gl_obj u_pvm; // PVM matrix uniform
     gl_obj u_paint; // Vertex color multiplier
-}gui_state;
+}editor_state;
 
-// Update the GUI state according to new user input.
-bool gui_update_with_input(gui_state* gui, GLFWwindow* window);
+// Update our state according to new user input.
+bool editor_update_with_input(editor_state* editor, GLFWwindow* window);
 
 // Compile the basic common shader, upload buffers for primitives, setup uniforms
-bool gui_init(gui_state* gui);
+bool editor_init(editor_state* editor);
 
-// Delete resources created in gui_init().
-void gui_teardown(gui_state* gui);
-void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask);
+// Delete resources created in editor_init().
+void editor_teardown(editor_state* editor);
+void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask);
 
-#endif // GUI_COMMON_H 
+#endif // EDITOR_COMMON_H

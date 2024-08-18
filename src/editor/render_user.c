@@ -1,7 +1,7 @@
 #include <string.h>
 
 #include "../parts.h"
-#include "gui_common.h"
+#include "editor.h"
 #include "render_text.h"
 
 char partname_buf[32] = "Large Folding Propeller";
@@ -9,7 +9,7 @@ text_state part_name = {0};
 text_state editing_mode = {0};
 text_state camera_mode_text = {0};
 
-void ui_update_render(gui_state* gui) {
+void ui_update_render(editor_state* editor) {
     // Setup on first run
     static bool initialized = false;
     if (!initialized) {
@@ -23,22 +23,22 @@ void ui_update_render(gui_state* gui) {
     static vec3s16 last_selbox = {-1, -1, -1};
 
     // We can skip updating the part name if the cursor hasn't moved
-    if (!vec3s16_eq(last_selbox, gui->sel_box)) {
-        s32 idx = part_by_pos(gui->v, (vec3s8){gui->sel_box.x, gui->sel_box.y, gui->sel_box.z});
+    if (!vec3s16_eq(last_selbox, editor->sel_box)) {
+        s32 idx = part_by_pos(editor->v, (vec3s8){editor->sel_box.x, editor->sel_box.y, editor->sel_box.z});
         u32 part_id = 0;
         if (idx != -1) {
-            part_id = gui->v->parts[idx].id;
+            part_id = editor->v->parts[idx].id;
         }
         part_info cur_part = part_get_info(part_id);
         strncpy(partname_buf, cur_part.name, sizeof(partname_buf));
         // Update part name & selection box
         text_update_transforms(&part_name);
-        last_selbox = gui->sel_box;
+        last_selbox = editor->sel_box;
     }
 
     static u8 last_edit_mode = MODE_ENUM_MAX;
-    if (last_edit_mode != gui->mode) {
-        switch (gui->mode) {
+    if (last_edit_mode != editor->mode) {
+        switch (editor->mode) {
         case MODE_EDIT:
             editing_mode.text = "[Editing]";
             break;
@@ -53,11 +53,11 @@ void ui_update_render(gui_state* gui) {
         }
 
         text_update_transforms(&editing_mode);
-        last_edit_mode = gui->mode;
+        last_edit_mode = editor->mode;
     }
     static camera_mode last_cam_mode = CAMERA_MODE_ENUM_MAX;
-    if (last_cam_mode != gui->cam.mode) {
-        switch (gui->cam.mode) {
+    if (last_cam_mode != editor->cam.mode) {
+        switch (editor->cam.mode) {
         case CAMERA_ORBIT:
             camera_mode_text.text = "CAMSTYLE: Orbit";
             break;
@@ -72,7 +72,7 @@ void ui_update_render(gui_state* gui) {
         }
 
         text_update_transforms(&camera_mode_text);
-        last_cam_mode = gui->cam.mode;
+        last_cam_mode = editor->cam.mode;
     }
 
     text_render(editing_mode);
