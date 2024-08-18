@@ -15,7 +15,7 @@ void vehiclemask_set_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z, u8 val);
 
 bool cell_is_selected(gui_state* gui, vec3s8 cell);
 
-vec3s8 vehicle_selection_center(gui_state* gui);
+vec3s16 vehicle_selection_center(gui_state* gui);
 
 // Rotate all selected parts about their centerpoint. Forward & side diff
 // represent user inputs on a joystick/D-Pad/keyboard X/Y axes.

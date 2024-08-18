@@ -99,6 +99,7 @@ void render_vehicle_bitmask(gui_state* gui, vehicle_bitmask* mask) {
 
 
 void update_edit_mode(gui_state* gui) {
+    bool rotation = input.control;
     // Handle moving the selector box
     vec3s cam_view = glms_normalize(camera_facing(gui->cam));
     // Absolute value of camera vector
@@ -119,7 +120,13 @@ void update_edit_mode(gui_state* gui) {
         ((cam_view.z < 0) ? -1 : 1) * (cam_abs.z > cam_abs.x),
     };
 
-    if (!input.control) {
+    if (rotation) {
+        // Update the bitmask(s) if needed
+        if (forward_diff != 0 || side_diff != 0 || roll_diff != 0) {
+            vehicle_rotate_selection(gui, forward_diff, side_diff, roll_diff);
+            // update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
+        }
+    } else {
         vec3s right_vec = {-horizontal_vec.z, 0, horizontal_vec.x};
 
         for (u8 i = 0; i < 3; i++) {
@@ -131,30 +138,27 @@ void update_edit_mode(gui_state* gui) {
         gui->sel_box.y += (input.space && !gui->prev_input.space);
         gui->sel_box.y -= (input.shift && !gui->prev_input.shift);
     }
-    else {
-
-        // Update the bitmask(s) if needed
-        if (forward_diff != 0 || side_diff != 0 || roll_diff != 0) {
-            vehicle_rotate_selection(gui, forward_diff, side_diff, roll_diff);
-            // update_vehiclemask(gui->v, gui->vacancy_mask, gui->selected_mask);
-        }
-    }
 
 
     // Handle moving the selection, if applicable
-    if (gui->sel_mode != SEL_NONE && !vec3s16_eq(gui->sel_box, sel_box_prev)) {
+    if (gui->sel_mode != SEL_NONE && !vec3s16_eq(gui->sel_box, sel_box_prev) && !rotation) {
         vec3s16 diff = {
             .x = gui->sel_box.x - sel_box_prev.x,
             .y = gui->sel_box.y - sel_box_prev.y,
             .z = gui->sel_box.z - sel_box_prev.z,
         };
 
-        bool vehicle_adjusted = false;
         // Move all selected parts
         for (u32 i = 0; i < gui->selected_parts.end_idx; i++) {
             u16 idx = gui->selected_parts.data[i];
             // vehicle_move_part() returns false when a part moves out of bounds
-            vehicle_adjusted &= vehicle_move_part(gui->v, idx, diff);
+            vec3s16 adjustment = {0};
+            vehicle_move_part(gui->v, idx, diff, &adjustment);
+            // Move the selection box to the part's new location, if it moved out
+            // of bounds and forced the vehicle to be adjusted.
+            gui->sel_box.x -= adjustment.x;
+            gui->sel_box.y -= adjustment.y;
+            gui->sel_box.z -= adjustment.z;
 
             // Check for overlaps and block the placement if needed
             if (vehicle_selection_overlap(gui)) {
@@ -165,21 +169,10 @@ void update_edit_mode(gui_state* gui) {
             }
         }
         update_vehiclemask(gui->v, gui->selected_parts, gui->vacancy_mask, gui->selected_mask);
-
-        // Move the selection box to the part's new location, if it moved out
-        // of bounds and forced the vehicle to be adjusted.
-        gui->sel_box.x -= diff.x * vehicle_adjusted;
-        gui->sel_box.y -= diff.y * vehicle_adjusted;
-        gui->sel_box.z -= diff.z * vehicle_adjusted;
     }
 
-    // Keep selection box in bounds
-    gui->sel_box.x = CLAMP(0, gui->sel_box.x, 127);
-    gui->sel_box.y = CLAMP(0, gui->sel_box.y, 127);
-    gui->sel_box.z = CLAMP(0, gui->sel_box.z, 127);
-
     // Handle user trying to select a part (unless the selection has overlaps).
-    if (input.e && !gui->prev_input.e && gui->sel_mode != SEL_BAD && !input.control) {
+    if (input.e && !gui->prev_input.e && gui->sel_mode != SEL_BAD && !rotation) {
         // Convert to vec3s8
         vec3s8 pos = {gui->sel_box.x, gui->sel_box.y, gui->sel_box.z};
         s32 idx = part_by_pos(gui->v, pos);
@@ -197,8 +190,7 @@ void update_edit_mode(gui_state* gui) {
                 update_vehiclemask(gui->v, gui->selected_parts, gui->vacancy_mask, gui->selected_mask);
 
                 // Set cursor to the selection center
-                vec3s8 sel_center = vehicle_selection_center(gui);
-                gui->sel_box = (vec3s16){sel_center.x, sel_center.y, sel_center.z};
+                gui->sel_box = vehicle_selection_center(gui);
             } else {
                 // Select the part
                 list_add(&gui->selected_parts, idx);

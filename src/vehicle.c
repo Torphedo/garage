@@ -1,4 +1,6 @@
+#include <stdlib.h>
 #include <stdbool.h>
+#include <math.h>
 #include <malloc.h>
 
 #include <common/endian.h>
@@ -92,7 +94,7 @@ vehicle* vehicle_load(const char* path) {
     return v;
 }
 
-bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
+bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff, vec3s16* adjust_out) {
     if (idx > v->head.part_count - 1) {
         // We can't move a part that doesn't exist.
         LOG_MSG(error, "Cant move part %d, there are only %d parts!\n", idx, v->head.part_count);
@@ -116,8 +118,12 @@ bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff) {
         }
 
         needed_readjustment = true;
-        // Make this the new 0, and adjust the rest of the parts
+        // Make this the new 0, update the output adjustment vector, and adjust
+        // the rest of the parts
         p->pos.raw[i] = 0;
+        if (adjust_out != NULL) {
+            adjust_out->raw[i] = new_pos;
+        }
         for (u16 j = 0; j < v->head.part_count; j++) {
             if (j == idx) {
                 // This is the part we just made the new 0, skip.
@@ -146,6 +152,10 @@ s32 part_by_pos(vehicle* v, vec3s8 target) {
     // TODO: When moving a selection through other parts, the detected part can
     // suddenly switch to one of the parts you're moving through. Maybe we
     // should prioritize selected parts in the search?
+    // TODO: Move this into vehicle_edit.c, so we can use the grid for an early
+    // exit (also it uses cglm a lot, which adds a dependency)
+    // TODO: Make an iterator or something to factor out the complex iteration
+    // code that accounts for part rotation
     for (u16 i = 0; i < v->head.part_count; i++) {
         part_entry* p = &v->parts[i]; // Just a shortcut
 
@@ -189,3 +199,4 @@ s32 part_by_pos(vehicle* v, vec3s8 target) {
     // Nothing here...
     return -1;
 }
+

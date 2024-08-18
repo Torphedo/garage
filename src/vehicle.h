@@ -85,7 +85,9 @@ void vehicle_unselect_all(vehicle* v);
 
 // Move a part by a 3D vector. If the new position is out of bounds (< 0), that
 // position will be the new zero and the other parts are adjusted accordingly.
+// If the vehicle was adjusted, writes to an output vector to indicate the
+// vector of the adjustment. This output vector can be NULL.
 // Returns a boolean indicating if the vehicle had to be adjusted.
-bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff);
+bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff, vec3s16* adjust_out);
 #endif // VEHICLE_H
 

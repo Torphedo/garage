@@ -1,8 +1,10 @@
 #include <memory.h>
+#include <math.h>
 
 #include <common/vector.h>
+#include <common/int.h>
 
-#include "../parts.h"
+#include <parts.h>
 #include "vehicle_edit.h"
 #include "camera.h"
 
@@ -138,7 +140,7 @@ void update_vehiclemask(vehicle* v, list selected_parts, vehicle_bitmask* vacanc
     }
 }
 
-vec3s8 vehicle_selection_center(gui_state* gui) {
+vec3s16 vehicle_selection_center(gui_state* gui) {
     vehicle* v = gui->v;
     vec3s8 sel_max = {0}; // Highest position in the selection
     vec3s8 sel_min = {127, 127, 127}; // Smallest position in the selection
@@ -158,7 +160,7 @@ vec3s8 vehicle_selection_center(gui_state* gui) {
             MIN(sel_min.z, p->pos.z),
         };
     }
-    vec3s8 sel_center = {
+    vec3s16 sel_center = {
         floorf((float)(sel_max.x + sel_min.x) / 2),
         floorf((float)(sel_max.y + sel_min.y) / 2),
         floorf((float)(sel_max.z + sel_min.z) / 2),
@@ -208,12 +210,6 @@ bool vehicle_rotate_selection(gui_state* gui, s8 forward_diff, s8 side_diff, s8 
     }
     glm_rotate(rot_matrix, glm_rad(90) * roll_diff, *(vec3*)&forward_vec);
 
-    vec3s8 sel_center = (vec3s8) {
-        MAX(gui->sel_box.x, 0),
-        MAX(gui->sel_box.y, 0),
-        MAX(gui->sel_box.z, 0),
-    };
-
     for (u32 i = 0; i < gui->selected_parts.end_idx; i++) {
         // Selected parts list stores indices, sorry it's a little confusing
         part_entry* p = &v->parts[gui->selected_parts.data[i]];
@@ -227,21 +223,35 @@ bool vehicle_rotate_selection(gui_state* gui, s8 forward_diff, s8 side_diff, s8 
         glm_euler_angles(part_rotation, p->rot);
 
         vec3 offset = {
-            (float)p->pos.x - sel_center.x,
-            (float)p->pos.y - sel_center.y,
-            (float)p->pos.z - sel_center.z,
+            (float)p->pos.x - gui->sel_box.x,
+            (float)p->pos.y - gui->sel_box.y,
+            (float)p->pos.z - gui->sel_box.z,
         };
         vec3 rotated_offset = {0};
         vec4 quaternion = {0};
         glm_mat4_quat(rot_matrix, quaternion);
         glm_quat_rotatev(quaternion, offset, rotated_offset);
 
-        p->pos = (vec3s8) {
-            roundf(sel_center.x + rotated_offset[0]),
-            roundf(sel_center.y + rotated_offset[1]),
-            roundf(sel_center.z + rotated_offset[2]),
+        // Part position after rotation
+        vec3s16 new_pos = {
+            roundf(gui->sel_box.x + rotated_offset[0]),
+            roundf(gui->sel_box.y + rotated_offset[1]),
+            roundf(gui->sel_box.z + rotated_offset[2]),
         };
+        vec3s16 diff = {
+            new_pos.x - p->pos.x,
+            new_pos.y - p->pos.y,
+            new_pos.z - p->pos.z,
+        };
+        vec3s16 adjustment = {0};
+        vehicle_move_part(gui->v, gui->selected_parts.data[i], diff, &adjustment);
+        // If we tried to cross the edge and parts were adjusted, we need to
+        // adjust the centerpoint. (will be zero if no adjustment was needed)
+        gui->sel_box.x -= adjustment.x;
+        gui->sel_box.y -= adjustment.y;
+        gui->sel_box.z -= adjustment.z;
     }
 
     return true;
 }
+
