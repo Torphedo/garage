@@ -202,14 +202,10 @@ void update_edit_mode(gui_state* gui) {
 
 // Update the GUI state according to new user input.
 bool gui_update_with_input(gui_state* gui, GLFWwindow* window) {
-    update_vehiclemask(gui->v, gui->selected_parts, gui->vacancy_mask, gui->selected_mask);
     static bool cursor_lock = false;
+    // TODO: Why are we updating this every frame? This need some serious cleanup.
+    update_vehiclemask(gui->v, gui->selected_parts, gui->vacancy_mask, gui->selected_mask);
     update_mods(window); // Update input.shift, input.ctrl, etc.
-
-    // Quit on quit keybind
-    if (input.shift && input.escape) {
-        return false;
-    }
 
     if (input.f && !gui->prev_input.f) {
         // Cycle through camera modes
