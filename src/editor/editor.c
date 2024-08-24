@@ -26,14 +26,8 @@ void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
     vec3s max = glms_vec3_adds(glms_vec3_scale(center, PART_POS_SCALE), 5.0f);
 
     // Tranformation matrices
-    float move_speed = editor->cam.move_speed;
-    if (editor->mode == MODE_MENU) {
-        editor->cam.move_speed = 0;
-    }
     mat4 pv = {0};
     camera_proj_view(editor->cam, pv);
-    // Put move speed back to normal
-    editor->cam.move_speed = move_speed;
 
     mat4 model = {0};
     glm_mat4_identity(model);
@@ -66,25 +60,28 @@ void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
 
 
                 bool part_present = vehiclemask_get_3d(mask, i, j, k);
-                if (part_present) {
-                    vec3 pos = {i, j, k};
-
-                    // Move to the same position as the part rendering
-                    pos[0] -= center.x;
-                    pos[2] -= center.z;
-                    glm_vec3_scale(pos, PART_POS_SCALE, pos);
-
-                    mat4 pvm = {0};
-                    glm_translate(model, pos);
-                    glm_mat4_mul(pv, model, pvm); // Compute pvm
-
-                    // TODO: The iteration seems to cause a heavy CPU bottleneck,
-                    // but it's probably still worth doing a single instanced
-                    // draw call instead of this.
-                    glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float*)&pvm);
-                    glDrawElements(GL_TRIANGLES, cube.idx_count, GL_UNSIGNED_SHORT, NULL);
-                    glm_mat4_identity(model);
+                if (!part_present) {
+                    continue;
                 }
+                vec3 pos = {i, j, k};
+
+                // Move to the same position as the part rendering
+                pos[0] -= center.x;
+                pos[2] -= center.z;
+                glm_vec3_scale(pos, PART_POS_SCALE, pos);
+
+                mat4 pvm = {0};
+                glm_translate(model, pos);
+                // Scale up by an imperceptible amount to avoid Z-fighting
+                glm_scale_uni(model, 1.0001f);
+                glm_mat4_mul(pv, model, pvm); // Compute pvm
+
+                // TODO: The iteration seems to cause a heavy CPU bottleneck,
+                // but it's probably still worth doing a single instanced
+                // draw call instead of this.
+                glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float*)&pvm);
+                glDrawElements(GL_TRIANGLES, cube.idx_count, GL_UNSIGNED_SHORT, NULL);
+                glm_mat4_identity(model);
             }
         }
     }
