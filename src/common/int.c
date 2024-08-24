@@ -1,5 +1,6 @@
 #include <memory.h>
 #include <stdio.h>
+#include <stddef.h>
 
 #include "int.h"
 
@@ -49,8 +50,11 @@ u32 exponent(u32 val, u8 pow) {
 }
 
 void print_c16s(const c16* str) {
+    // On platforms where wchar_t is 4 bytes (Linux), we have to print the
+    // 2-byte characters one at a time, with the other 2 bytes set to 0.
     while (*str != 0) {
-        printf("%lc", *str);
+        wchar_t c = *str;
+        printf("%lc", c);
         str++;
     }
 }

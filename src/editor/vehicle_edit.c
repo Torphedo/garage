@@ -46,35 +46,15 @@ bool cell_is_selected(editor_state* editor, vec3s8 cell) {
 }
 
 bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry* p) {
-    part_id id = p->id;
-    // Find all the cells this part contains
-    vec3s8* positions = part_get_info(id).relative_occupation;
-
-    // Get quaternion of part rotation
-    // Sorry for the ugly cast, this is just making it treat a vec3 as vec3s because they're the same
-    versors quaternion = glms_euler_xyz_quat(*(vec3s*)&p->rot);
-
-    vec3s8 origin = p->pos;
     bool result = false;
-    while (1) {
-        // Rotate the relative point around the part's origin
-        vec3s rotated_point = glms_quat_rotatev(quaternion, vec3_from_vec3s8(*positions, 1.0f));
-
+    part_cell_iterator iter = part_cell_iterator_setup(*p);
+    while (!iter.done) {
         // Get the final coordinate by adding the rotated point to origin
-        vec3s8 cell = {
-            MAX(origin.x + roundf(rotated_point.x), 0),
-            MAX(origin.y + roundf(rotated_point.y), 0),
-            MAX(origin.z + roundf(rotated_point.z), 0),
-        };
+        vec3s8 cell = part_cell_iterator_next(&iter);
 
         bool cell_occupied = vehiclemask_get_3d(vacancy, cell.x, cell.y, cell.z);
         result |= cell_occupied;
 
-        // The position array ends with an all-zero entry (the origin)
-        if (vec3s8_eq(*positions, (vec3s8){0})) {
-            break;
-        }
-        positions++;
     }
     return result;
 }
@@ -98,37 +78,18 @@ void update_vehiclemask(vehicle* v, list selected_parts, vehicle_bitmask* vacanc
     for (u16 i = 0; i < v->head.part_count; i++) {
         // Get the list of points relative to the origin this part occupies.
         part_entry p = v->parts[i];
-        part_id id = p.id;
         // This is kind of inefficient, but it should be ok...
         bool selected = list_contains(selected_parts, i);
 
-        vec3s8* positions = part_get_info(id).relative_occupation;
-        // Get quaternion of part rotation
-        // Sorry for the ugly cast, this is just making it treat a vec3 as vec3s because they're the same
-        versors quaternion = glms_euler_xyz_quat(*(vec3s*)&p.rot);
-
-        vec3s8 origin = p.pos;
-        while (1) {
-            // Rotate the relative point around the part's origin
-            vec3s rotated_point = glms_quat_rotatev(quaternion, vec3_from_vec3s8(*positions, 1.0f));
-
-            // Get the final coordinate by adding the rotated point to origin
-            vec3s8 cell = {
-                MAX(origin.x + roundf(rotated_point.x), 0),
-                MAX(origin.y + roundf(rotated_point.y), 0),
-                MAX(origin.z + roundf(rotated_point.z), 0),
-            };
+        part_cell_iterator iter = part_cell_iterator_setup(p);
+        while (!iter.done) {
+            // Get the next cell of this part
+            vec3s8 cell = part_cell_iterator_next(&iter);
 
             // Remove selected parts from vacancy mask & add them to the
             // selection mask
             vehiclemask_set_3d(vacancy, cell.x, cell.y, cell.z, !selected);
             vehiclemask_set_3d(selection, cell.x, cell.y, cell.z, selected);
-
-            // The position array ends with an all-zero entry (the origin)
-            if (vec3s8_eq(*positions, (vec3s8){0})) {
-                break;
-            }
-            positions++;
         }
     }
 }
@@ -246,5 +207,85 @@ bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_dif
     }
 
     return true;
+}
+
+// Setup an iterator from a part entry. Returns an iteration context.
+part_cell_iterator part_cell_iterator_setup(part_entry p) {
+    part_cell_iterator out = {
+        .info = part_get_info(p.id),
+        .part = p,
+        .done = false,
+    };
+    return out;
+}
+
+// Get the next item and advance.
+vec3s8 part_cell_iterator_next(part_cell_iterator* ctx) {
+    // Early exit if iteration is already finished
+    if (ctx->done) {
+        return (vec3s8){0, 0, 0};
+    }
+
+    // Get the origin and current relative cell we're working with
+    vec3s relative_cell = vec3_from_vec3s8(*ctx->info.relative_occupation, 1.0f);
+    vec3s8 origin = ctx->part.pos;
+
+    // Get quaternion of part rotation
+    // Sorry for the ugly cast, this is just making it treat a vec3 as vec3s because they're the same
+    versors quaternion = glms_euler_xyz_quat(*(vec3s*)&ctx->part.rot);
+
+    // Rotate the relative point about the part origin
+    vec3s rotated_point = glms_quat_rotatev(quaternion, relative_cell);
+
+    // Get the final coordinate by adding the relative rotated point to origin
+    vec3s8 cell = {
+        MAX(origin.x + roundf(rotated_point.x), 0),
+        MAX(origin.y + roundf(rotated_point.y), 0),
+        MAX(origin.z + roundf(rotated_point.z), 0),
+    };
+
+    // Array ends with an all-zero entry, so if we just hit that, we're done
+    ctx->done = vec3s8_eq(*ctx->info.relative_occupation, (vec3s8){0});
+
+    // Increment the current position
+    ctx->info.relative_occupation++;
+
+    return cell;
+}
+
+s32 part_by_pos(vehicle* v, vec3s8 target) {
+    // Linearly search for the part
+    // TODO: When moving a selection through other parts, the detected part can
+    // suddenly switch to one of the parts you're moving through. Maybe we
+    // should prioritize selected parts in the search?
+    // TODO: Use the grid for an early exit
+    for (u16 i = 0; i < v->head.part_count; i++) {
+        part_entry* p = &v->parts[i]; // Just a shortcut
+
+        // A part's max width is 8, so anything further away can't be a match
+        if (abs(p->pos.x - target.x) > 8 || 
+            abs(p->pos.y - target.y) > 8 || 
+            abs(p->pos.z - target.z) > 8) {
+            continue; // The part is too far away, skip it
+        }
+
+        // Loop over every cell this part occupies
+        part_cell_iterator iter = part_cell_iterator_setup(*p);
+        if (p->id == WHEEL_SUPER && vec3s8_eq(target, p->pos)) {
+            printf("");
+        }
+        while (!iter.done) {
+            // Get the next coordinate
+            vec3s8 cell = part_cell_iterator_next(&iter);
+
+            if (vec3s8_eq(cell, target)) {
+                // Found it!
+                return i;
+            }
+        }
+    }
+
+    // Nothing here...
+    return -1;
 }
 

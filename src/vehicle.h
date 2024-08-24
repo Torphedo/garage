@@ -66,10 +66,6 @@ void vehicle_header_byteswap(vehicle_header* v);
 // (returns float vector for convenience, since centerpoint could be a decimal)
 vec3s vehicle_find_center(vehicle* v);
 
-// Look up a part by its origin position.
-// This will never return NULL, if a part isn't found the struct will be all 0.
-s32 part_by_pos(vehicle* v, vec3s8 target);
-
 // Everything after this point involves runtime data structures for the editor.
 // If you're using this header to write your own program, the rest won't be
 // useful unless you adopt the same data structures.

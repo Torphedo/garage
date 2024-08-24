@@ -1,7 +1,8 @@
 #include <string.h>
 
-#include "../parts.h"
+#include <parts.h>
 #include "editor.h"
+#include "vehicle_edit.h"
 #include "render_text.h"
 
 char partname_buf[32] = "Large Folding Propeller";
