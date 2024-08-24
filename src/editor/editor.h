@@ -24,6 +24,11 @@ typedef enum {
     SEL_BAD,    // User is moving parts around, but placing it down now would cause an overlap.
 }selection_state;
 
+enum {
+    PART_POS_SCALE = 2, // Coordinate multiplier for rendering (can add spacing in the part grid)
+    VEH_MASK_BYTE_WIDTH = (VEH_MAX_DIM / 8),
+};
+
 // Used to store a compact 3D grid of parts at 1 bit per cell.
 // The editor uses 2 of these, one for storing which cells are occupied and one
 // for storing which cells are selected.

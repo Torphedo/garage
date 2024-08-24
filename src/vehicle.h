@@ -71,16 +71,9 @@ vec3s vehicle_find_center(vehicle* v);
 // useful unless you adopt the same data structures.
 
 enum {
-    PART_SCALE = 1,
-    PART_POS_SCALE = 2, // Coordinate multiplier for rendering (can add spacing in the part grid)
-    SEL_BOX_SIZE = (PART_POS_SCALE * 2),
-
+    // Max size of a vehicle on any axis
     VEH_MAX_DIM = (INT8_MAX + 1),
-    VEH_MASK_BYTE_WIDTH = (VEH_MAX_DIM / 8),
 };
-
-// Unselect all parts in a vehicle
-void vehicle_unselect_all(vehicle* v);
 
 // Move a part by a 3D vector. If the new position is out of bounds (< 0), that
 // position will be the new zero and the other parts are adjusted accordingly.
