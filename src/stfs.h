@@ -11,6 +11,7 @@
  *
  *  Arrays of 3 u8's or s8's are representing 24-bit integers.
  */
+#include <assert.h>
 
 #include "common/int.h"
 #include "common/file.h"
@@ -111,6 +112,7 @@ typedef struct {
     s32 modtime; // FAT timestamp of last update
     s32 access_time; // FAT timestamp of last access
 }stfs_filetable;
+static_assert(sizeof(stfs_filetable) == 0x40, "stfs_filetable size is wrong!");
 
 // There's an array of this structure, 1 per block
 typedef struct {
@@ -118,6 +120,7 @@ typedef struct {
     u8 status;
     s8 next_block_num[3];
 }stfs_hash_table;
+static_assert(sizeof(stfs_hash_table) == 0x18, "stfs_hash_table size is wrong!");
 
 // See X360's STFS/STFSPackage.cs, HeaderData.Write().
 typedef struct {
@@ -125,6 +128,7 @@ typedef struct {
     s32 license_bits;
     s32 flags;
 }stfs_license;
+static_assert(sizeof(stfs_license) == 0x10, "stfs_license size is wrong!");
 
 // Volume Descriptor
 typedef struct {
@@ -136,6 +140,7 @@ typedef struct {
     s32 allocated_block_count;
     s32 unallocated_block_count;
 }stfs_vol_desc;
+static_assert(sizeof(stfs_vol_desc) == 0x23, "stfs_vol_desc size is wrong!");
 
 typedef struct {
     stfs_license licenses[0x10];
@@ -195,6 +200,7 @@ typedef struct {
     //      u8 thumbnail[0x4000];
     //      u8 title_thumbnail[0x4000];
 }stfs_meta;
+static_assert(sizeof(stfs_meta) == 0x94EE, "stfs_meta size is wrong!");
 
 typedef struct {
     u32 magic; // stfs_magic enum
@@ -212,6 +218,7 @@ typedef struct {
 
     stfs_meta meta;
 }stfs_header;
+static_assert(sizeof(stfs_header) == 0x971A, "stfs_header size is wrong!");
 #pragma pack(pop, r1)
 
 // Extra constants that don't need a typedef

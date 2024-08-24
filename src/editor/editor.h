@@ -1,5 +1,7 @@
-#ifndef EDITOR_COMMON_H
-#define EDITOR_COMMON_H
+#ifndef EDITOR_H
+#define EDITOR_H
+#include <assert.h>
+
 #include <common/int.h>
 #include <common/vector.h>
 #include <common/input.h>
@@ -26,6 +28,7 @@ typedef enum {
 // The editor uses 2 of these, one for storing which cells are occupied and one
 // for storing which cells are selected.
 typedef u8 vehicle_bitmask[VEH_MAX_DIM][VEH_MAX_DIM][VEH_MASK_BYTE_WIDTH];
+static_assert(sizeof(vehicle_bitmask) == 0x40000, "vehicle_bitmask size is wrong!");
 
 // Current state of the vehicle editor & GUI in general
 typedef struct {
@@ -65,4 +68,4 @@ bool editor_init(editor_state* editor);
 void editor_teardown(editor_state* editor);
 void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask);
 
-#endif // EDITOR_COMMON_H
+#endif // EDITOR_H

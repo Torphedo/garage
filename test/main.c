@@ -3,12 +3,10 @@
 #include <common/int.h>
 #include <common/logging.h>
 
-bool test_struct_size();
 bool test_stfs();
 
 typedef bool (*testproc)(void);
 testproc tests[] = {
-    test_struct_size,
     test_stfs,
 };
 

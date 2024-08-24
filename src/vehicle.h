@@ -1,5 +1,6 @@
 #ifndef VEHICLE_H
 #define VEHICLE_H
+#include <assert.h>
 #include "common/int.h"
 #include "common/vector.h"
 // Vehicle data structures for Nuts & Bolts. The header has a lot of holes, but
@@ -19,6 +20,7 @@ typedef struct {
     u8 unk3[0x18];
     // If you add new fields, make sure to update vehicle_header_byteswap().
 }vehicle_header;
+static_assert(sizeof(vehicle_header) == 0x80, "vehicle_header size is wrong!");
 
 enum {
     // No idea why they chose these numbers or if they mean anything.
@@ -37,6 +39,7 @@ typedef struct {
     rgba8 color; // Game stores arbitrary colors, but only the preset colors are allowed
     u32 pad3;
 }part_entry;
+static_assert(sizeof(part_entry) == 0x24, "part_entry size is wrong!");
 
 // The flexible array member causes sizeof(vehicle) == sizeof(vehicle_header)!
 // Be careful!
@@ -72,9 +75,9 @@ s32 part_by_pos(vehicle* v, vec3s8 target);
 // useful unless you adopt the same data structures.
 
 enum {
-      PART_SCALE = 1,
-      PART_POS_SCALE = 2, // Coordinate multiplier for rendering (can add spacing in the part grid)
-      SEL_BOX_SIZE = (PART_POS_SCALE * 2),
+    PART_SCALE = 1,
+    PART_POS_SCALE = 2, // Coordinate multiplier for rendering (can add spacing in the part grid)
+    SEL_BOX_SIZE = (PART_POS_SCALE * 2),
 
     VEH_MAX_DIM = (INT8_MAX + 1),
     VEH_MASK_BYTE_WIDTH = (VEH_MAX_DIM / 8),

@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.18)
 project(garage C)
 
-set(CMAKE_C_STANDARD 99)
+set(CMAKE_C_STANDARD 11)
 
 add_subdirectory(ext/glfw)
 
@@ -104,7 +104,6 @@ endif()
 
 # List of all test files
 set(test_sources
-    test/test_struct_size.c
     test/test_stfs.c
 )
 
