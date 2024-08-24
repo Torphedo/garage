@@ -43,6 +43,7 @@ GLFWwindow* setup_opengl(s32 width, s32 height, const char* window_name, bool en
     
     // Request a debug context if requested by caller
     glfwWindowHint(GLFW_OPENGL_DEBUG_CONTEXT, enable_debug);
+    glfwWindowHint(GLFW_SAMPLES, 4); // 4-sample MSAA
     
     GLFWwindow* window = glfwCreateWindow(width, height, window_name, NULL, NULL);
     if (window == NULL) {
@@ -86,6 +87,7 @@ GLFWwindow* setup_opengl(s32 width, s32 height, const char* window_name, bool en
         // Example code that will trigger a critical debug message:
         // glBindBuffer(GL_VERTEX_ARRAY_BINDING, 0);
     }
+    glEnable(GL_MULTISAMPLE); // Enable MSAA
 
     // Set OpenGL viewport to size of window, handle resizing
     glViewport(0, 0, width, height);
