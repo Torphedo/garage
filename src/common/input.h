@@ -161,7 +161,7 @@ typedef struct {
 
 // The global input struct our callback will update
 extern input_internal input;
-static const float deadzone = 0.15f;
+static const float deadzone = 0.25f;
 
 // GLFW callbacks for all kinds of input
 void input_update(GLFWwindow* window, int key, int scancode, int actions, int mods);

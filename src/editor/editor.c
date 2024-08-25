@@ -110,16 +110,21 @@ void update_edit_mode(editor_state* editor) {
         // Sorry for this... awful-ness. It was the only way I could keep it even a little bit within screen width
         #define GET_GAMEPAD_BUTTON(idx) ((get_gamepad(idx) && !editor->prev_input.gamepad.buttons[idx]))
 
-        // Gamepad DPAD directions
+        // Gamepad rotations directions
         const s8 gp_forward = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_DPAD_UP);
         const s8 gp_back = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_DPAD_DOWN);
         const s8 gp_left = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_DPAD_LEFT);
         const s8 gp_right = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_DPAD_RIGHT);
         const s8 gp_roll_right = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER);
         const s8 gp_roll_left = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_LEFT_BUMPER);
+
+        // Sorry this is a nightmare... we subtract 1 from the deadzone because
+        // triggers start at -1, with 1 being "fully pressed". So deadzone - 1
+        // is the neutral position plus the deadzone.
         const bool LT = (get_gamepad_hat(GLFW_GAMEPAD_AXIS_LEFT_TRIGGER) > deadzone - 1) && !(editor->prev_input.gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER] > deadzone - 1);
         const bool RT = (get_gamepad_hat(GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER) > deadzone - 1) && !(editor->prev_input.gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER] > deadzone - 1);
 
+        // Combine keyboard and gamepad inputs
         const s8 forward = (input.w && !editor->prev_input.w) + gp_forward;
         const s8 back = (input.s && !editor->prev_input.s) + gp_back;
         const s8 left = (input.a && !editor->prev_input.a) + gp_left;
@@ -129,19 +134,29 @@ void update_edit_mode(editor_state* editor) {
         const s8 up = (input.space && !editor->prev_input.space) + RT;
         const s8 down = (input.shift && !editor->prev_input.shift) + LT;
 
+        // Combine our directions into signed values on each axis
         forward_diff = forward - back;
         side_diff = right - left;
         roll_diff = roll_right - roll_left;
         vertical_diff = up - down;
 
-        // TODO: LS_x * (prev_input.gamepad.axes[LEFT_X] > deadzone)?
-        // TODO: BIG WARNING!! THIS IS FRAMERATE-DEPENDENT RIGHT NOW!
-        const float LS_x = input.gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
-        const float LS_y = -input.gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
-        if (fabsf(LS_x) > deadzone || fabsf(LS_y) > deadzone) {
-            forward_diff += LS_y;
-            side_diff += LS_x;
-        }
+        float LS_x = input.gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
+        float LS_y = input.gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+        // Set anything below the deadzone to zero
+        LS_x *= (fabsf(LS_x) > deadzone);
+        LS_y *= (fabsf(LS_y) > deadzone);
+
+        // Over deadzone positive => 1, negative => -1
+        LS_x = CLAMP(-1, LS_x / deadzone, 1);
+        LS_y = CLAMP(-1, LS_y / deadzone, 1);
+
+        // Whether the axis was over the threshold last frame
+        const bool last_LS_x = fabsf(editor->prev_input.gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X]) > deadzone;
+        const bool last_LS_y = fabsf(editor->prev_input.gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]) > deadzone;
+
+        // Move if we're over the deadzone, but only if we weren't last frame.
+        side_diff += LS_x * !last_LS_x;
+        forward_diff -= LS_y * !last_LS_y;
     }
 
     vec3s16 sel_box_prev = editor->sel_box;
@@ -281,7 +296,9 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
     }
 
     editor_mode old_mode = editor->mode;
-    if (input.tab && !editor->prev_input.tab) {
+    // Cycle if Tab or X are pressed
+    bool cycle_mode = (input.tab && !editor->prev_input.tab) || (get_gamepad(GLFW_GAMEPAD_BUTTON_X) && !editor->prev_input.gamepad.buttons[GLFW_GAMEPAD_BUTTON_X]);
+    if (cycle_mode) {
         // Cycle through modes. Ctrl-Tab goes backwards.
         editor->mode = (editor->mode + (input.control ? -1 : 1)) % 2;
     }
