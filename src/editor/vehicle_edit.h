@@ -8,13 +8,14 @@
 #include <cglm/cglm.h>
 
 #include <common/int.h>
+#include <common/vector.h>
 #include <vehicle.h>
 #include <parts.h>
 #include "editor.h"
 
 // Safely get & set values from vehicle bitmask (with bounds checking)
-bool vehiclemask_get_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z);
-void vehiclemask_set_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z, u8 val);
+bool vehiclemask_get_3d(vehicle_bitmask* mask, vec3s8 cell);
+void vehiclemask_set_3d(vehicle_bitmask* mask, vec3s8 cell, u8 val);
 
 bool cell_is_selected(editor_state* editor, vec3s8 cell);
 
@@ -22,13 +23,15 @@ vec3s16 vehicle_selection_center(editor_state* editor);
 
 // Rotate all selected parts about their centerpoint. Forward & side diff
 // represent user inputs on a joystick/D-Pad/keyboard X/Y axes.
+// Returns whether the rest of the vehicle was adjusted (like vehicle_move_part())
 bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_diff, s8 roll_diff);
 
 // Check if the selected parts overlap with the rest of the vehicle
 bool vehicle_selection_overlap(editor_state* editor);
 
-// Update the vacancy & selection masks based on the current part data
-void update_vehiclemask(vehicle* v, list selected_parts, vehicle_bitmask* vacancy, vehicle_bitmask* selection);
+// Wipe & reconstruct individual 3d grids from scratch
+void update_selectionmask(editor_state* editor);
+void update_vacancymask(editor_state* editor);
 
 typedef struct {
     part_info info;

@@ -59,11 +59,12 @@ void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
                 }
 
 
-                bool part_present = vehiclemask_get_3d(mask, i, j, k);
+                vec3s8 cell = {i, j, k};
+                bool part_present = vehiclemask_get_3d(mask, cell);
                 if (!part_present) {
                     continue;
                 }
-                vec3 pos = {i, j, k};
+                vec3 pos = {i, j, k}; // lol can't reuse the vec3s8
 
                 // Move to the same position as the part rendering
                 pos[0] -= center.x;
@@ -169,10 +170,21 @@ void update_edit_mode(editor_state* editor) {
     };
 
     if (rotation) {
-        // Update the bitmask(s) if needed
         if (forward_diff != 0 || side_diff != 0 || roll_diff != 0) {
-            vehicle_rotate_selection(editor, forward_diff, side_diff, roll_diff);
-            // update_vehiclemask(editor->v, editor->vacancy_mask, editor->selected_mask);
+            bool needed_adjust = vehicle_rotate_selection(editor, forward_diff, side_diff, roll_diff);
+            // Update vacancy if the rest of the vehicle moved
+            if (needed_adjust) {
+                update_vacancymask(editor);
+            }
+            update_selectionmask(editor);
+
+            // Check for overlaps and block the placement if needed
+            if (vehicle_selection_overlap(editor)) {
+                editor->sel_mode = SEL_BAD;
+            }
+            else {
+                editor->sel_mode = SEL_ACTIVE;
+            }
         }
     } else {
         vec3s right_vec = {-horizontal_vec.z, 0, horizontal_vec.x};
@@ -196,11 +208,11 @@ void update_edit_mode(editor_state* editor) {
         };
 
         // Move all selected parts
+        bool needed_adjust = false;
         for (u32 i = 0; i < editor->selected_parts.end_idx; i++) {
             u16 idx = editor->selected_parts.data[i];
-            // vehicle_move_part() returns false when a part moves out of bounds
             vec3s16 adjustment = {0};
-            vehicle_move_part(editor->v, idx, diff, &adjustment);
+            needed_adjust |= vehicle_move_part(editor->v, idx, diff, &adjustment);
             // Move the selection box to the part's new location, if it moved out
             // of bounds and forced the vehicle to be adjusted.
             editor->sel_box.x -= adjustment.x;
@@ -215,7 +227,17 @@ void update_edit_mode(editor_state* editor) {
                 editor->sel_mode = SEL_ACTIVE;
             }
         }
-        update_vehiclemask(editor->v, editor->selected_parts, editor->vacancy_mask, editor->selected_mask);
+
+        // When moving selection, we only need to update the selection mask
+        // TODO: Make a separate function for moving selection that uses
+        // bitshifts/memcpy() to shift the grid. Need to do testing to see if
+        // that's actually any faster.
+        update_selectionmask(editor);
+
+        // If rest of the vehicle was moved, we need to update the other grid
+        if (needed_adjust) {
+            update_vacancymask(editor);
+        }
     }
 
     bool select_button_pressed = input.e && !editor->prev_input.e;
@@ -229,21 +251,24 @@ void update_edit_mode(editor_state* editor) {
         if (editor->sel_mode == SEL_ACTIVE) {
             // User pressed the button while moving parts, which means
             // we should put them down.
-            update_vehiclemask(editor->v, editor->selected_parts, editor->vacancy_mask, editor->selected_mask);
             list_clear(&editor->selected_parts);
+            update_selectionmask(editor); // This will boil down to just clearing the grid
+            update_vacancymask(editor); // Need to add those parts to vacancy grid
             editor->sel_mode = SEL_NONE; // Now you can start moving the parts
         } else if (idx != -1) {
             if (cell_is_selected(editor, editor->v->parts[idx].pos)) {
                 // User pressed the button while selecting parts on an
-                // already-selected part, which means they want to start moving them.
+                // already-selected part, which means they want to start moving
+                // them. No change to the vacancy/selection grids.
                 editor->sel_mode = SEL_ACTIVE;
-                update_vehiclemask(editor->v, editor->selected_parts, editor->vacancy_mask, editor->selected_mask);
 
                 // Set cursor to the selection center
                 editor->sel_box = vehicle_selection_center(editor);
             } else {
                 // Select the part
                 list_add(&editor->selected_parts, idx);
+                update_selectionmask(editor);
+                update_vacancymask(editor);
                 editor->sel_mode = SEL_NONE;
             }
         }
@@ -253,8 +278,6 @@ void update_edit_mode(editor_state* editor) {
 // Update the GUI state according to new user input.
 bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
     static bool cursor_lock = false;
-    // TODO: Why are we updating this every frame? This need some serious cleanup.
-    update_vehiclemask(editor->v, editor->selected_parts, editor->vacancy_mask, editor->selected_mask);
     update_mods(window); // Update input.shift, input.ctrl, etc.
     gamepad_update();
 
@@ -328,15 +351,16 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
 }
 
 bool editor_init(editor_state* editor) {
-    // Initialize part bitmask
-    update_vehiclemask(editor->v, editor->selected_parts, editor->vacancy_mask, editor->selected_mask);
+    // Initialize part grids
+    update_vacancymask(editor);
+    update_selectionmask(editor);
 
-    char* vert = physfs_load_file("/src/editor/shader/vcolor.vert");
-    char* frag = physfs_load_file("/src/editor/shader/vcolor.frag");
+    u8* vert = physfs_load_file("/src/editor/shader/vcolor.vert");
+    u8* frag = physfs_load_file("/src/editor/shader/vcolor.frag");
     if (vert == NULL || frag == NULL) {
         return false;
     }
-    editor->vcolor_shader = program_compile_src(vert, frag);
+    editor->vcolor_shader = program_compile_src((char*)vert, (char*)frag);
     if (!shader_link_check(editor->vcolor_shader)) {
         free(vert);
         free(frag);

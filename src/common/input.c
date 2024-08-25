@@ -333,10 +333,9 @@ void update_mods(GLFWwindow* window) {
     input.control = input.left_control | input.right_control;
 }
 
-// TODO: Make a gamepad_update() that updates fields in the struct, so we can
-// do "input.LS.x" instead of "input.gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X]"
 void gamepad_update() {
     GLFWgamepadstate gamepad = {0};
+    // TODO: Loop over all joysticks and sum their input?
     glfwGetGamepadState(GLFW_JOYSTICK_1, &gamepad); // Get input
     input.LS.x = gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
     input.LS.y = gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];

@@ -5,16 +5,16 @@
 - Add a new bitmask at 6 bits per cell for part connectivity. Each of the 6
   bits indicate if one of its sides is connectable.
 
-- Look into controller support via GLFW. I think D-pads are exposed as "hat"
-  switches, the triggers are one-axis "joysticks", and the actual sticks are
-  2-axis joysticks.
 - Consider making a 6-axis snapping camera view like the game
 - Try to improve ease of depth perception (maybe some shadows?)
 
 # Selection
 Other tweaks:
 - In scenarios where we move the entire bitmask, we could implement it with
-  bitshifts & memcpy()
+  bitshifts or memcpy()
 - When a part is selected, just delete all its cells from occupancy. Why are we
   clearing the entire grid??
+- This might be overkill, but BVH trees look really cool and this could be a
+  decent excuse to use them. We could replace the grid lookup with a BVH tree
+  containing smaller grids, reducing memory usage & improving lookups
 

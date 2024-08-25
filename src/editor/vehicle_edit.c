@@ -6,36 +6,37 @@
 
 #include <parts.h>
 #include "vehicle_edit.h"
+#include "editor.h"
 #include "camera.h"
 
-bool vehiclemask_get_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z) {
-    u8* mask_addr = (u8*)&(*mask)[x][y];
+bool vehiclemask_get_3d(vehicle_bitmask* mask, vec3s8 cell) {
+    u8* mask_addr = (u8*)&(*mask)[cell.x][cell.y]; // Target byte
 
     // Only try to access mask bits if the address is in bounds.
     if (mask_addr >= (u8*)mask && mask_addr <= (u8*)mask[1]) {
         // Get mask value
-        return mask_get(mask_addr, z);
+        return mask_get(mask_addr, cell.z);
     }
 
     // Out of bounds? Zero.
     return 0;
 }
 
-void vehiclemask_set_3d(vehicle_bitmask* mask, s8 x, s8 y, s8 z, u8 val) {
-    u8* mask_addr = (u8*)&(*mask)[x][y];
+void vehiclemask_set_3d(vehicle_bitmask* mask, vec3s8 cell, u8 val) {
+    u8* mask_addr = (u8*)&(*mask)[cell.x][cell.y]; // Target byte
     val &= 1; // Only keep the lowest bit of the value.
 
     // Only try to set mask bits if the address is in bounds.
     if (mask_addr >= (u8*)mask && mask_addr <= (u8*)mask[1]) {
         // Set mask value
-        mask_set(mask_addr, z, val);
+        mask_set(mask_addr, cell.z, val);
     }
 
     // Oh well.
 }
 
 bool cell_is_selected(editor_state* editor, vec3s8 cell) {
-    if (!vehiclemask_get_3d(editor->selected_mask, cell.x, cell.y, cell.z)) {
+    if (!vehiclemask_get_3d(editor->selected_mask, cell)) {
         return false;
     }
     // Even if the cell is marked as selected, it might just be overlapping a
@@ -52,7 +53,7 @@ bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry* p) {
         // Get the final coordinate by adding the rotated point to origin
         vec3s8 cell = part_cell_iterator_next(&iter);
 
-        bool cell_occupied = vehiclemask_get_3d(vacancy, cell.x, cell.y, cell.z);
+        bool cell_occupied = vehiclemask_get_3d(vacancy, cell);
         result |= cell_occupied;
 
     }
@@ -70,26 +71,49 @@ bool vehicle_selection_overlap(editor_state* editor) {
     return false;
 }
 
-void update_vehiclemask(vehicle* v, list selected_parts, vehicle_bitmask* vacancy, vehicle_bitmask* selection) {
-    // Erase the bitmask
-    memset(vacancy, 0x00, sizeof(vehicle_bitmask));
-    memset(selection, 0x00, sizeof(vehicle_bitmask));
+void update_vacancymask(editor_state* editor) {
+    vehicle* v = editor->v; // Just a shorthand
+    // Clear the selection grid
+    memset(editor->vacancy_mask, 0x00, sizeof(vehicle_bitmask));
 
     for (u16 i = 0; i < v->head.part_count; i++) {
-        // Get the list of points relative to the origin this part occupies.
         part_entry p = v->parts[i];
+
         // This is kind of inefficient, but it should be ok...
-        bool selected = list_contains(selected_parts, i);
+        // TODO: This is a place where a list of unselected parts would be nice
+        if (list_contains(editor->selected_parts, i)) {
+            // Skip selected parts, we only want to update unselected ones
+            continue;
+        }
 
         part_cell_iterator iter = part_cell_iterator_setup(p);
         while (!iter.done) {
             // Get the next cell of this part
             vec3s8 cell = part_cell_iterator_next(&iter);
 
-            // Remove selected parts from vacancy mask & add them to the
-            // selection mask
-            vehiclemask_set_3d(vacancy, cell.x, cell.y, cell.z, !selected);
-            vehiclemask_set_3d(selection, cell.x, cell.y, cell.z, selected);
+            vehiclemask_set_3d(editor->vacancy_mask, cell, true);
+        }
+    }
+}
+
+void update_selectionmask(editor_state* editor) {
+    vehicle* v = editor->v; // Just a shorthand
+    // Clear the selection grid
+    memset(editor->selected_mask, 0x00, sizeof(vehicle_bitmask));
+
+    for (u16 i = 0; i < editor->selected_parts.end_idx; i++) {
+        u16 idx = editor->selected_parts.data[i]; // Selected list stores indices
+        part_entry p = v->parts[idx];
+
+        // This is kind of inefficient, but it should be ok...
+        bool selected = true;
+
+        part_cell_iterator iter = part_cell_iterator_setup(p);
+        while (!iter.done) {
+            // Get the next cell of this part
+            vec3s8 cell = part_cell_iterator_next(&iter);
+
+            vehiclemask_set_3d(editor->selected_mask, cell, true);
         }
     }
 }
@@ -164,6 +188,7 @@ bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_dif
     }
     glm_rotate(rot_matrix, glm_rad(90) * roll_diff, *(vec3*)&forward_vec);
 
+    bool needed_adjust = false;
     for (u32 i = 0; i < editor->selected_parts.end_idx; i++) {
         // Selected parts list stores indices, sorry it's a little confusing
         part_entry* p = &v->parts[editor->selected_parts.data[i]];
@@ -198,7 +223,7 @@ bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_dif
             new_pos.z - p->pos.z,
         };
         vec3s16 adjustment = {0};
-        vehicle_move_part(editor->v, editor->selected_parts.data[i], diff, &adjustment);
+        needed_adjust |= vehicle_move_part(editor->v, editor->selected_parts.data[i], diff, &adjustment);
         // If we tried to cross the edge and parts were adjusted, we need to
         // adjust the centerpoint. (will be zero if no adjustment was needed)
         editor->sel_box.x -= adjustment.x;
@@ -206,7 +231,7 @@ bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_dif
         editor->sel_box.z -= adjustment.z;
     }
 
-    return true;
+    return needed_adjust;
 }
 
 // Setup an iterator from a part entry. Returns an iteration context.
