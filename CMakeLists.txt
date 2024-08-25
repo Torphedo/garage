@@ -74,15 +74,15 @@ add_executable(garage
 target_link_libraries(garage PRIVATE glfw common physfs-static)
 
 if (NOT MSVC)
-    # Generate a data.7z with our assets
+    # Generate a data.zip with our assets
     add_custom_command(
         # This output file will never exist, which makes CMake run this command on
         # every build.
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/generate_datafile
-        # Setting the working dir stops it from making ".." the archive root... this is really stupid.
+        # Setting the working dir stops it from making ".." the archive root.
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMAND "cmake"
-        ARGS -E tar c ${CMAKE_CURRENT_BINARY_DIR}/data.7z --format=7zip ${CMAKE_SOURCE_DIR}/bin/ ${CMAKE_SOURCE_DIR}/src/editor/shader/
+        ARGS -E tar c ${CMAKE_CURRENT_BINARY_DIR}/data.zip --format=zip ${CMAKE_SOURCE_DIR}/bin/ ${CMAKE_SOURCE_DIR}/src/editor/shader/
     )
 else()
     add_custom_command(
@@ -92,7 +92,7 @@ else()
         # Setting the working dir stops it from making ".." the archive root... this is really stupid.
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMAND "cmake"
-        ARGS -E tar c ${CMAKE_CURRENT_BINARY_DIR}/data.7z --format=7zip ${CMAKE_SOURCE_DIR}/bin/ ${CMAKE_SOURCE_DIR}/src/editor/shader/
+        ARGS -E tar c ${CMAKE_CURRENT_BINARY_DIR}/data.zip --format=zip ${CMAKE_SOURCE_DIR}/bin/ ${CMAKE_SOURCE_DIR}/src/editor/shader/
 
         # On MSVC we need to use incbin to generate a .c file because they don't have an inline assembler.
         COMMAND incbin
