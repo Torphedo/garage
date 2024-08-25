@@ -19,7 +19,29 @@
 // it's considered held. To avoid this we keep track of key state ourselves, so
 // that the key appears held the entire time.
 
-// Using a bitfield takes it from 145 bytes to around 36 bytes
+
+// Gamepad button inputs (no hat switches)
+// Using standard Xbox mapping like GLFW
+typedef struct {
+    bool a: 1;
+    bool b: 1;
+    bool x: 1;
+    bool y: 1;
+    bool lb: 1;
+    bool rb: 1;
+    bool l3: 1; // Stick clicks are in Playstation notation :P
+    bool r3: 1;
+    bool select: 1;
+    bool start: 1;
+
+    // D-Pad
+    bool up: 1;
+    bool down: 1;
+    bool left: 1;
+    bool right: 1;
+}gamepad;
+
+// Using a bitfield takes it from ~145 bytes to ~36 bytes (at time of writing)
 typedef struct {
     bool space: 1;
     bool apostrophe: 1;
@@ -146,7 +168,7 @@ typedef struct {
     bool shift: 1;
     bool control: 1;
     bool alt: 1;
-    bool super: 1;
+    bool super: 1; // AKA Windows key
 
     bool click_left: 1;
     bool click_right: 1;
@@ -156,7 +178,13 @@ typedef struct {
 
     vec2s cursor;
     vec2s scroll;
-    GLFWgamepadstate gamepad;
+
+    // Gamepad stuff
+    vec2s LS;
+    vec2s RS;
+    float LT;
+    float RT;
+    gamepad gp;
 }input_internal;
 
 // The global input struct our callback will update
@@ -169,7 +197,7 @@ void cursor_update(GLFWwindow* window, double xpos, double ypos);
 void scroll_update(GLFWwindow* window, double x, double y);
 void mouse_button_update(GLFWwindow* window, int button, int action, int mods);
 void update_mods(GLFWwindow* window);
-unsigned char get_gamepad(u8 idx);
-float get_gamepad_hat(u8 idx);
+
+void gamepad_update();
 
 #endif // INPUT_H

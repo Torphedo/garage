@@ -46,18 +46,17 @@ vec2s get_cursor_delta(camera* cam, vec2s cursor_pos) {
     // Save state so we can find the delta next time we're called
     last_cursor = cursor_pos;
 
+    if (fabsf(input.RS.x) > deadzone || fabsf(input.RS.y) > deadzone) {
+        cursor_delta.x = input.RS.x * cam->mouse_sens * 5;
+        cursor_delta.y = input.RS.y * cam->mouse_sens * 5;
+    }
+
     // Invert sign as needed.
     if (cam->invert_mouse_x) {
         cursor_delta.x = -cursor_delta.x;
     }
     if (cam->invert_mouse_y) {
         cursor_delta.y = -cursor_delta.y;
-    }
-    float RS_x = -input.gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_X];
-    float RS_y = input.gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y];
-    if (fabsf(RS_x) > deadzone || fabsf(RS_y) > deadzone) {
-        cursor_delta.x = RS_x * 0.1f;
-        cursor_delta.y = RS_y * 0.1f;
     }
 
     return cursor_delta;

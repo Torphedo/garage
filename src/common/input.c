@@ -333,11 +333,31 @@ void update_mods(GLFWwindow* window) {
     input.control = input.left_control | input.right_control;
 }
 
-unsigned char get_gamepad(u8 idx) {
-    return input.gamepad.buttons[idx];
-}
+// TODO: Make a gamepad_update() that updates fields in the struct, so we can
+// do "input.LS.x" instead of "input.gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X]"
+void gamepad_update() {
+    GLFWgamepadstate gamepad = {0};
+    glfwGetGamepadState(GLFW_JOYSTICK_1, &gamepad); // Get input
+    input.LS.x = gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
+    input.LS.y = gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+    input.RS.x = gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_X];
+    input.RS.y = gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y];
+    input.LT = gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER];
+    input.RT = gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER];
 
-float get_gamepad_hat(u8 idx) {
-    return input.gamepad.axes[idx];
+    input.gp.a = gamepad.buttons[GLFW_GAMEPAD_BUTTON_A];
+    input.gp.b = gamepad.buttons[GLFW_GAMEPAD_BUTTON_B];
+    input.gp.x = gamepad.buttons[GLFW_GAMEPAD_BUTTON_X];
+    input.gp.y = gamepad.buttons[GLFW_GAMEPAD_BUTTON_Y];
+    input.gp.lb = gamepad.buttons[GLFW_GAMEPAD_BUTTON_LEFT_BUMPER];
+    input.gp.rb = gamepad.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER];
+    input.gp.l3 = gamepad.buttons[GLFW_GAMEPAD_BUTTON_LEFT_THUMB];
+    input.gp.r3 = gamepad.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_THUMB];
+    input.gp.select = gamepad.buttons[GLFW_GAMEPAD_BUTTON_BACK];
+    input.gp.start = gamepad.buttons[GLFW_GAMEPAD_BUTTON_START];
+    input.gp.up = gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_UP];
+    input.gp.down = gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_DOWN];
+    input.gp.left = gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT];
+    input.gp.right = gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT];
 }
 

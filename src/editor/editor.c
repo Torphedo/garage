@@ -95,34 +95,34 @@ void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
 
 
 void update_edit_mode(editor_state* editor) {
-    bool gamepad_rotation = get_gamepad(GLFW_GAMEPAD_BUTTON_DPAD_UP) || get_gamepad(GLFW_GAMEPAD_BUTTON_DPAD_DOWN) || get_gamepad(GLFW_GAMEPAD_BUTTON_DPAD_LEFT) || get_gamepad(GLFW_GAMEPAD_BUTTON_DPAD_RIGHT) || get_gamepad(GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER) || get_gamepad(GLFW_GAMEPAD_BUTTON_LEFT_BUMPER);
-    bool rotation = input.control || gamepad_rotation;
+    // Gamepad rotations directions
+    const bool gp_forward = input.gp.up && !editor->prev_input.gp.up;
+    const bool gp_back = input.gp.down && !editor->prev_input.gp.down;
+    const bool gp_left = input.gp.left && !editor->prev_input.gp.left;
+    const bool gp_right = input.gp.right && !editor->prev_input.gp.right;
+    const bool gp_roll_right = input.gp.rb && !editor->prev_input.gp.rb;
+    const bool gp_roll_left = input.gp.lb && !editor->prev_input.gp.lb;
+
+    // I made a lot of variables here, but I'm just trying to preserve some
+    // semblance of readability :)
+    const bool gamepad_rotation = gp_forward || gp_back || gp_left || gp_right || gp_roll_left || gp_roll_right;
+
+    const bool rotation = input.control || gamepad_rotation;
     // Handle moving the selector box
-    vec3s cam_view = glms_normalize(camera_facing(editor->cam));
+    const vec3s cam_view = glms_normalize(camera_facing(editor->cam));
     // Absolute value of camera vector
-    vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
+    const vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
 
     s8 forward_diff = 0;
     s8 side_diff = 0;
     s8 roll_diff = 0;
     s8 vertical_diff = 0;
     {
-        // Sorry for this... awful-ness. It was the only way I could keep it even a little bit within screen width
-        #define GET_GAMEPAD_BUTTON(idx) ((get_gamepad(idx) && !editor->prev_input.gamepad.buttons[idx]))
-
-        // Gamepad rotations directions
-        const s8 gp_forward = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_DPAD_UP);
-        const s8 gp_back = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_DPAD_DOWN);
-        const s8 gp_left = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_DPAD_LEFT);
-        const s8 gp_right = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_DPAD_RIGHT);
-        const s8 gp_roll_right = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER);
-        const s8 gp_roll_left = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_LEFT_BUMPER);
-
         // Sorry this is a nightmare... we subtract 1 from the deadzone because
         // triggers start at -1, with 1 being "fully pressed". So deadzone - 1
         // is the neutral position plus the deadzone.
-        const bool LT = (get_gamepad_hat(GLFW_GAMEPAD_AXIS_LEFT_TRIGGER) > deadzone - 1) && !(editor->prev_input.gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER] > deadzone - 1);
-        const bool RT = (get_gamepad_hat(GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER) > deadzone - 1) && !(editor->prev_input.gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER] > deadzone - 1);
+        const bool LT = (input.LT > deadzone - 1) && !(editor->prev_input.LT > deadzone - 1);
+        const bool RT = (input.RT > deadzone - 1) && !(editor->prev_input.RT > deadzone - 1);
 
         // Combine keyboard and gamepad inputs
         const s8 forward = (input.w && !editor->prev_input.w) + gp_forward;
@@ -140,19 +140,17 @@ void update_edit_mode(editor_state* editor) {
         roll_diff = roll_right - roll_left;
         vertical_diff = up - down;
 
-        float LS_x = input.gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
-        float LS_y = input.gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
         // Set anything below the deadzone to zero
-        LS_x *= (fabsf(LS_x) > deadzone);
-        LS_y *= (fabsf(LS_y) > deadzone);
+        float LS_x = input.LS.x * (fabsf(input.LS.x) > deadzone);
+        float LS_y = input.LS.y * (fabsf(input.LS.y) > deadzone);
 
-        // Over deadzone positive => 1, negative => -1
+        // Over deadzone positive -> 1, negative -> -1
         LS_x = CLAMP(-1, LS_x / deadzone, 1);
         LS_y = CLAMP(-1, LS_y / deadzone, 1);
 
         // Whether the axis was over the threshold last frame
-        const bool last_LS_x = fabsf(editor->prev_input.gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X]) > deadzone;
-        const bool last_LS_y = fabsf(editor->prev_input.gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_Y]) > deadzone;
+        const bool last_LS_x = fabsf(editor->prev_input.LS.x) > deadzone;
+        const bool last_LS_y = fabsf(editor->prev_input.LS.y) > deadzone;
 
         // Move if we're over the deadzone, but only if we weren't last frame.
         side_diff += LS_x * !last_LS_x;
@@ -221,7 +219,7 @@ void update_edit_mode(editor_state* editor) {
     }
 
     bool select_button_pressed = input.e && !editor->prev_input.e;
-    select_button_pressed |= (get_gamepad(GLFW_GAMEPAD_BUTTON_A) && !editor->prev_input.gamepad.buttons[GLFW_GAMEPAD_BUTTON_A]);
+    select_button_pressed |= (input.gp.a && !editor->prev_input.gp.a);
 
     // Handle user trying to select a part (unless the selection has overlaps).
     if (select_button_pressed && editor->sel_mode != SEL_BAD && !rotation) {
@@ -258,10 +256,10 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
     // TODO: Why are we updating this every frame? This need some serious cleanup.
     update_vehiclemask(editor->v, editor->selected_parts, editor->vacancy_mask, editor->selected_mask);
     update_mods(window); // Update input.shift, input.ctrl, etc.
-    glfwGetGamepadState(GLFW_JOYSTICK_1, &input.gamepad); // Update gamepad
+    gamepad_update();
 
     bool change_camstyle = (input.f && !editor->prev_input.f);
-    change_camstyle |= (input.gamepad.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_THUMB] && !editor->prev_input.gamepad.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_THUMB]);
+    change_camstyle |= (input.gp.r3 && !editor->prev_input.gp.r3);
     if (change_camstyle) {
         // Cycle through camera modes
         camera_mode mode = editor->cam.mode + 1;
@@ -297,7 +295,7 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
 
     editor_mode old_mode = editor->mode;
     // Cycle if Tab or X are pressed
-    bool cycle_mode = (input.tab && !editor->prev_input.tab) || (get_gamepad(GLFW_GAMEPAD_BUTTON_X) && !editor->prev_input.gamepad.buttons[GLFW_GAMEPAD_BUTTON_X]);
+    bool cycle_mode = (input.tab && !editor->prev_input.tab) || (input.gp.x && !editor->prev_input.gp.x);
     if (cycle_mode) {
         // Cycle through modes. Ctrl-Tab goes backwards.
         editor->mode = (editor->mode + (input.control ? -1 : 1)) % 2;
