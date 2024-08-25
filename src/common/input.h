@@ -156,10 +156,12 @@ typedef struct {
 
     vec2s cursor;
     vec2s scroll;
+    GLFWgamepadstate gamepad;
 }input_internal;
 
 // The global input struct our callback will update
 extern input_internal input;
+static const float deadzone = 0.15f;
 
 // GLFW callbacks for all kinds of input
 void input_update(GLFWwindow* window, int key, int scancode, int actions, int mods);
@@ -167,5 +169,7 @@ void cursor_update(GLFWwindow* window, double xpos, double ypos);
 void scroll_update(GLFWwindow* window, double x, double y);
 void mouse_button_update(GLFWwindow* window, int button, int action, int mods);
 void update_mods(GLFWwindow* window);
+unsigned char get_gamepad(u8 idx);
+float get_gamepad_hat(u8 idx);
 
 #endif // INPUT_H

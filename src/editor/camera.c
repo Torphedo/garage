@@ -53,6 +53,12 @@ vec2s get_cursor_delta(camera* cam, vec2s cursor_pos) {
     if (cam->invert_mouse_y) {
         cursor_delta.y = -cursor_delta.y;
     }
+    float RS_x = -input.gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_X];
+    float RS_y = -input.gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y];
+    if (fabsf(RS_x) > deadzone || fabsf(RS_y) > deadzone) {
+        cursor_delta.x = RS_x * 0.1f;
+        cursor_delta.y = RS_y * 0.1f;
+    }
 
     return cursor_delta;
 }

@@ -333,3 +333,11 @@ void update_mods(GLFWwindow* window) {
     input.control = input.left_control | input.right_control;
 }
 
+unsigned char get_gamepad(u8 idx) {
+    return input.gamepad.buttons[idx];
+}
+
+float get_gamepad_hat(u8 idx) {
+    return input.gamepad.axes[idx];
+}
+

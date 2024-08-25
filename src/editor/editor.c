@@ -95,15 +95,54 @@ void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
 
 
 void update_edit_mode(editor_state* editor) {
-    bool rotation = input.control;
+    bool gamepad_rotation = get_gamepad(GLFW_GAMEPAD_BUTTON_DPAD_UP) || get_gamepad(GLFW_GAMEPAD_BUTTON_DPAD_DOWN) || get_gamepad(GLFW_GAMEPAD_BUTTON_DPAD_LEFT) || get_gamepad(GLFW_GAMEPAD_BUTTON_DPAD_RIGHT) || get_gamepad(GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER) || get_gamepad(GLFW_GAMEPAD_BUTTON_LEFT_BUMPER);
+    bool rotation = input.control || gamepad_rotation;
     // Handle moving the selector box
     vec3s cam_view = glms_normalize(camera_facing(editor->cam));
     // Absolute value of camera vector
     vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
 
-    s8 forward_diff = ((input.w && !editor->prev_input.w) - (input.s && !editor->prev_input.s));
-    s8 side_diff = ((input.d && !editor->prev_input.d) - (input.a && !editor->prev_input.a));
-    s8 roll_diff = ((input.e && !editor->prev_input.e) - (input.q && !editor->prev_input.q));
+    s8 forward_diff = 0;
+    s8 side_diff = 0;
+    s8 roll_diff = 0;
+    s8 vertical_diff = 0;
+    {
+        // Sorry for this... awful-ness. It was the only way I could keep it even a little bit within screen width
+        #define GET_GAMEPAD_BUTTON(idx) ((get_gamepad(idx) && !editor->prev_input.gamepad.buttons[idx]))
+
+        // Gamepad DPAD directions
+        const s8 gp_forward = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_DPAD_UP);
+        const s8 gp_back = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_DPAD_DOWN);
+        const s8 gp_left = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_DPAD_LEFT);
+        const s8 gp_right = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_DPAD_RIGHT);
+        const s8 gp_roll_right = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER);
+        const s8 gp_roll_left = GET_GAMEPAD_BUTTON(GLFW_GAMEPAD_BUTTON_LEFT_BUMPER);
+        const bool LT = (get_gamepad_hat(GLFW_GAMEPAD_AXIS_LEFT_TRIGGER) > deadzone - 1) && !(editor->prev_input.gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER] > deadzone - 1);
+        const bool RT = (get_gamepad_hat(GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER) > deadzone - 1) && !(editor->prev_input.gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER] > deadzone - 1);
+
+        const s8 forward = (input.w && !editor->prev_input.w) + gp_forward;
+        const s8 back = (input.s && !editor->prev_input.s) + gp_back;
+        const s8 left = (input.a && !editor->prev_input.a) + gp_left;
+        const s8 right = (input.d && !editor->prev_input.d) + gp_right;
+        const s8 roll_left = (input.q && !editor->prev_input.q) + gp_roll_left;
+        const s8 roll_right = (input.e && !editor->prev_input.e) + gp_roll_right;
+        const s8 up = (input.space && !editor->prev_input.space) + RT;
+        const s8 down = (input.shift && !editor->prev_input.shift) + LT;
+
+        forward_diff = forward - back;
+        side_diff = right - left;
+        roll_diff = roll_right - roll_left;
+        vertical_diff = up - down;
+
+        // TODO: LS_x * (prev_input.gamepad.axes[LEFT_X] > deadzone)?
+        // TODO: BIG WARNING!! THIS IS FRAMERATE-DEPENDENT RIGHT NOW!
+        const float LS_x = input.gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
+        const float LS_y = -input.gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+        if (fabsf(LS_x) > deadzone || fabsf(LS_y) > deadzone) {
+            forward_diff += LS_y;
+            side_diff += LS_x;
+        }
+    }
 
     vec3s16 sel_box_prev = editor->sel_box;
 
@@ -131,8 +170,7 @@ void update_edit_mode(editor_state* editor) {
         }
 
         // Handle vertical movement
-        editor->sel_box.y += (input.space && !editor->prev_input.space);
-        editor->sel_box.y -= (input.shift && !editor->prev_input.shift);
+        editor->sel_box.y += vertical_diff;
     }
 
 
@@ -167,8 +205,11 @@ void update_edit_mode(editor_state* editor) {
         update_vehiclemask(editor->v, editor->selected_parts, editor->vacancy_mask, editor->selected_mask);
     }
 
+    bool select_button_pressed = input.e && !editor->prev_input.e;
+    select_button_pressed |= (get_gamepad(GLFW_GAMEPAD_BUTTON_A) && !editor->prev_input.gamepad.buttons[GLFW_GAMEPAD_BUTTON_A]);
+
     // Handle user trying to select a part (unless the selection has overlaps).
-    if (input.e && !editor->prev_input.e && editor->sel_mode != SEL_BAD && !rotation) {
+    if (select_button_pressed && editor->sel_mode != SEL_BAD && !rotation) {
         // Convert to vec3s8
         vec3s8 pos = {editor->sel_box.x, editor->sel_box.y, editor->sel_box.z};
         s32 idx = part_by_pos(editor->v, pos);
@@ -202,8 +243,11 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
     // TODO: Why are we updating this every frame? This need some serious cleanup.
     update_vehiclemask(editor->v, editor->selected_parts, editor->vacancy_mask, editor->selected_mask);
     update_mods(window); // Update input.shift, input.ctrl, etc.
+    glfwGetGamepadState(GLFW_JOYSTICK_1, &input.gamepad); // Update gamepad
 
-    if (input.f && !editor->prev_input.f) {
+    bool change_camstyle = (input.f && !editor->prev_input.f);
+    change_camstyle |= (input.gamepad.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_THUMB] && !editor->prev_input.gamepad.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_THUMB]);
+    if (change_camstyle) {
         // Cycle through camera modes
         camera_mode mode = editor->cam.mode + 1;
         mode %= CAMERA_MODE_ENUM_MAX;
