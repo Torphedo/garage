@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.18)
 project(garage C)
 
 set(CMAKE_C_STANDARD 11)
+# Emit a compile_commands.json for use with clangd in LSPs
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 
 add_subdirectory(ext/glfw)
 
