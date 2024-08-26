@@ -240,14 +240,19 @@ void update_edit_mode(editor_state* editor) {
         }
     }
 
-    bool select_button_pressed = input.e && !editor->prev_input.e;
-    select_button_pressed |= (input.gp.a && !editor->prev_input.gp.a);
+    // Find index of the part we're targeting
+    const vec3s8 pos = {editor->sel_box.x, editor->sel_box.y, editor->sel_box.z};
+    const s32 idx = part_by_pos(editor->v, pos);
 
-    // Handle user trying to select a part (unless the selection has overlaps).
-    if (select_button_pressed && editor->sel_mode != SEL_BAD && !rotation) {
-        // Convert to vec3s8
-        vec3s8 pos = {editor->sel_box.x, editor->sel_box.y, editor->sel_box.z};
-        s32 idx = part_by_pos(editor->v, pos);
+    const bool select_button_pressed = (input.e && !editor->prev_input.e) || (input.gp.a && !editor->prev_input.gp.a);
+    const bool unselect_button_pressed = (input.r && !editor->prev_input.r) || (input.gp.b && !editor->prev_input.gp.b);
+    if (unselect_button_pressed && editor->sel_mode == SEL_NONE && !rotation) {
+        list_remove_val(&editor->selected_parts, idx);
+        update_selectionmask(editor);
+        update_vacancymask(editor);
+    }
+    else if (select_button_pressed && editor->sel_mode != SEL_BAD && !rotation) {
+        // Handle user trying to select a part (unless the selection has overlaps).
         if (editor->sel_mode == SEL_ACTIVE) {
             // User pressed the button while moving parts, which means
             // we should put them down.
