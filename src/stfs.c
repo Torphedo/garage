@@ -8,46 +8,56 @@
 #include "common/sha1.h"
 
 void stfs_header_byteswap(stfs_header* h) {
-    ENDIAN_FLIP(u16, h->pubkey_cert_size);
-    ENDIAN_FLIP(u32, h->public_exponent);
+    if (is_little_endian()) {
+        ENDIAN_FLIP(u16, h->pubkey_cert_size);
+        ENDIAN_FLIP(u32, h->public_exponent);
 
-    for (u8 i = 0; i < 0x10; i++) {
-        ENDIAN_FLIP(s64, h->meta.licenses->id);
+        for (u8 i = 0; i < ARRAY_SIZE(h->meta.licenses); i++) {
+            ENDIAN_FLIP(s64, h->meta.licenses->id);
+        }
+        ENDIAN_FLIP(u32, h->meta.header_size);
+        ENDIAN_FLIP(s32, h->meta.pkg_type);
+        ENDIAN_FLIP(s32, h->meta.meta_version);
+        ENDIAN_FLIP(s64, h->meta.content_size);
+        ENDIAN_FLIP(s32, h->meta.media_id);
+        ENDIAN_FLIP(s32, h->meta.version);
+        ENDIAN_FLIP(s32, h->meta.base_version);
+        ENDIAN_FLIP(u32, h->meta.title_id);
+        ENDIAN_FLIP(u32, h->meta.savegame_id);
+
+        ENDIAN_FLIP_24(h->meta.vol_desc.file_block_num);
+        ENDIAN_FLIP(s32, h->meta.vol_desc.allocated_block_count);
+        ENDIAN_FLIP(s32, h->meta.vol_desc.unallocated_block_count);
+        ENDIAN_FLIP(s32, h->meta.data_file_count);
+        ENDIAN_FLIP(s32, h->meta.data_file_size);
+        ENDIAN_FLIP(u32, h->meta.descriptor_type);
+        ENDIAN_FLIP(u32, h->meta.reserved);
+        ENDIAN_FLIP(s16, h->meta.season);
+        ENDIAN_FLIP(s16, h->meta.episode);
+        ENDIAN_FLIP(u32, h->meta.thumbnail_size);
+        ENDIAN_FLIP(u32, h->meta.title_thumbnail_size);
     }
-    ENDIAN_FLIP(u32, h->meta.header_size);
-    ENDIAN_FLIP(s32, h->meta.pkg_type);
-    ENDIAN_FLIP(s32, h->meta.meta_version);
-    ENDIAN_FLIP(s64, h->meta.content_size);
-    ENDIAN_FLIP(s32, h->meta.media_id);
-    ENDIAN_FLIP(s32, h->meta.version);
-    ENDIAN_FLIP(s32, h->meta.base_version);
-    ENDIAN_FLIP(u32, h->meta.title_id);
-    ENDIAN_FLIP(u32, h->meta.savegame_id);
-
-    ENDIAN_FLIP_24(h->meta.vol_desc.file_block_num);
-    ENDIAN_FLIP(s32, h->meta.vol_desc.allocated_block_count);
-    ENDIAN_FLIP(s32, h->meta.vol_desc.unallocated_block_count);
-    ENDIAN_FLIP(s32, h->meta.data_file_count);
-    ENDIAN_FLIP(s32, h->meta.data_file_size);
-    ENDIAN_FLIP(u32, h->meta.descriptor_type);
-    ENDIAN_FLIP(u32, h->meta.reserved);
-    ENDIAN_FLIP(s16, h->meta.season);
-    ENDIAN_FLIP(s16, h->meta.episode);
-    ENDIAN_FLIP(u32, h->meta.thumbnail_size);
-    ENDIAN_FLIP(u32, h->meta.title_thumbnail_size);
 }
 
 void stfs_filetable_byteswap(stfs_filetable* f) {
-    // DON'T BYTESWAP THE LITTLE ENDIAN FIELDS!
-    // blocks, blocks2, and start_block are all little endian s24.
-    ENDIAN_FLIP(s16, f->path);
-    ENDIAN_FLIP(u32, f->size);
-    ENDIAN_FLIP(s32, f->modtime);
-    ENDIAN_FLIP(s32, f->access_time);
+    if (is_little_endian()) {
+        ENDIAN_FLIP(s16, f->path);
+        ENDIAN_FLIP(u32, f->size);
+        ENDIAN_FLIP(s32, f->modtime);
+        ENDIAN_FLIP(s32, f->access_time);
+    } else {
+        // On big endian, byteswap the foreign little-endian fields
+        // What was Microsoft thinking here?
+        ENDIAN_FLIP_24(f->blocks);
+        ENDIAN_FLIP_24(f->blocks2);
+        ENDIAN_FLIP_24(f->start_block);
+    }
 }
 
 void stfs_hashtable_byteswap(stfs_hash_table* table) {
-    ENDIAN_FLIP_24(table->next_block_num);
+    if (is_little_endian()) {
+        ENDIAN_FLIP_24(table->next_block_num);
+    }
 }
 
 u32 stfs_file_block(stfs_header* h, u32 block) {

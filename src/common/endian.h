@@ -1,5 +1,6 @@
 #ifndef ENDIAN_H
 #define ENDIAN_H
+#include <stdbool.h>
 #include <memory.h>
 #include "int.h"
 
@@ -15,6 +16,14 @@
 // they used big endian. Since the Xbox 360 was big endian and most modern PCs
 // are little endian, we need to reverse the byte order of every number stored
 // using more than 1 byte before we use it.
+
+// At -O1 or higher this should be optimized away
+static inline bool is_little_endian() {
+    const u16 endiancheck = 0x0100;
+    // On little endian this is stored as "00 01", so the first byte is 00 and
+    // we return true. On big endian, the first byte is 01 and we return false.
+    return (*(u8*)&endiancheck) == 0;
+}
 
 // Byte-swap any value to the opposite endian.
 #define ENDIAN_FLIP(T, val)                         \

@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdbool.h>
-#include <math.h>
 #include <malloc.h>
 
 #include <common/endian.h>
@@ -13,26 +12,30 @@
 #include "parts.h"
 #include "stfs.h"
 
-// TODO: Make this a no-op when compiling for a big endian system
 void part_byteswap(part_entry* part) {
-    ENDIAN_FLIP(u32, part->unknown);
-    ENDIAN_FLIP(u32, part->id);
-    vec3_byteswap(&part->rot);
+    if (is_little_endian()) {
+        ENDIAN_FLIP(u32, part->unknown);
+        ENDIAN_FLIP(u32, part->id);
+        vec3_byteswap(&part->rot);
 
-    // Byte-swap the padding just in case :P
-    ENDIAN_FLIP(u16, part->pad);
-    ENDIAN_FLIP(u32, part->pad3);
+        // Byte-swap the padding just in case :P
+        ENDIAN_FLIP(u16, part->pad);
+        ENDIAN_FLIP(u32, part->pad3);
+    }
 }
 
 void vehicle_header_byteswap(vehicle_header* v) {
-    ENDIAN_FLIP(u64, v->magic);
-    ENDIAN_FLIP(u16, v->part_count);
-    for (u32 i = 0; i < 0x20; i++) {
-        ENDIAN_FLIP(c16, v->name[i]);
+    if (is_little_endian()) {
+        ENDIAN_FLIP(u64, v->magic);
+        ENDIAN_FLIP(u16, v->part_count);
+        for (u32 i = 0; i < ARRAY_SIZE(v->name); i++) {
+            // 16-bit characters are also subject to endian-ness
+            ENDIAN_FLIP(c16, v->name[i]);
+        }
+        ENDIAN_FLIP_FLOAT(v->weight);
+        ENDIAN_FLIP_FLOAT(v->unknownf);
+        ENDIAN_FLIP_FLOAT(v->unknownf_1);
     }
-    ENDIAN_FLIP_FLOAT(v->weight);
-    ENDIAN_FLIP_FLOAT(v->unknownf);
-    ENDIAN_FLIP_FLOAT(v->unknownf_1);
 }
 
 vec3s vehicle_find_center(vehicle* v) {
