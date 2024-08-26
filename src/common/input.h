@@ -39,7 +39,7 @@ typedef struct {
     bool down: 1;
     bool left: 1;
     bool right: 1;
-}gamepad;
+}gamepad_t;
 
 // Using a bitfield takes it from ~145 bytes to ~36 bytes (at time of writing)
 typedef struct {
@@ -184,7 +184,7 @@ typedef struct {
     vec2s RS;
     float LT;
     float RT;
-    gamepad gp;
+    gamepad_t gp;
 }input_internal;
 
 // The global input struct our callback will update

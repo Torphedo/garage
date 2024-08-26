@@ -334,29 +334,54 @@ void update_mods(GLFWwindow* window) {
 }
 
 void gamepad_update() {
-    GLFWgamepadstate gamepad = {0};
-    // TODO: Loop over all joysticks and sum their input?
-    glfwGetGamepadState(GLFW_JOYSTICK_1, &gamepad); // Get input
-    input.LS.x = gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
-    input.LS.y = gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
-    input.RS.x = gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_X];
-    input.RS.y = gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y];
-    input.LT = gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER];
-    input.RT = gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER];
+    // Wipe previous gamepad state
+    input.LS = (vec2s){0};
+    input.RS = (vec2s){0};
+    input.LT = 0;
+    input.RT = 0;
+    input.gp = (gamepad_t){0};
 
-    input.gp.a = gamepad.buttons[GLFW_GAMEPAD_BUTTON_A];
-    input.gp.b = gamepad.buttons[GLFW_GAMEPAD_BUTTON_B];
-    input.gp.x = gamepad.buttons[GLFW_GAMEPAD_BUTTON_X];
-    input.gp.y = gamepad.buttons[GLFW_GAMEPAD_BUTTON_Y];
-    input.gp.lb = gamepad.buttons[GLFW_GAMEPAD_BUTTON_LEFT_BUMPER];
-    input.gp.rb = gamepad.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER];
-    input.gp.l3 = gamepad.buttons[GLFW_GAMEPAD_BUTTON_LEFT_THUMB];
-    input.gp.r3 = gamepad.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_THUMB];
-    input.gp.select = gamepad.buttons[GLFW_GAMEPAD_BUTTON_BACK];
-    input.gp.start = gamepad.buttons[GLFW_GAMEPAD_BUTTON_START];
-    input.gp.up = gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_UP];
-    input.gp.down = gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_DOWN];
-    input.gp.left = gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT];
-    input.gp.right = gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT];
+    for (u8 i = 0; i < GLFW_JOYSTICK_LAST; i++) {
+        if (!glfwJoystickIsGamepad(i)) {
+            // If it doesn't have gamepad mappings, it's not usable for us
+            continue;
+        }
+
+        GLFWgamepadstate gamepad = {0};
+        glfwGetGamepadState(i, &gamepad); // Get input
+
+        // Sum up stick inputs from all available controllers
+        input.LS.x += gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_X];
+        input.LS.y += gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_Y];
+        input.RS.x += gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_X];
+        input.RS.y += gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_Y];
+        input.LT += gamepad.axes[GLFW_GAMEPAD_AXIS_LEFT_TRIGGER];
+        input.RT += gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER];
+
+        // Set a button "on" if any of the controllers have it pressed
+        input.gp.a |= gamepad.buttons[GLFW_GAMEPAD_BUTTON_A];
+        input.gp.b |= gamepad.buttons[GLFW_GAMEPAD_BUTTON_B];
+        input.gp.x |= gamepad.buttons[GLFW_GAMEPAD_BUTTON_X];
+        input.gp.y |= gamepad.buttons[GLFW_GAMEPAD_BUTTON_Y];
+        input.gp.lb |= gamepad.buttons[GLFW_GAMEPAD_BUTTON_LEFT_BUMPER];
+        input.gp.rb |= gamepad.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_BUMPER];
+        input.gp.l3 |= gamepad.buttons[GLFW_GAMEPAD_BUTTON_LEFT_THUMB];
+        input.gp.r3 |= gamepad.buttons[GLFW_GAMEPAD_BUTTON_RIGHT_THUMB];
+        input.gp.select |= gamepad.buttons[GLFW_GAMEPAD_BUTTON_BACK];
+        input.gp.start |= gamepad.buttons[GLFW_GAMEPAD_BUTTON_START];
+        input.gp.up |= gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_UP];
+        input.gp.down |= gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_DOWN];
+        input.gp.left |= gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_LEFT];
+        input.gp.right |= gamepad.buttons[GLFW_GAMEPAD_BUTTON_DPAD_RIGHT];
+    }
+
+    // If for some reason someone is moving sticks on multiple controllers at
+    // once, keep the results within range.
+    input.LS.x = CLAMP(-1.0f, input.LS.x, 1.0f);
+    input.LS.y = CLAMP(-1.0f, input.LS.y, 1.0f);
+    input.RS.x = CLAMP(-1.0f, input.RS.x, 1.0f);
+    input.RS.y = CLAMP(-1.0f, input.RS.y, 1.0f);
+    input.LT = CLAMP(-1.0f, input.LT, 1.0f);
+    input.RT = CLAMP(-1.0f, input.RT, 1.0f);
 }
 
