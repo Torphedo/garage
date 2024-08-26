@@ -2,17 +2,21 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
+#include "common/int.h"
 #include "logging.h"
 #include "list.h"
 
-u32 list_maxidx(const list* l) {
-    return (l->alloc_size / sizeof(*l->data)) - 1;
+u8 list_element_size(list l) {
+    return sizeof(*l.data);
 }
 
-bool list_full(const list* l) {
-    return l->end_idx >= list_maxidx(l);
+u32 list_maxidx(list l) {
+    return (l.alloc_size / list_element_size(l)) - 1;
 }
 
+bool list_full(list l) {
+    return l.end_idx >= list_maxidx(l);
+}
 list list_create(u32 init_size) {
     return (list) {
         .data = calloc(1, init_size),
@@ -20,13 +24,12 @@ list list_create(u32 init_size) {
     };
 }
 
-void list_add(list* l, u16 val) {
+void list_add(list* l, list_element val) {
     // If there's no room, we need to realloc
-    if (list_full(l)) {
+    if (list_full(*l)) {
         // The buffer is completely full & needs a new allocation.
-        // Grow by 50%, rounded up to the next multiple of our data size.
-        u32 newsize = (l->alloc_size * 1.5);
-        newsize += sizeof(*l->data) - (newsize % sizeof(*l->data));
+        // Grow by 50%, rounded up to the next multiple of our element size.
+        const u32 newsize = ALIGN_UP((u32)(l->alloc_size * 1.5), list_element_size(*l));
         void* newbuf = calloc(1, newsize);
         if (newbuf == NULL) {
             LOG_MSG(error, "Couldn't expand list 0x%X -> 0x%X [alloc failure]\n", l->alloc_size, newsize);
@@ -45,31 +48,42 @@ void list_add(list* l, u16 val) {
 }
 
 void list_remove(list* l, u32 idx) {
-    if (idx >= l->end_idx) {
+    if (idx > l->end_idx || l->end_idx == 0) {
         // Caller wants to remove an element that isn't used...
         return;
     }
 
-    l->end_idx--;
-    if (idx == l->end_idx) {
-        // We're removing the last element, no memmove() needed.
-        l->data[idx] = 0;
-        return;
-    }
+    // Overwrite the element to be deleted with the last one in the list. This
+    // simultaneously removes the target data and shrinks the list.
+    l->data[idx] = l->data[l->end_idx - 1];
 
-    // Shift the rest of the list back to fill the empty space
-    const u32 size = (l->end_idx - idx) * sizeof(*l->data);
-    memmove(&l->data[idx], &l->data[idx + 1], size);
+    // Zero out the back element just in case
+    l->data[l->end_idx] = 0;
+    l->end_idx--; // Shrink the list
 }
 
-bool list_contains(list l, u16 val) {
+void list_remove_val(list* l, list_element val) {
+    const s64 idx = list_find(*l, val);
+    if (idx == -1) {
+        return;
+    }
+    list_remove(l, idx);
+}
+
+s64 list_find(list l, list_element val) {
     for (u32 i = 0; i < l.end_idx; i++) {
         if (l.data[i] == val) {
-            return true;
+            // Found it!
+            return i;
         }
     }
 
-    return false;
+    // Nothin...
+    return -1;
+}
+
+bool list_contains(list l, list_element val) {
+    return list_find(l, val) != -1;
 }
 
 void list_clear(list* l) {

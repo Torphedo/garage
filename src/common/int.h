@@ -42,6 +42,7 @@ u32 exponent(u32 val, u8 pow);
 void print_c16s(const c16* str);
 
 // Round a number up to any boundary
+// I remember writing this, but not where the formula came from or why it works
 #define ALIGN_UP(x, bound) (((x - 1) & (bound * 0xF)) + bound)
 
 // Return the larger of 2 values
