@@ -99,7 +99,7 @@ void garage_render(garage_state* state, editor_state* editor) {
 
         // Upload paint color & draw
         vec4s paint_col = vec4_from_rgba8(p->color);
-        if (list_contains(editor->selected_parts, i)) {
+        if (list_contains(editor->selected_parts, (void*)&i)) {
             paint_col.a /= 3;
         }
 

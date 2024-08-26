@@ -48,7 +48,7 @@ int main(int argc, char** argv) {
     }
     editor_state editor = {
         .v = v,
-        .selected_parts = list_create(sizeof(u16) * v->head.part_count),
+        .selected_parts = list_create(sizeof(u16) * v->head.part_count, sizeof(u16)),
         .vsync = true,
         .vacancy_mask = calloc(1, sizeof(vehicle_bitmask)),
         .selected_mask = calloc(1, sizeof(vehicle_bitmask)),

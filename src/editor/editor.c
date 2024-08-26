@@ -210,7 +210,7 @@ void update_edit_mode(editor_state* editor) {
         // Move all selected parts
         bool needed_adjust = false;
         for (u32 i = 0; i < editor->selected_parts.end_idx; i++) {
-            u16 idx = editor->selected_parts.data[i];
+            u16 idx = ((u16*)editor->selected_parts.data)[i];
             vec3s16 adjustment = {0};
             needed_adjust |= vehicle_move_part(editor->v, idx, diff, &adjustment);
             // Move the selection box to the part's new location, if it moved out
@@ -247,7 +247,7 @@ void update_edit_mode(editor_state* editor) {
     const bool select_button_pressed = (input.e && !editor->prev_input.e) || (input.gp.a && !editor->prev_input.gp.a);
     const bool unselect_button_pressed = (input.r && !editor->prev_input.r) || (input.gp.b && !editor->prev_input.gp.b);
     if (unselect_button_pressed && editor->sel_mode == SEL_NONE && !rotation) {
-        list_remove_val(&editor->selected_parts, idx);
+        list_remove_val(&editor->selected_parts, (void*)&idx);
         update_selectionmask(editor);
         update_vacancymask(editor);
     }
@@ -271,7 +271,7 @@ void update_edit_mode(editor_state* editor) {
                 editor->sel_box = vehicle_selection_center(editor);
             } else {
                 // Select the part
-                list_add(&editor->selected_parts, idx);
+                list_add(&editor->selected_parts, (void*)&idx);
                 update_selectionmask(editor);
                 update_vacancymask(editor);
                 editor->sel_mode = SEL_NONE;
@@ -394,7 +394,7 @@ void editor_teardown(editor_state* editor) {
     glDeleteBuffers(1, &cube.vbuf);
     glDeleteBuffers(1, &cube.ibuf);
     free(editor->v);
-    free(editor->selected_parts.data);
+    free((void*)editor->selected_parts.data);
     free(editor->vacancy_mask);
     free(editor->selected_mask);
 }

@@ -43,7 +43,7 @@ bool cell_is_selected(editor_state* editor, vec3s8 cell) {
     // selected part. We need to double-check.
     // TODO: part_by_pos() can't distinguish between 2 parts in the same spot...
     u16 idx = part_by_pos(editor->v, cell);
-    return list_contains(editor->selected_parts, idx);
+    return list_contains(editor->selected_parts, (void*)&idx);
 }
 
 bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry* p) {
@@ -63,7 +63,7 @@ bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry* p) {
 bool vehicle_selection_overlap(editor_state* editor) {
     vehicle* v = editor->v;
     for (u32 i = 0; i < editor->selected_parts.end_idx; i++) {
-        u16 idx = editor->selected_parts.data[i];
+        u16 idx = ((u16*)editor->selected_parts.data)[i];
         if (vehicle_part_conflict(editor->vacancy_mask, &v->parts[idx])) {
             return true;
         }
@@ -81,7 +81,7 @@ void update_vacancymask(editor_state* editor) {
 
         // This is kind of inefficient, but it should be ok...
         // TODO: This is a place where a list of unselected parts would be nice
-        if (list_contains(editor->selected_parts, i)) {
+        if (list_contains(editor->selected_parts, (void*)&i)) {
             // Skip selected parts, we only want to update unselected ones
             continue;
         }
@@ -102,7 +102,7 @@ void update_selectionmask(editor_state* editor) {
     memset(editor->selected_mask, 0x00, sizeof(vehicle_bitmask));
 
     for (u16 i = 0; i < editor->selected_parts.end_idx; i++) {
-        u16 idx = editor->selected_parts.data[i]; // Selected list stores indices
+        u16 idx = ((u16*)editor->selected_parts.data)[i]; // Selected list stores indices
         part_entry p = v->parts[idx];
 
         // This is kind of inefficient, but it should be ok...
@@ -123,7 +123,7 @@ vec3s16 vehicle_selection_center(editor_state* editor) {
     vec3s8 sel_max = {0}; // Highest position in the selection
     vec3s8 sel_min = {127, 127, 127}; // Smallest position in the selection
     for (u32 i = 0; i < editor->selected_parts.end_idx; i++) {
-        u16 idx = editor->selected_parts.data[i];
+        u16 idx = ((u16*)editor->selected_parts.data)[i];
         part_entry* p = &v->parts[idx];
 
         // Update selection min/max positions
@@ -191,7 +191,8 @@ bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_dif
     bool needed_adjust = false;
     for (u32 i = 0; i < editor->selected_parts.end_idx; i++) {
         // Selected parts list stores indices, sorry it's a little confusing
-        part_entry* p = &v->parts[editor->selected_parts.data[i]];
+        const u32 idx = ((u16*)editor->selected_parts.data)[i];
+        part_entry* p = &v->parts[idx];
 
         // Get rotation matrix for the part rotation
         mat4 part_rotation = {0};
@@ -223,7 +224,7 @@ bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_dif
             new_pos.z - p->pos.z,
         };
         vec3s16 adjustment = {0};
-        needed_adjust |= vehicle_move_part(editor->v, editor->selected_parts.data[i], diff, &adjustment);
+        needed_adjust |= vehicle_move_part(editor->v, idx, diff, &adjustment);
         // If we tried to cross the edge and parts were adjusted, we need to
         // adjust the centerpoint. (will be zero if no adjustment was needed)
         editor->sel_box.x -= adjustment.x;
