@@ -17,4 +17,15 @@ Other tweaks:
 - This might be overkill, but BVH trees look really cool and this could be a
   decent excuse to use them. We could replace the grid lookup with a BVH tree
   containing smaller grids, reducing memory usage & improving lookups
+- BVH/octree procedure could look like this:
+  - Recursively split space into octants until there are 8 parts or less.
+  - Lookup now becomes an octree lookup, and at the leaf we just do a linear
+    search of the parts in that box.
+  - Problem: how do we insert? Perfect for static but moving parts are a pain.
+    Just split the leaf volume?
+    - If the part(s) move out of their assigned octant(s), remove them from the
+      list. Delete the octant(s) if they have no other occupants.
+    - Find where the parts should go, and add them to the appropriate octants.
+    - If any of the leaves we just added to are over the max parts per octant,
+      recursively split the volume.
 

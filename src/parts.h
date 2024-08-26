@@ -108,7 +108,7 @@ typedef enum {
     VACUUM          = 0x1FB27042,
     SPRING          = 0x1F8517A9,
     DETACHER        = 0x1F10C777,
-    SEAT_EJECTOR    = 0x1F3BA23B, // TODO: Should this move to seats section?
+    SEAT_EJECTOR    = 0x1F3BA23B,
     TOW_BAR         = 0x1FFEC0B5,
     HORN            = 0x1F029162,
     REPLENISHER     = 0x1F982C42,

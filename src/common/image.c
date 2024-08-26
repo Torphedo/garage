@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <assert.h>
 #include <memory.h>
 
 #include "int.h"
@@ -39,10 +40,10 @@ typedef enum dds_format_flags {
 }dds_format_flags;
 
 typedef enum {
-    DDS_DXT1 = 0x31545844, // 'DXT1' (little endian)
-    DDS_DXT3 = 0x33545844, // 'DXT3' (little endian)
-    DDS_DXT5 = 0x35545844, // 'DXT5' (little endian)
-    DDS_DX10 = 0x30315844, // 'DX10' (little endian)
+    DDS_DXT1 = MAGIC('D', 'X', 'T', '1'), // 'DXT1'
+    DDS_DXT3 = MAGIC('D', 'X', 'T', '3'), // 'DXT3'
+    DDS_DXT5 = MAGIC('D', 'X', 'T', '5'), // 'DXT5'
+    DDS_DX10 = MAGIC('D', 'X', '1', '0'), // 'DX10'
     DXT1_BLOCK_SIZE = 0x8,
     DXT3_BLOCK_SIZE = 0x10,
     DXT5_BLOCK_SIZE = 0x10
@@ -59,11 +60,12 @@ typedef struct dds_pixel_format {
     u32 blue_bitmask;
     u32 alpha_bitmask;
 }dds_pixel_format;
+static_assert(sizeof(dds_pixel_format) == 0x20, "dds_pixel_format size is wrong!");
 
-// We can't just check equality with "DDS" because it's 'DDS ' with no null
+// We can't just strcmp() with "DDS" because it's 'DDS ' with no null
 // terminator.
 typedef enum {
-    DDS_BEGIN = 0x20534444 // 'DDS ' (little endian)
+    DDS_BEGIN = MAGIC('D', 'D', 'S', ' '), // 'DDS '
 }dds_const;
 
 typedef struct dds_header {
@@ -83,6 +85,9 @@ typedef struct dds_header {
     u32 caps4;        // Unused
     u32 reserved2;    // Unused
 }dds_header;
+// The header itself is 0x7C (as MS specifies), but our struct includes the DDS
+// magic as part of the header, adding 4 bytes.
+static_assert(sizeof(dds_header) == 0x7C + 4, "dds_header size is wrong!");
 
 dds_header mk_header(u32 height, u32 width, u32 mip_lvl) {
     dds_header header = {
@@ -102,27 +107,26 @@ dds_header mk_header(u32 height, u32 width, u32 mip_lvl) {
     return header;
 }
 
+// Round an image's dimensions down to some multiple [size].
 void img_snap(texture* img, u32 size) {
-    if (img->width % size) {
-        img->width -= (img->width % size);
-    }
-    if (img->height % size) {
-        img->height -= (img->height % size);
-    }
+    // If already a multiple of [size], (dim % size) == 0 and nothing happens
+    img->width -= (img->width % size);
+    img->height -= (img->height % size);
 }
 
+// Check for a set of flags in a 32-bit bitfield using the provided mask.
 bool has_flag(u32 input, u32 flag) {
     return (input ^ flag) != input;
 }
 
+// For a compressed texture (like DXTn), pitch is the size in bytes of the
+// texture at mip level 0.
 u32 dxt_pitch(u32 height, u32 width, u32 block_size) {
-    u32 block_res = 16; // 16 pixels per block
-    // TODO: Divide by pixels per byte instead, so we don't need to use floats.
-    float bytes_per_pixel = (float)block_size/ (float)block_res;
-    u32 pitch = (width * height) * bytes_per_pixel;
+    const u32 block_res = 16; // 16 pixels per block
+    const u32 pixels_per_byte = block_res / block_size;
+    const u32 pitch = (width * height) / pixels_per_byte;
     return pitch;
 }
-
 
 void img_write(texture img, const char* path) {
     u32 tex_size = 0;
