@@ -36,6 +36,9 @@ void list_remove(list* l, u32 idx);
 // Find and remove the first occurance of a value from the list.
 void list_remove_val(list* l, const void* data);
 
+// Add every element of [src] into [dest] (duplicates are allowed)
+void list_merge(list* dest, list src);
+
 // Find the index of a value in the list. Returns -1 on failure.
 s64 list_find(list l, const void* data);
 

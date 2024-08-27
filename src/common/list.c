@@ -1,6 +1,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <assert.h>
 
 #include "common/int.h"
 #include "logging.h"
@@ -32,6 +33,7 @@ void list_add(list* l, const void* data) {
         // The buffer is completely full & needs a new allocation.
         // Grow by 50%, rounded up to the next multiple of our element size.
         const u32 newsize = ALIGN_UP((u32)(l->alloc_size * 1.5), l->element_size);
+        assert(newsize > l->alloc_size); // Sanity check to avoid memory corruption
         void* newbuf = calloc(1, newsize);
         if (newbuf == NULL) {
             LOG_MSG(error, "Couldn't expand list 0x%X -> 0x%X [alloc failure]\n", l->alloc_size, newsize);
@@ -73,6 +75,13 @@ void list_remove_val(list* l, const void* data) {
         return;
     }
     list_remove(l, idx);
+}
+
+void list_merge(list* dest, list src) {
+    for (u32 i = 0; i < src.end_idx; i++) {
+        const void* data = list_get_element(src, i);
+        list_add(dest, data);
+    }
 }
 
 s64 list_find(list l, const void* data) {
