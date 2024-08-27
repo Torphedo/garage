@@ -19,7 +19,11 @@ void vehiclemask_set_3d(vehicle_bitmask* mask, vec3s8 cell, u8 val);
 
 bool cell_is_selected(editor_state* editor, vec3s8 cell);
 
-vec3s16 vehicle_selection_center(editor_state* editor);
+vec3s16 vehicle_selection_center(const editor_state* editor);
+
+// Uses part data to find the centerpoint of a vehicle.
+// (returns float vector for convenience, since centerpoint could be a decimal)
+vec3s vehicle_find_center(const editor_state* editor);
 
 // Rotate all selected parts about their centerpoint. Forward & side diff
 // represent user inputs on a joystick/D-Pad/keyboard X/Y axes.
@@ -46,9 +50,35 @@ part_cell_iterator part_cell_iterator_setup(part_entry p);
 // Get the next item and advance.
 vec3s8 part_cell_iterator_next(part_cell_iterator* ctx);
 
-// Look up a part by its origin position.
-// This will return an index into the part array, or -1 on error.
-s32 part_by_pos(vehicle* v, vec3s8 target);
+typedef enum {
+    SEARCH_SELECTED,
+    SEARCH_UNSELECTED,
+    SEARCH_ALL,
+}partsearch_type;
+
+typedef struct {
+    list partlists[2];
+    partsearch_type search_type;
+    u8 partlist_idx; // Current index into the list array
+    u32 part_idx; // Current index into the current list
+    bool done;
+}part_iterator;
+
+part_iterator part_iterator_setup(editor_state editor, partsearch_type search_type);
+part_entry* part_iterator_next(part_iterator* ctx);
+
+// Look up a part by position.
+// Use the enum to search only one list, or tell it to search both. 
+// When searching both lists, the selected list is prioritized.
+// Returns an all-zero part on failure.
+part_entry* part_by_pos(editor_state* editor, vec3s8 target, partsearch_type search_hint);
+
+// Move a part by a 3D vector. If the new position is out of bounds (< 0), that
+// position will be the new zero and the other parts are adjusted accordingly.
+// If the vehicle was adjusted, writes to an output vector to indicate the
+// vector of the adjustment. This output vector can be NULL.
+// Returns a boolean indicating if the vehicle had to be adjusted.
+bool vehicle_move_part(editor_state* editor, part_entry part, vec3s16 diff, vec3s16* adjust_out);
 
 #endif // VEHICLE_EDIT_H
 

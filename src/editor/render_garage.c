@@ -54,8 +54,10 @@ garage_state garage_init(editor_state* editor) {
     // ID 0 will just render a cube
     state.models[0] = (part_model){.id = 0, .model = cube};
 
-    for (u16 i = 0; i < editor->v->head.part_count; i++) {
-        get_or_load_model(&state, editor->v->parts[i].id);
+    part_iterator iter = part_iterator_setup(*editor, SEARCH_ALL);
+    while (!iter.done) {
+        const part_entry* p = part_iterator_next(&iter);
+        get_or_load_model(&state, p->id);
     }
 
     return state;
@@ -88,10 +90,11 @@ void garage_render(garage_state* state, editor_state* editor) {
     glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
 
     // Draw all our parts
-    vehicle* v = editor->v;
-    vec3s center = vehicle_find_center(v);
-    for (u16 i = 0; i < v->head.part_count; i++) {
-        part_entry* p = &v->parts[i];
+    const vec3s center = vehicle_find_center(editor);
+    part_iterator iter = part_iterator_setup(*editor, SEARCH_ALL);
+    while (!iter.done) {
+        const part_entry* p = part_iterator_next(&iter);
+
         // Move the part
         vec3s pos = vec3_from_vec3s8(p->pos, PART_POS_SCALE);
         pos.x -= (center.x * PART_POS_SCALE);
@@ -99,12 +102,12 @@ void garage_render(garage_state* state, editor_state* editor) {
 
         // Upload paint color & draw
         vec4s paint_col = vec4_from_rgba8(p->color);
-        if (list_contains(editor->selected_parts, (void*)&i)) {
+        if (list_contains(editor->selected_parts, (void*)p)) {
             paint_col.a /= 3;
         }
 
         // Load a model for the part, if possible.
-        model m = get_or_load_model(state, p->id);
+        const model m = get_or_load_model(state, p->id);
         // Don't paint parts with custom models
         if (m.vao != cube.vao) {
             paint_col = (vec4s){.r = 1.0f, .g = 1.0f, .b = 1.0f, paint_col.a};

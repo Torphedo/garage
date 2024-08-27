@@ -38,8 +38,9 @@ static_assert(sizeof(vehicle_bitmask) == 0x40000, "vehicle_bitmask size is wrong
 // Current state of the vehicle editor & GUI in general
 typedef struct {
     // Vehicle/part data
-    vehicle* v;
+    vehicle_header v;
     list selected_parts;
+    list unselected_parts;
     camera cam;
     // Bitmask for whether a space is occupied by a part, at 1 bit per cell.
     vehicle_bitmask* vacancy_mask;

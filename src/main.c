@@ -16,6 +16,7 @@
 #include "editor/render_text.h"
 #include "editor/render_user.h"
 #include "editor/editor.h"
+#include "editor/vehicle_edit.h"
 #include "editor/camera.h"
 
 #include "vehicle.h"
@@ -47,13 +48,19 @@ int main(int argc, char** argv) {
         return 1;
     }
     editor_state editor = {
-        .v = v,
-        .selected_parts = list_create(sizeof(u16) * v->head.part_count, sizeof(u16)),
+        .v = v->head,
+        .selected_parts = list_create(sizeof(part_entry) * v->head.part_count, sizeof(part_entry)),
+        .unselected_parts = list_create(sizeof(part_entry) * v->head.part_count, sizeof(part_entry)),
         .vsync = true,
         .vacancy_mask = calloc(1, sizeof(vehicle_bitmask)),
         .selected_mask = calloc(1, sizeof(vehicle_bitmask)),
         .cam = camera_default(),
     };
+    // Copy part data into the dynamic list and free the raw vehicle data
+    memcpy((void*)editor.unselected_parts.data, v->parts, sizeof(*v->parts) * v->head.part_count);
+    editor.unselected_parts.end_idx = v->head.part_count;
+    free(v);
+
     if (editor.vacancy_mask == NULL || editor.selected_mask == NULL) {
         LOG_MSG(error, "Failed to alloc a vehicle bitmask\n");
         return 1;
@@ -146,13 +153,18 @@ int main(int argc, char** argv) {
 
     // Print vehicle details (mostly a leftover from old versions of this program)
     LOG_MSG(info, "\"");
-    print_c16s(v->head.name); // We need a special function to portably print UTF-16
-    printf("\" has %d parts & weighs %f\n", v->head.part_count, v->head.weight);
-    for (u16 i = 0; i < v->head.part_count; i++) {
-        LOG_MSG(info, "Part %d: 0x%x [%s] ", i, v->parts[i].id, part_get_info(v->parts[i].id).name);
-        printf("@ (%d, %d, %d) ", v->parts[i].pos.x, v->parts[i].pos.y, v->parts[i].pos.z);
-        printf("painted #%x%x%x", v->parts[i].color.r, v->parts[i].color.g, v->parts[i].color.b);
-        printf(", modifier 0x%02hx\n", v->parts[i].modifier);
+    print_c16s(editor.v.name); // We need a special function to portably print UTF-16
+    printf("\" has %d parts & weighs %f\n", editor.v.part_count, editor.v.weight);
+
+    part_iterator iter = part_iterator_setup(editor, SEARCH_ALL);
+    u32 i = 0;
+    while (!iter.done) {
+        i++;
+        part_entry* p = part_iterator_next(&iter);
+        LOG_MSG(info, "Part %d: 0x%x [%s] ", i, p->id, part_get_info(p->id).name);
+        printf("@ (%d, %d, %d) ", p->pos.x, p->pos.y, p->pos.z);
+        printf("painted #%x%x%x", p->color.r, p->color.g, p->color.b);
+        printf(", modifier 0x%02hx\n", p->modifier);
     }
 
     // Cleanup

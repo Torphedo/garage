@@ -62,10 +62,6 @@ void part_byteswap(part_entry* part);
 // Byte-swap an existing vehicle header
 void vehicle_header_byteswap(vehicle_header* v);
 
-// Uses part data to find the centerpoint of a vehicle.
-// (returns float vector for convenience, since centerpoint could be a decimal)
-vec3s vehicle_find_center(vehicle* v);
-
 // Everything after this point involves runtime data structures for the editor.
 // If you're using this header to write your own program, the rest won't be
 // useful unless you adopt the same data structures.
@@ -75,11 +71,5 @@ enum {
     VEH_MAX_DIM = (INT8_MAX + 1),
 };
 
-// Move a part by a 3D vector. If the new position is out of bounds (< 0), that
-// position will be the new zero and the other parts are adjusted accordingly.
-// If the vehicle was adjusted, writes to an output vector to indicate the
-// vector of the adjustment. This output vector can be NULL.
-// Returns a boolean indicating if the vehicle had to be adjusted.
-bool vehicle_move_part(vehicle* v, u16 idx, vec3s16 diff, vec3s16* adjust_out);
 #endif // VEHICLE_H
 

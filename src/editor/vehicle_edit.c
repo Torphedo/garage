@@ -3,9 +3,11 @@
 
 #include <common/vector.h>
 #include <common/int.h>
+#include <common/logging.h>
 
 #include <parts.h>
 #include "vehicle_edit.h"
+#include "common/list.h"
 #include "editor.h"
 #include "camera.h"
 
@@ -42,8 +44,8 @@ bool cell_is_selected(editor_state* editor, vec3s8 cell) {
     // Even if the cell is marked as selected, it might just be overlapping a
     // selected part. We need to double-check.
     // TODO: part_by_pos() can't distinguish between 2 parts in the same spot...
-    u16 idx = part_by_pos(editor->v, cell);
-    return list_contains(editor->selected_parts, (void*)&idx);
+    part_entry* p = part_by_pos(editor, cell, SEARCH_SELECTED);
+    return list_contains(editor->selected_parts, (void*)p);
 }
 
 bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry* p) {
@@ -61,10 +63,10 @@ bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry* p) {
 }
 
 bool vehicle_selection_overlap(editor_state* editor) {
-    vehicle* v = editor->v;
-    for (u32 i = 0; i < editor->selected_parts.end_idx; i++) {
-        u16 idx = ((u16*)editor->selected_parts.data)[i];
-        if (vehicle_part_conflict(editor->vacancy_mask, &v->parts[idx])) {
+    part_iterator iter = part_iterator_setup(*editor, SEARCH_SELECTED);
+    while (!iter.done) {
+        part_entry* p = part_iterator_next(&iter);
+        if (vehicle_part_conflict(editor->vacancy_mask, p)) {
             return true;
         }
     }
@@ -72,24 +74,24 @@ bool vehicle_selection_overlap(editor_state* editor) {
 }
 
 void update_vacancymask(editor_state* editor) {
-    vehicle* v = editor->v; // Just a shorthand
     // Clear the selection grid
     memset(editor->vacancy_mask, 0x00, sizeof(vehicle_bitmask));
 
-    for (u16 i = 0; i < v->head.part_count; i++) {
-        part_entry p = v->parts[i];
+    part_iterator iter = part_iterator_setup(*editor, SEARCH_UNSELECTED);
+    while (!iter.done) {
+        part_entry* p = part_iterator_next(&iter);
 
         // This is kind of inefficient, but it should be ok...
         // TODO: This is a place where a list of unselected parts would be nice
-        if (list_contains(editor->selected_parts, (void*)&i)) {
+        if (list_contains(editor->selected_parts, (void*)p)) {
             // Skip selected parts, we only want to update unselected ones
             continue;
         }
 
-        part_cell_iterator iter = part_cell_iterator_setup(p);
-        while (!iter.done) {
+        part_cell_iterator cell_iter = part_cell_iterator_setup(*p);
+        while (!cell_iter.done) {
             // Get the next cell of this part
-            vec3s8 cell = part_cell_iterator_next(&iter);
+            vec3s8 cell = part_cell_iterator_next(&cell_iter);
 
             vehiclemask_set_3d(editor->vacancy_mask, cell, true);
         }
@@ -97,34 +99,31 @@ void update_vacancymask(editor_state* editor) {
 }
 
 void update_selectionmask(editor_state* editor) {
-    vehicle* v = editor->v; // Just a shorthand
     // Clear the selection grid
     memset(editor->selected_mask, 0x00, sizeof(vehicle_bitmask));
 
-    for (u16 i = 0; i < editor->selected_parts.end_idx; i++) {
-        u16 idx = ((u16*)editor->selected_parts.data)[i]; // Selected list stores indices
-        part_entry p = v->parts[idx];
+    part_iterator iter = part_iterator_setup(*editor, SEARCH_SELECTED);
+    while (!iter.done) {
+        part_entry* p = part_iterator_next(&iter);
 
-        // This is kind of inefficient, but it should be ok...
-        bool selected = true;
-
-        part_cell_iterator iter = part_cell_iterator_setup(p);
-        while (!iter.done) {
+        part_cell_iterator cell_iter = part_cell_iterator_setup(*p);
+        while (!cell_iter.done) {
             // Get the next cell of this part
-            vec3s8 cell = part_cell_iterator_next(&iter);
+            vec3s8 cell = part_cell_iterator_next(&cell_iter);
 
             vehiclemask_set_3d(editor->selected_mask, cell, true);
         }
     }
 }
 
-vec3s16 vehicle_selection_center(editor_state* editor) {
-    vehicle* v = editor->v;
+vec3s16 vehicle_selection_center(const editor_state* editor) {
     vec3s8 sel_max = {0}; // Highest position in the selection
     vec3s8 sel_min = {127, 127, 127}; // Smallest position in the selection
-    for (u32 i = 0; i < editor->selected_parts.end_idx; i++) {
-        u16 idx = ((u16*)editor->selected_parts.data)[i];
-        part_entry* p = &v->parts[idx];
+
+    // TODO: We should consider including part cells
+    part_iterator iter = part_iterator_setup(*editor, SEARCH_SELECTED);
+    while (!iter.done) {
+        part_entry* p = part_iterator_next(&iter);
 
         // Update selection min/max positions
         sel_max = (vec3s8) {
@@ -147,9 +146,34 @@ vec3s16 vehicle_selection_center(editor_state* editor) {
     return sel_center;
 }
 
-bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_diff, s8 roll_diff) {
-    vehicle* v = editor->v;
+vec3s vehicle_find_center(const editor_state* editor) {
+    vec3s8 max = {0}; // Max XYZ position found in the vehicle
 
+    // TODO: We should consider including part cells
+    part_iterator iter = part_iterator_setup(*editor, SEARCH_ALL);
+    while (!iter.done) {
+        const part_entry* p = part_iterator_next(&iter);
+        const vec3s8 pos = p->pos;
+
+        // Update the max position if the part's position is larger on any axis
+        max = (vec3s8) {
+            MAX(max.x, pos.x),
+            MAX(max.y, pos.y),
+            MAX(max.z, pos.z),
+        };
+    }
+
+    // Return the centerpoint. Since all coordinates are u8, we don't need to
+    // find the min point (it's just [0, 0, 0], we can divide by 2 instead).
+    return (vec3s) {
+        .x = (float)max.x / 2,
+        .y = (float)max.y / 2,
+        .z = (float)max.z / 2,
+    };
+}
+
+
+bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_diff, s8 roll_diff) {
     vec3s cam_view = glms_normalize(camera_facing(editor->cam));
     // Absolute value of camera vector
     vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
@@ -189,10 +213,9 @@ bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_dif
     glm_rotate(rot_matrix, glm_rad(90) * roll_diff, *(vec3*)&forward_vec);
 
     bool needed_adjust = false;
-    for (u32 i = 0; i < editor->selected_parts.end_idx; i++) {
-        // Selected parts list stores indices, sorry it's a little confusing
-        const u32 idx = ((u16*)editor->selected_parts.data)[i];
-        part_entry* p = &v->parts[idx];
+    part_iterator iter = part_iterator_setup(*editor, SEARCH_SELECTED);
+    while (!iter.done) {
+        part_entry* p = part_iterator_next(&iter);
 
         // Get rotation matrix for the part rotation
         mat4 part_rotation = {0};
@@ -224,7 +247,7 @@ bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_dif
             new_pos.z - p->pos.z,
         };
         vec3s16 adjustment = {0};
-        needed_adjust |= vehicle_move_part(editor->v, idx, diff, &adjustment);
+        needed_adjust |= vehicle_move_part(editor, *p, diff, &adjustment);
         // If we tried to cross the edge and parts were adjusted, we need to
         // adjust the centerpoint. (will be zero if no adjustment was needed)
         editor->sel_box.x -= adjustment.x;
@@ -279,39 +302,166 @@ vec3s8 part_cell_iterator_next(part_cell_iterator* ctx) {
     return cell;
 }
 
-s32 part_by_pos(vehicle* v, vec3s8 target) {
+part_iterator part_iterator_setup(editor_state editor, partsearch_type search_type) {
+    part_iterator output = {
+        .partlists = {editor.selected_parts, editor.unselected_parts},
+        .search_type = search_type
+    };
+
+    switch (search_type) {
+        case SEARCH_SELECTED:
+            // No special action needed, but make both entries the selected
+            // list just in case
+            output.partlists[1] = editor.selected_parts;
+            break;
+        case SEARCH_UNSELECTED:
+            // Make both entries the unselected list
+            output.partlists[0] = editor.unselected_parts;
+            break;
+        case SEARCH_ALL:
+            // No special action needed
+            break;
+    }
+
+    // Skip empty lists
+    list cur_list = output.partlists[output.partlist_idx];
+    if (list_empty(cur_list)) {
+        output.partlist_idx++;
+        cur_list = output.partlists[output.partlist_idx];
+        if (list_empty(cur_list)) {
+            output.partlist_idx++;
+        }
+    }
+
+    // Mark as done on creation if there's nothing left
+    const u8 max_partlist_idx = output.search_type == SEARCH_ALL;
+    if (output.partlist_idx > max_partlist_idx || list_empty(cur_list)) {
+        output.done = true;
+    }
+
+    return output;
+}
+
+part_entry* part_iterator_next(part_iterator* ctx) {
+    list cur_list = ctx->partlists[ctx->partlist_idx];
+    part_entry* part = (part_entry*)list_get_element(cur_list, ctx->part_idx);
+    ctx->part_idx++;
+
+    // Move on to the next list if needed
+    if (ctx->part_idx >= cur_list.end_idx) {
+        ctx->part_idx = 0;
+        ctx->partlist_idx++;
+        cur_list = ctx->partlists[ctx->partlist_idx];
+    }
+
+    const u8 max_partlist_idx = ctx->search_type == SEARCH_ALL;
+    if (ctx->partlist_idx > max_partlist_idx || list_empty(cur_list)) {
+        ctx->done = true;
+    }
+
+    return part;
+}
+
+static part_entry empty_part = {0};
+
+part_entry* part_by_pos(editor_state* editor, vec3s8 target, partsearch_type search_hint) {
     // Linearly search for the part
-    // TODO: When moving a selection through other parts, the detected part can
-    // suddenly switch to one of the parts you're moving through. Maybe we
-    // should prioritize selected parts in the search?
     // TODO: Use the grid for an early exit
-    for (u16 i = 0; i < v->head.part_count; i++) {
-        part_entry* p = &v->parts[i]; // Just a shortcut
+
+    // Loop over every part requested by caller
+    part_iterator iter = part_iterator_setup(*editor, search_hint);
+    while (!iter.done) {
+        part_entry* part = part_iterator_next(&iter);
 
         // A part's max width is 8, so anything further away can't be a match
-        if (abs(p->pos.x - target.x) > 8 || 
-            abs(p->pos.y - target.y) > 8 || 
-            abs(p->pos.z - target.z) > 8) {
+        if (abs(part->pos.x - target.x) > 8 || 
+            abs(part->pos.y - target.y) > 8 || 
+            abs(part->pos.z - target.z) > 8) {
             continue; // The part is too far away, skip it
         }
 
         // Loop over every cell this part occupies
-        part_cell_iterator iter = part_cell_iterator_setup(*p);
-        if (p->id == WHEEL_SUPER && vec3s8_eq(target, p->pos)) {
-            printf("");
-        }
-        while (!iter.done) {
+        part_cell_iterator cell_iter = part_cell_iterator_setup(*part);
+        while (!cell_iter.done) {
             // Get the next coordinate
-            vec3s8 cell = part_cell_iterator_next(&iter);
+            vec3s8 cell = part_cell_iterator_next(&cell_iter);
 
             if (vec3s8_eq(cell, target)) {
                 // Found it!
-                return i;
+                return part;
             }
         }
     }
 
     // Nothing here...
-    return -1;
+    empty_part = (part_entry){0}; // Make sure we return an empty part
+    return &empty_part;
 }
+
+bool vehicle_move_part(editor_state* editor, part_entry part, vec3s16 diff, vec3s16* adjust_out) {
+    const s64 idx = list_find(editor->selected_parts, &part);
+    if (idx == -1) {
+        return false;
+    }
+    part_entry* p = (part_entry*) list_get_element(editor->selected_parts, idx);
+    if (p->id == 0) {
+        // If for some reason we're moving an unselected part, handle that
+        p = (part_entry*)list_find(editor->unselected_parts, &part);
+    }
+    if (p->id == 0) {
+        // We can't move a part that doesn't exist.
+        // TODO: Maybe remove this message?
+        LOG_MSG(error, "Couldn't find the part you want to move!\n");
+        return false;
+    }
+
+    bool needed_readjustment = false;
+    // We loop over the 3 axes here
+    for (u8 i = 0; i < 3; i++) {
+        // Find position of this axis after the move
+        const s16 new_pos = (s16)p->pos.raw[i] + diff.raw[i];
+        if (new_pos >= VEH_MAX_DIM - 1) {
+            // This part is at the border, there's nothing we can do.
+            continue;
+        }
+        else if (new_pos >= 0) {
+            // Everything's fine, update pos and move on
+            p->pos.raw[i] += diff.raw[i];
+            continue;
+        }
+
+        needed_readjustment = true;
+        // Make this the new 0, update the output adjustment vector, and adjust
+        // the rest of the parts
+        p->pos.raw[i] = 0;
+        if (adjust_out != NULL) {
+            adjust_out->raw[i] = new_pos;
+        }
+
+        part_iterator iter = part_iterator_setup(*editor, SEARCH_ALL);
+        while (!iter.done) {
+            
+            // The part to be moved
+            part_entry* other_part = part_iterator_next(&iter);
+
+            if (memcmp(p, other_part, sizeof(part_entry)) == 0) {
+                // This is the part we just made the new 0, skip.
+                continue;
+            }
+
+            if (other_part->pos.raw[i] >= VEH_MAX_DIM - new_pos) {
+                // Integer overflow, we can't move this part any further.
+                other_part->pos.raw[i] = VEH_MAX_DIM - 1;
+                continue;
+            }
+
+            // Pull each part back on this axis by however much we're out of bounds
+            other_part->pos.raw[i] -= new_pos;
+        }
+    }
+
+    // Return bool result on if the part moved out of bounds and had to be adjusted
+    return needed_readjustment;
+}
+
 

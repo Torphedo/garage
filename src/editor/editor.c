@@ -19,7 +19,7 @@
 // This doesn't enforce what the bound VAO is... make sure to only call it with
 // the cube VAO bound.
 void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
-    vec3s center = vehicle_find_center(editor->v);
+    vec3s center = vehicle_find_center(editor);
 
     // Highest XYZ coords in the vehicle. We add 1 to include the highest
     // index, then 4 to avoid cutting off large parts with up to 4 cells radius
@@ -209,10 +209,11 @@ void update_edit_mode(editor_state* editor) {
 
         // Move all selected parts
         bool needed_adjust = false;
-        for (u32 i = 0; i < editor->selected_parts.end_idx; i++) {
-            u16 idx = ((u16*)editor->selected_parts.data)[i];
+        part_iterator iter = part_iterator_setup(*editor, SEARCH_SELECTED);
+        while (!iter.done) {
+            part_entry* p = part_iterator_next(&iter);
             vec3s16 adjustment = {0};
-            needed_adjust |= vehicle_move_part(editor->v, idx, diff, &adjustment);
+            needed_adjust |= vehicle_move_part(editor, *p, diff, &adjustment);
             // Move the selection box to the part's new location, if it moved out
             // of bounds and forced the vehicle to be adjusted.
             editor->sel_box.x -= adjustment.x;
@@ -242,12 +243,13 @@ void update_edit_mode(editor_state* editor) {
 
     // Find index of the part we're targeting
     const vec3s8 pos = {editor->sel_box.x, editor->sel_box.y, editor->sel_box.z};
-    const s32 idx = part_by_pos(editor->v, pos);
+    const part_entry* p = part_by_pos(editor, pos, SEARCH_ALL);
 
     const bool select_button_pressed = (input.e && !editor->prev_input.e) || (input.gp.a && !editor->prev_input.gp.a);
     const bool unselect_button_pressed = (input.r && !editor->prev_input.r) || (input.gp.b && !editor->prev_input.gp.b);
     if (unselect_button_pressed && editor->sel_mode == SEL_NONE && !rotation) {
-        list_remove_val(&editor->selected_parts, (void*)&idx);
+        list_add(&editor->unselected_parts, (void*)&p);
+        list_remove_val(&editor->selected_parts, (void*)&p);
         update_selectionmask(editor);
         update_vacancymask(editor);
     }
@@ -256,12 +258,13 @@ void update_edit_mode(editor_state* editor) {
         if (editor->sel_mode == SEL_ACTIVE) {
             // User pressed the button while moving parts, which means
             // we should put them down.
+            list_merge(&editor->unselected_parts, editor->selected_parts);
             list_clear(&editor->selected_parts);
             update_selectionmask(editor); // This will boil down to just clearing the grid
             update_vacancymask(editor); // Need to add those parts to vacancy grid
             editor->sel_mode = SEL_NONE; // Now you can start moving the parts
-        } else if (idx != -1) {
-            if (cell_is_selected(editor, editor->v->parts[idx].pos)) {
+        } else if (p->id != 0) {
+            if (cell_is_selected(editor, p->pos)) {
                 // User pressed the button while selecting parts on an
                 // already-selected part, which means they want to start moving
                 // them. No change to the vacancy/selection grids.
@@ -271,7 +274,8 @@ void update_edit_mode(editor_state* editor) {
                 editor->sel_box = vehicle_selection_center(editor);
             } else {
                 // Select the part
-                list_add(&editor->selected_parts, (void*)&idx);
+                list_add(&editor->selected_parts, (void*)p);
+                list_remove_val(&editor->unselected_parts, (void*)p);
                 update_selectionmask(editor);
                 update_vacancymask(editor);
                 editor->sel_mode = SEL_NONE;
@@ -393,8 +397,8 @@ void editor_teardown(editor_state* editor) {
     glDeleteVertexArrays(1, &cube.vao);
     glDeleteBuffers(1, &cube.vbuf);
     glDeleteBuffers(1, &cube.ibuf);
-    free(editor->v);
     free((void*)editor->selected_parts.data);
+    free((void*)editor->unselected_parts.data);
     free(editor->vacancy_mask);
     free(editor->selected_mask);
 }

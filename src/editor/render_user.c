@@ -25,12 +25,9 @@ void ui_update_render(editor_state* editor) {
 
     // We can skip updating the part name if the cursor hasn't moved
     if (!vec3s16_eq(last_selbox, editor->sel_box)) {
-        s32 idx = part_by_pos(editor->v, (vec3s8){editor->sel_box.x, editor->sel_box.y, editor->sel_box.z});
-        u32 part_id = 0;
-        if (idx != -1) {
-            part_id = editor->v->parts[idx].id;
-        }
-        part_info cur_part = part_get_info(part_id);
+        const vec3s8 pos = {editor->sel_box.x, editor->sel_box.y, editor->sel_box.z};
+        const part_entry* part = part_by_pos(editor, pos, SEARCH_ALL);
+        const part_info cur_part = part_get_info(part->id);
         strncpy(partname_buf, cur_part.name, sizeof(partname_buf));
         // Update part name & selection box
         text_update_transforms(&part_name);
