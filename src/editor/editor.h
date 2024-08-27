@@ -56,6 +56,7 @@ typedef struct {
     double delta_time; // Measured in seconds
     input_internal prev_input; // Input from last frame
     bool vsync;
+    bool init_result; // Only used during init to communicate failure
 
     // Rendering state that everyone can re-use
     gl_obj vcolor_shader; // Shader for drawing objects with vertex colors
@@ -68,7 +69,7 @@ typedef struct {
 bool editor_update_with_input(editor_state* editor, GLFWwindow* window);
 
 // Compile the basic common shader, upload buffers for primitives, setup uniforms
-bool editor_init(editor_state* editor);
+editor_state editor_init(const char* vehicle_path);
 
 // Delete resources created in editor_init().
 void editor_teardown(editor_state* editor);

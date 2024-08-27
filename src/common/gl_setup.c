@@ -87,7 +87,15 @@ GLFWwindow* setup_opengl(s32 width, s32 height, const char* window_name, bool en
         // Example code that will trigger a critical debug message:
         // glBindBuffer(GL_VERTEX_ARRAY_BINDING, 0);
     }
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+    glEnable(GL_DEPTH_TEST);
     glEnable(GL_MULTISAMPLE); // Enable MSAA
+    glEnable(GL_CULL_FACE); // Backface culling via winding order
+
+    // Enable transparency
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glEnable(GL_BLEND);
+
 
     // Set OpenGL viewport to size of window, handle resizing
     glViewport(0, 0, width, height);

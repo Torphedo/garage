@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -34,6 +35,7 @@ enum {
     FIRST_CHAR = 0x20,
     NUM_CHAR = 0xDF,
 };
+static_assert((TTF_TEX_WIDTH % 4 == 0 || TTF_TEX_HEIGHT % 4 == 0), "Texture size isn't a multiple of block size!\n");
 
 // Regular quad, but with texture coordinates instead of colors
 const tex_vertex texquad_vertices[] = {
@@ -75,24 +77,22 @@ gl_obj u_transforms;
 gl_obj u_texcoords;
 
 bool text_renderer_setup(const char* ttf_path) {
-    if (TTF_TEX_WIDTH % 4 != 0 || TTF_TEX_HEIGHT % 4 != 0) {
-        LOG_MSG(error, "Assert fail, texture size isn't a multiple of block size!\n");
-        return false;
-    }
-
     u8* ttf_data = physfs_load_file(ttf_path);
     if (ttf_data == NULL) {
+        LOG_MSG(error, "Failed to load TTF file\n");
         return false;
     }
 
     stbtt_fontinfo font_info = {0};
     if (!stbtt_InitFont(&font_info, ttf_data, 0)) {
+        LOG_MSG(error, "stb font init failure\n");
         free(ttf_data);
         return false;
     }
 
     u8 bitmap[TTF_TEX_HEIGHT][TTF_TEX_WIDTH] = {0};
     if (!stbtt_PackBegin(&pack_ctx, (unsigned char*)bitmap, TTF_TEX_WIDTH, TTF_TEX_HEIGHT, 0, 1, NULL)) {
+        LOG_MSG(error, "stb font rasterization or packing failure\n");
         free(ttf_data);
         return false;
     }
@@ -155,9 +155,12 @@ bool text_renderer_setup(const char* ttf_path) {
     glGenerateMipmap(GL_TEXTURE_2D);
 
     // Compile shaders
-    char* vert_src = physfs_load_file("/src/editor/shader/text.vert");
-    char* frag_src = physfs_load_file("/src/editor/shader/text.frag");
+    char* vert_src = (char*)physfs_load_file("/src/editor/shader/text.vert");
+    char* frag_src = (char*)physfs_load_file("/src/editor/shader/text.frag");
     if (vert_src == NULL || frag_src == NULL) {
+        LOG_MSG(error, "Failed to load one or both of the text shader files\n");
+        free(vert_src);
+        free(frag_src);
         return false;
     }
     shader = program_compile_src(vert_src, frag_src);
@@ -166,7 +169,7 @@ bool text_renderer_setup(const char* ttf_path) {
 
     // Delete individual shader objects
     if (!shader_link_check(shader)) {
-        LOG_MSG(error, "Shader linker failure!\n");
+        LOG_MSG(error, "Shader linker failure\n");
         stbtt_PackEnd(&pack_ctx);
         glDeleteTextures(1, &font_atlas);
         glDeleteProgram(shader);
@@ -219,7 +222,7 @@ void text_renderer_cleanup() {
 
 text_state text_render_prep(const char* text, u32 len, float scale, vec2 pos) {
     if (!initialized) {
-        LOG_MSG(warning, "You haven't initialized the text renderer yet! I've silently ignored this, but nothing will render!\n");
+        LOG_MSG(warning, "You haven't initialized the text renderer yet! This isn't fatal, but nothing will render!\n");
         return (text_state){0};
     }
 

@@ -9,7 +9,7 @@
 #include "common/logging.h"
 #include "common/gl_setup.h"
 #include "common/input.h"
-#include "common/path.h"
+#include "common/vehicle_path.h"
 
 #include "editor/render_garage.h"
 #include "editor/render_debug.h"
@@ -41,50 +41,23 @@ int main(int argc, char** argv) {
         return 0;
     }
 
-    const char* path = argv[1]; // Give our first argument a convenient name
-    vehicle* v = vehicle_load(path);
-    if (v == NULL) {
-        // Loader function will print the error message for us, so just exit
-        return 1;
-    }
-    editor_state editor = {
-        .v = v->head,
-        .selected_parts = list_create(sizeof(part_entry) * v->head.part_count, sizeof(part_entry)),
-        .unselected_parts = list_create(sizeof(part_entry) * v->head.part_count, sizeof(part_entry)),
-        .vsync = true,
-        .vacancy_mask = calloc(1, sizeof(vehicle_bitmask)),
-        .selected_mask = calloc(1, sizeof(vehicle_bitmask)),
-        .cam = camera_default(),
-    };
-    // Copy part data into the dynamic list and free the raw vehicle data
-    memcpy((void*)editor.unselected_parts.data, v->parts, sizeof(*v->parts) * v->head.part_count);
-    editor.unselected_parts.end_idx = v->head.part_count;
-    free(v);
+    const char* vehicle_path = argv[1]; // Give our first argument a convenient name
 
-    if (editor.vacancy_mask == NULL || editor.selected_mask == NULL) {
-        LOG_MSG(error, "Failed to alloc a vehicle bitmask\n");
-        return 1;
-    }
-
-    GLFWwindow* window = setup_opengl(680, 480, "Garage Opener", ENABLE_DEBUG, GLFW_CURSOR_NORMAL, editor.vsync);
+    GLFWwindow* window = setup_opengl(680, 480, "Garage Opener", ENABLE_DEBUG, GLFW_CURSOR_NORMAL, true);
     if (window == NULL) {
+        LOG_MSG(error, "GLFW / OpenGL init error\n");
         return 1;
     }
 
-    // Prepare for rendering
-    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-    glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
-
-    // Enable transparency
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_BLEND);
-
-    if (!editor_init(&editor)) {
+    editor_state editor = editor_init(vehicle_path);
+    // This is a generic failure flag for any problems with startup
+    if (!editor.init_result) {
+        LOG_MSG(error, "Editor init failure\n");
         return 1;
     }
+
     if (!text_renderer_setup("bin/ProFontIIxNerdFontPropo-Regular.ttf")) {
-        LOG_MSG(error, "Couldn't setup text renderer\n");
+        LOG_MSG(error, "Text renderer init failure\n");
         return 1;
     }
 

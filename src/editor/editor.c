@@ -359,33 +359,67 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
     return true;
 }
 
-bool editor_init(editor_state* editor) {
+editor_state editor_init(const char* vehicle_path) {
+    editor_state editor = {
+        .vacancy_mask = calloc(1, sizeof(vehicle_bitmask)),
+        .selected_mask = calloc(1, sizeof(vehicle_bitmask)),
+        .cam = camera_default(),
+        .init_result = false, // Default to failure, this will only be set to success if all checks pass
+    };
+    if (editor.vacancy_mask == NULL || editor.selected_mask == NULL) {
+        LOG_MSG(error, "Failed to alloc a vehicle bitmask\n");
+        return editor;
+    }
+
+    vehicle* v = vehicle_load(vehicle_path);
+    if (v == NULL) {
+        LOG_MSG(error, "Failed to load vehicle from \"%s\"", vehicle_path);
+        return editor;
+    }
+
+    // Init vehicle header & dynamic lists
+    editor.v = v->head;
+    // Start with enough memory to select all parts without resizing
+    editor.selected_parts = list_create(sizeof(part_entry) * v->head.part_count, sizeof(part_entry));
+    editor.unselected_parts = list_create(sizeof(part_entry) * v->head.part_count, sizeof(part_entry));
+    if (editor.selected_parts.data == 0 || editor.unselected_parts.data == 0) {
+        LOG_MSG(error, "Failed to allocate for dynamic lists\n");
+        return editor;
+    }
+
+
+    // Copy part data into the dynamic list and free the raw vehicle data
+    memcpy((void*)editor.unselected_parts.data, v->parts, sizeof(*v->parts) * v->head.part_count);
+    editor.unselected_parts.end_idx = v->head.part_count;
+    free(v);
+
     // Initialize part grids
-    update_vacancymask(editor);
-    update_selectionmask(editor);
+    update_vacancymask(&editor);
+    update_selectionmask(&editor);
 
     u8* vert = physfs_load_file("/src/editor/shader/vcolor.vert");
     u8* frag = physfs_load_file("/src/editor/shader/vcolor.frag");
     if (vert == NULL || frag == NULL) {
-        return false;
+        LOG_MSG(error, "Failed to load one or both of the vertex color shader files\n");
+        return editor;
     }
-    editor->vcolor_shader = program_compile_src((char*)vert, (char*)frag);
-    if (!shader_link_check(editor->vcolor_shader)) {
-        free(vert);
-        free(frag);
-        return false;
-    }
+    editor.vcolor_shader = program_compile_src((char*)vert, (char*)frag);
     free(vert);
     free(frag);
+    if (!shader_link_check(editor.vcolor_shader)) {
+        LOG_MSG(error, "Shader linker error\n");
+        return editor;
+    }
 
     // Get our uniform locations
-    editor->u_pvm = glGetUniformLocation(editor->vcolor_shader, "pvm");
-    editor->u_paint = glGetUniformLocation(editor->vcolor_shader, "paint");
+    editor.u_pvm = glGetUniformLocation(editor.vcolor_shader, "pvm");
+    editor.u_paint = glGetUniformLocation(editor.vcolor_shader, "paint");
 
     model_upload(&quad);
     model_upload(&cube);
 
-    return true;
+    editor.init_result = true;
+    return editor;
 }
 
 void editor_teardown(editor_state* editor) {
