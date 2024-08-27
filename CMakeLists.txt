@@ -107,6 +107,7 @@ endif()
 # List of all test files
 set(test_sources
     test/test_stfs.c
+    test/test_list.c
 )
 
 add_executable(test

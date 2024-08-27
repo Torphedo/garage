@@ -21,7 +21,7 @@ typedef struct {
 list list_create(u32 init_size, u32 element_size);
 
 // Append an element to the list.
-void list_add(list* l, void* data);
+void list_add(list* l, const void* data);
 
 // We're forced to have this getter function to keep the list structure generic
 // Cast to your desired type and derefence.
@@ -34,13 +34,13 @@ void list_clear(list* l);
 void list_remove(list* l, u32 idx);
 
 // Find and remove the first occurance of a value from the list.
-void list_remove_val(list* l, void* data);
+void list_remove_val(list* l, const void* data);
 
 // Find the index of a value in the list. Returns -1 on failure.
-s64 list_find(list l, void* data);
+s64 list_find(list l, const void* data);
 
 // Whether the list contains a certain value
-bool list_contains(list l, void* data);
+bool list_contains(list l, const void* data);
 
 // Whether the list is empty
 bool list_empty(list l);

@@ -26,7 +26,7 @@ list list_create(u32 init_size, u32 element_size) {
     };
 }
 
-void list_add(list* l, void* data) {
+void list_add(list* l, const void* data) {
     // If there's no room, we need to realloc
     if (list_full(*l)) {
         // The buffer is completely full & needs a new allocation.
@@ -51,7 +51,7 @@ void list_add(list* l, void* data) {
 }
 
 void list_remove(list* l, u32 idx) {
-    if (idx > l->end_idx || l->end_idx == 0) {
+    if (idx > l->end_idx || list_empty(*l)) {
         // Caller wants to remove an element that isn't used...
         return;
     }
@@ -67,7 +67,7 @@ void list_remove(list* l, u32 idx) {
     l->end_idx--; // Shrink the list
 }
 
-void list_remove_val(list* l, void* data) {
+void list_remove_val(list* l, const void* data) {
     const s64 idx = list_find(*l, data);
     if (idx == -1) {
         return;
@@ -75,7 +75,7 @@ void list_remove_val(list* l, void* data) {
     list_remove(l, idx);
 }
 
-s64 list_find(list l, void* data) {
+s64 list_find(list l, const void* data) {
     for (u32 i = 0; i < l.end_idx; i++) {
         void* element = list_get_element(l, i);
         if (memcmp(data, element, l.element_size) == 0) {
@@ -88,7 +88,7 @@ s64 list_find(list l, void* data) {
     return -1;
 }
 
-bool list_contains(list l, void* data) {
+bool list_contains(list l, const void* data) {
     return list_find(l, data) != -1;
 }
 
