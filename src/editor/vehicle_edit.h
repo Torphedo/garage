@@ -13,17 +13,35 @@
 #include <parts.h>
 #include "editor.h"
 
+typedef enum {
+    SEARCH_SELECTED,
+    SEARCH_UNSELECTED,
+    SEARCH_ALL,
+}partsearch_type;
+
+typedef struct {
+    part_info info;
+    part_entry part;
+    bool done;
+}part_cell_iterator;
+
+typedef struct {
+    list partlists[2];
+    partsearch_type search_type;
+    u8 partlist_idx; // Current index into the list array
+    u32 part_idx; // Current index into the current list
+    bool done;
+}part_iterator;
+
 // Safely get & set values from vehicle bitmask (with bounds checking)
 bool vehiclemask_get_3d(vehicle_bitmask* mask, vec3s8 cell);
 void vehiclemask_set_3d(vehicle_bitmask* mask, vec3s8 cell, u8 val);
 
 bool cell_is_selected(editor_state* editor, vec3s8 cell);
 
-vec3s16 vehicle_selection_center(const editor_state* editor);
-
 // Uses part data to find the centerpoint of a vehicle.
 // (returns float vector for convenience, since centerpoint could be a decimal)
-vec3s vehicle_find_center(const editor_state* editor);
+vec3s vehicle_find_center(const editor_state* editor, partsearch_type search_type);
 
 // Rotate all selected parts about their centerpoint. Forward & side diff
 // represent user inputs on a joystick/D-Pad/keyboard X/Y axes.
@@ -37,32 +55,12 @@ bool vehicle_selection_overlap(editor_state* editor);
 void update_selectionmask(editor_state* editor);
 void update_vacancymask(editor_state* editor);
 
-typedef struct {
-    part_info info;
-    part_entry part;
-    bool done;
-}part_cell_iterator;
-
 // Setup an iterator from a part entry. Returns an iteration context.
 // There's no need to free the iteration context.
 part_cell_iterator part_cell_iterator_setup(part_entry p);
 
 // Get the next item and advance.
 vec3s8 part_cell_iterator_next(part_cell_iterator* ctx);
-
-typedef enum {
-    SEARCH_SELECTED,
-    SEARCH_UNSELECTED,
-    SEARCH_ALL,
-}partsearch_type;
-
-typedef struct {
-    list partlists[2];
-    partsearch_type search_type;
-    u8 partlist_idx; // Current index into the list array
-    u32 part_idx; // Current index into the current list
-    bool done;
-}part_iterator;
 
 part_iterator part_iterator_setup(editor_state editor, partsearch_type search_type);
 part_entry* part_iterator_next(part_iterator* ctx);

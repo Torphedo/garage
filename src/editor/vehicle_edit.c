@@ -80,13 +80,6 @@ void update_vacancymask(editor_state* editor) {
     while (!iter.done) {
         part_entry* p = part_iterator_next(&iter);
 
-        // This is kind of inefficient, but it should be ok...
-        // TODO: This is a place where a list of unselected parts would be nice
-        if (list_contains(editor->selected_parts, (void*)p)) {
-            // Skip selected parts, we only want to update unselected ones
-            continue;
-        }
-
         part_cell_iterator cell_iter = part_cell_iterator_setup(*p);
         while (!cell_iter.done) {
             // Get the next cell of this part
@@ -115,60 +108,37 @@ void update_selectionmask(editor_state* editor) {
     }
 }
 
-vec3s16 vehicle_selection_center(const editor_state* editor) {
-    vec3s8 sel_max = {0}; // Highest position in the selection
-    vec3s8 sel_min = {127, 127, 127}; // Smallest position in the selection
+vec3s vehicle_find_center(const editor_state* editor, partsearch_type search_type) {
+    vec3s8 max = {0}; // Highest position in the selection
+    vec3s8 min = {127, 127, 127}; // Smallest position in the selection
 
-    // TODO: We should consider including part cells
-    part_iterator iter = part_iterator_setup(*editor, SEARCH_SELECTED);
-    while (!iter.done) {
-        part_entry* p = part_iterator_next(&iter);
-
-        // Update selection min/max positions
-        sel_max = (vec3s8) {
-            MAX(sel_max.x, p->pos.x),
-            MAX(sel_max.y, p->pos.y),
-            MAX(sel_max.z, p->pos.z),
-        };
-        sel_min = (vec3s8) {
-            MIN(sel_min.x, p->pos.x),
-            MIN(sel_min.y, p->pos.y),
-            MIN(sel_min.z, p->pos.z),
-        };
-    }
-    vec3s16 sel_center = {
-        floorf((float)(sel_max.x + sel_min.x) / 2),
-        floorf((float)(sel_max.y + sel_min.y) / 2),
-        floorf((float)(sel_max.z + sel_min.z) / 2),
-    };
-
-    return sel_center;
-}
-
-vec3s vehicle_find_center(const editor_state* editor) {
-    vec3s8 max = {0}; // Max XYZ position found in the vehicle
-
-    // TODO: We should consider including part cells
-    part_iterator iter = part_iterator_setup(*editor, SEARCH_ALL);
+    part_iterator iter = part_iterator_setup(*editor, search_type);
     while (!iter.done) {
         const part_entry* p = part_iterator_next(&iter);
-        const vec3s8 pos = p->pos;
-
-        // Update the max position if the part's position is larger on any axis
-        max = (vec3s8) {
-            MAX(max.x, pos.x),
-            MAX(max.y, pos.y),
-            MAX(max.z, pos.z),
-        };
+        part_cell_iterator cell_iter = part_cell_iterator_setup(*p);
+        while (!cell_iter.done) {
+            const vec3s8 pos = part_cell_iterator_next(&cell_iter);
+            // Update the min/max positions
+            min = (vec3s8) {
+                MIN(min.x, pos.x),
+                MIN(min.y, pos.y),
+                MIN(min.z, pos.z),
+            };
+            max = (vec3s8) {
+                MAX(max.x, pos.x),
+                MAX(max.y, pos.y),
+                MAX(max.z, pos.z),
+            };
+        }
     }
 
-    // Return the centerpoint. Since all coordinates are u8, we don't need to
-    // find the min point (it's just [0, 0, 0], we can divide by 2 instead).
-    return (vec3s) {
-        .x = (float)max.x / 2,
-        .y = (float)max.y / 2,
-        .z = (float)max.z / 2,
+    vec3s center = {
+        (float)(max.x + min.x) / 2,
+        (float)(max.y + min.y) / 2,
+        (float)(max.z + min.z) / 2,
     };
+
+    return center;
 }
 
 

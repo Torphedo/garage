@@ -97,7 +97,7 @@ void garage_render(garage_state* state, editor_state* editor) {
     glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
 
     // Draw all our parts
-    const vec3s center = vehicle_find_center(editor);
+    const vec3s center = vehicle_find_center(editor, SEARCH_ALL);
     part_iterator iter = part_iterator_setup(*editor, SEARCH_ALL);
     while (!iter.done) {
         const part_entry* p = part_iterator_next(&iter);
