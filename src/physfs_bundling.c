@@ -6,6 +6,7 @@
 #include <incbin.h>
 
 #include <physfs.h>
+#include <GLFW/glfw3.h>
 #include <common/path.h>
 #include <common/logging.h>
 #include <common/int.h>
@@ -13,6 +14,7 @@
 INCBIN(asset_archive, "data.zip");
 
 bool setup_physfs(const char* argv0) {
+    const double physfs_time_start = glfwGetTime();
     char* self_path = get_self_path(argv0);
     PHYSFS_init(argv0);
     if (PHYSFS_mount(self_path, "/", 0) == 0) {
@@ -33,6 +35,11 @@ bool setup_physfs(const char* argv0) {
 
     free(self_path);
 
+    const double physfs_time_end = glfwGetTime();
+    const double elapsed = physfs_time_end - physfs_time_start;
+    if (elapsed > 1.0 / 1000) {
+        LOG_MSG(debug, "Finished in %.3lf ms\n", elapsed * 1000);
+    }
     return true;
 }
 

@@ -49,6 +49,7 @@ model get_or_load_model(garage_state* state, part_id id) {
 }
 
 garage_state garage_init(editor_state* editor) {
+    const double time_start = glfwGetTime();
     garage_state state = {0};
 
     // ID 0 will just render a cube
@@ -60,6 +61,12 @@ garage_state garage_init(editor_state* editor) {
         get_or_load_model(&state, p->id);
     }
 
+
+    const double time_end = glfwGetTime();
+    const double elapsed = time_end - time_start;
+    if (elapsed > 1.0 / 1000) {
+        LOG_MSG(debug, "Finished in %.3lfms\n", elapsed * 1000);
+    }
     return state;
 }
 

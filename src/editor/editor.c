@@ -286,6 +286,7 @@ void update_edit_mode(editor_state* editor) {
 
 // Update the GUI state according to new user input.
 bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
+    const double time_start = glfwGetTime();
     static bool cursor_lock = false;
     update_mods(window); // Update input.shift, input.ctrl, etc.
     gamepad_update();
@@ -356,10 +357,16 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
             editor->cam.mouse_sens = camera_default().mouse_sens;
     }
 
+    const double time_end = glfwGetTime();
+    const double elapsed = time_end - time_start;
+    if (elapsed > 1.0 / 1000) {
+        LOG_MSG(debug, "Finished in %.3lfms\n", elapsed * 1000);
+    }
     return true;
 }
 
 editor_state editor_init(const char* vehicle_path) {
+    const double time_start = glfwGetTime();
     editor_state editor = {
         .vacancy_mask = calloc(1, sizeof(vehicle_bitmask)),
         .selected_mask = calloc(1, sizeof(vehicle_bitmask)),
@@ -419,6 +426,11 @@ editor_state editor_init(const char* vehicle_path) {
     model_upload(&cube);
 
     editor.init_result = true;
+    const double time_end = glfwGetTime();
+    const double elapsed = time_end - time_start;
+    if (elapsed > 1.0 / 1000) {
+        LOG_MSG(debug, "Finished in %.3lfms\n", elapsed * 1000);
+    }
     return editor;
 }
 

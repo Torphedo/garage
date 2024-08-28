@@ -2,14 +2,11 @@
 #include <stdio.h>
 
 #include <glad/glad.h>
-#include <physfs.h>
 
 #include "common/int.h"
-#include "common/list.h"
 #include "common/logging.h"
 #include "common/gl_setup.h"
 #include "common/input.h"
-#include "common/path.h"
 
 #include "editor/render_garage.h"
 #include "editor/render_debug.h"
@@ -30,18 +27,10 @@ int main(int argc, char** argv) {
         LOG_MSG(info, "Usage: garage [vehicle file]\n");
         return 1;
     }
-
-    // Setup PhysicsFS
-    if (!setup_physfs(argv[0])) {
-        return 1;
-    }
-
     if (strcmp(argv[1], "--dump-assets") == 0) {
         dump_assets();
         return 0;
     }
-
-    const char* vehicle_path = argv[1]; // Give our first argument a convenient name
 
     GLFWwindow* window = setup_opengl(680, 480, "Garage Opener", ENABLE_DEBUG, GLFW_CURSOR_NORMAL, true);
     if (window == NULL) {
@@ -49,6 +38,12 @@ int main(int argc, char** argv) {
         return 1;
     }
 
+    // Setup PhysicsFS
+    if (!setup_physfs(argv[0])) {
+        return 1;
+    }
+
+    const char* vehicle_path = argv[1]; // Give our first argument a convenient name
     editor_state editor = editor_init(vehicle_path);
     // This is a generic failure flag for any problems with startup
     if (!editor.init_result) {

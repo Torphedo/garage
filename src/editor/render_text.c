@@ -77,6 +77,7 @@ gl_obj u_transforms;
 gl_obj u_texcoords;
 
 bool text_renderer_setup(const char* ttf_path) {
+    const double time_start = glfwGetTime();
     u8* ttf_data = physfs_load_file(ttf_path);
     if (ttf_data == NULL) {
         LOG_MSG(error, "Failed to load TTF file\n");
@@ -206,6 +207,12 @@ bool text_renderer_setup(const char* ttf_path) {
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
     initialized = true;
+
+    const double time_end = glfwGetTime();
+    const double elapsed = time_end - time_start;
+    if (elapsed > 1.0 / 1000) {
+        LOG_MSG(debug, "Finished in %.3lfms\n", elapsed * 1000);
+    }
     return true;
 }
 
