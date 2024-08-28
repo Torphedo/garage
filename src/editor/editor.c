@@ -19,7 +19,7 @@
 // This doesn't enforce what the bound VAO is... make sure to only call it with
 // the cube VAO bound.
 void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
-    vec3s center = vehicle_find_center(editor);
+    vec3s center = vehicle_find_center(editor, SEARCH_ALL);
 
     // Highest XYZ coords in the vehicle. We add 1 to include the highest
     // index, then 4 to avoid cutting off large parts with up to 4 cells radius
@@ -28,9 +28,6 @@ void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
     // Tranformation matrices
     mat4 pv = {0};
     camera_proj_view(editor->cam, pv);
-
-    mat4 model = {0};
-    glm_mat4_identity(model);
 
     // Disable backface culling, it doesn't make sense for a wireframe
     GLboolean culling_was_enabled = false;
@@ -59,8 +56,8 @@ void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
                 }
 
 
-                vec3s8 cell = {i, j, k};
-                bool part_present = vehiclemask_get_3d(mask, cell);
+                const vec3s8 cell = {i, j, k};
+                const bool part_present = vehiclemask_get_3d(mask, cell);
                 if (!part_present) {
                     continue;
                 }
@@ -72,6 +69,9 @@ void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
                 glm_vec3_scale(pos, PART_POS_SCALE, pos);
 
                 mat4 pvm = {0};
+                mat4 model = {0};
+                glm_mat4_identity(model);
+
                 glm_translate(model, pos);
                 // Scale up by an imperceptible amount to avoid Z-fighting
                 glm_scale_uni(model, 1.0001f);
@@ -82,7 +82,6 @@ void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
                 // draw call instead of this.
                 glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float*)&pvm);
                 glDrawElements(GL_TRIANGLES, cube.idx_count, GL_UNSIGNED_SHORT, NULL);
-                glm_mat4_identity(model);
             }
         }
     }
@@ -91,7 +90,6 @@ void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
     if (culling_was_enabled == GL_TRUE) {
         glEnable(GL_CULL_FACE);
     }
-
 }
 
 
@@ -271,7 +269,12 @@ void update_edit_mode(editor_state* editor) {
                 editor->sel_mode = SEL_ACTIVE;
 
                 // Set cursor to the selection center
-                editor->sel_box = vehicle_selection_center(editor);
+                const vec3s center = vehicle_find_center(editor, SEARCH_SELECTED);
+                editor->sel_box = (vec3s16){
+                    floorf(center.x),
+                    floorf(center.y),
+                    floorf(center.z),
+                };
             } else {
                 // Select the part
                 list_add(&editor->selected_parts, (void*)p);
