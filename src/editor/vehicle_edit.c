@@ -38,14 +38,13 @@ void vehiclemask_set_3d(vehicle_bitmask* mask, vec3s8 cell, u8 val) {
 }
 
 bool cell_is_selected(editor_state* editor, vec3s8 cell) {
-    if (!vehiclemask_get_3d(editor->selected_mask, cell)) {
-        return false;
-    }
-    // Even if the cell is marked as selected, it might just be overlapping a
-    // selected part. We need to double-check.
-    // TODO: part_by_pos() can't distinguish between 2 parts in the same spot...
-    part_entry* p = part_by_pos(editor, cell, SEARCH_SELECTED);
-    return list_contains(editor->selected_parts, (void*)p);
+    // Try to find a part from the selected list at this position
+    const part_entry* p = part_by_pos(editor, cell, SEARCH_SELECTED);
+
+    // An id of 0 indicates placeholder, meaning nothing was found
+    const bool found_part = (p->id != 0);
+
+    return found_part;
 }
 
 bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry* p) {
@@ -365,10 +364,15 @@ part_entry* part_iterator_next(part_iterator* ctx) {
 static part_entry empty_part = {0};
 
 part_entry* part_by_pos(editor_state* editor, vec3s8 target, partsearch_type search_hint) {
-    // Linearly search for the part
-    // TODO: Use the grid for an early exit
+    const bool vacancy_result = vehiclemask_get_3d(editor->vacancy_mask, target);
+    const bool selection_result = vehiclemask_get_3d(editor->selected_mask, target);
+    if (!vacancy_result && !selection_result) {
+        // This cell isn't in the selection or vacancy grid, so there's no part here.
+        empty_part = (part_entry){0};
+        return &empty_part;
+    }
 
-    // Loop over every part requested by caller
+    // Linearly search for the part
     part_iterator iter = part_iterator_setup(*editor, search_hint);
     while (!iter.done) {
         part_entry* part = part_iterator_next(&iter);
@@ -399,21 +403,15 @@ part_entry* part_by_pos(editor_state* editor, vec3s8 target, partsearch_type sea
 }
 
 bool vehicle_move_part(editor_state* editor, part_entry part, vec3s16 diff, vec3s16* adjust_out) {
-    const s64 idx = list_find(editor->selected_parts, &part);
+    s64 idx = list_find(editor->selected_parts, &part);
     if (idx == -1) {
-        return false;
+        // If for some reason we're moving an unselected part, handle that
+        idx = list_find(editor->unselected_parts, &part);
+        if (idx == -1) {
+            return false;
+        }
     }
     part_entry* p = (part_entry*) list_get_element(editor->selected_parts, idx);
-    if (p->id == 0) {
-        // If for some reason we're moving an unselected part, handle that
-        p = (part_entry*)list_find(editor->unselected_parts, &part);
-    }
-    if (p->id == 0) {
-        // We can't move a part that doesn't exist.
-        // TODO: Maybe remove this message?
-        LOG_MSG(error, "Couldn't find the part you want to move!\n");
-        return false;
-    }
 
     bool needed_readjustment = false;
     // We loop over the 3 axes here
