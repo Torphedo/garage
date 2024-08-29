@@ -1,5 +1,10 @@
 #include <string.h>
+#include <stdatomic.h>
 
+#include <GLFW/glfw3.h>
+
+#include <common/utf8.h>
+#include <common/logging.h>
 #include <parts.h>
 #include "editor.h"
 #include "vehicle_edit.h"
@@ -10,13 +15,38 @@ text_state part_name = {0};
 text_state editing_mode = {0};
 text_state camera_mode_text = {0};
 
+// 500 characters because that's how many the text rendering shader can handle
+char textbox_buf[500] = {0};
+text_state textbox = {0};
+
+atomic_bool enable_textinput = false;
+
+// This receives UTF-8 codepoint data from GLFW on every key press
+void character_callback(GLFWwindow* window, unsigned int codepoint) {
+    if (enable_textinput) {
+        const utf8 encoding = codepoint_to_utf8(codepoint);
+
+        const u32 dest_len = strnlen(textbox_buf, sizeof(textbox_buf));
+        const u32 utf8_len = strnlen(encoding.data, sizeof(encoding.data));
+        // Only copy if the buffer has room
+        if (dest_len < sizeof(textbox_buf) - utf8_len) {
+            strncat(textbox_buf, encoding.data, utf8_len);
+            text_update_transforms(&textbox);
+        } else {
+            LOG_MSG(debug, "Buffer full, not saving character %s\n", encoding.data);
+        }
+    }
+}
+
 void ui_update_render(editor_state* editor) {
     // Setup on first run
     static bool initialized = false;
     if (!initialized) {
-        part_name = text_render_prep(partname_buf, sizeof(partname_buf), 0.03f, (vec2){-1, -0.7f});
-        editing_mode = text_render_prep(NULL, 32, 0.03f, (vec2){-1.01f, 0.85f});
-        camera_mode_text = text_render_prep(NULL, 32, 0.03f, (vec2){-1.00f, 0.75f});
+        part_name = text_render_prep(partname_buf, sizeof(partname_buf), 0.03f, (vec2){-1.0f, -0.7f});
+        editing_mode = text_render_prep(NULL, 32, 0.03f, (vec2){-1.0f, 0.85f});
+        camera_mode_text = text_render_prep(NULL, 32, 0.03f, (vec2){-1.0f, 0.75f});
+        textbox = text_render_prep(textbox_buf, sizeof(textbox_buf), 0.03f, (vec2){-1.0f, 0.65f});
+        glfwSetCharCallback(editor->window, character_callback);
         initialized = true;
     }
 
@@ -45,9 +75,16 @@ void ui_update_render(editor_state* editor) {
             break;
         case MODE_MENU:
             editing_mode.text = "[Menu] (controls locked)";
+            enable_textinput = true;
             break;
         default:
             editing_mode.text = "Unknown editor mode";
+        }
+        if (last_edit_mode == MODE_MENU) {
+            // Disable when leaving menu mode
+            enable_textinput = false;
+            memset(textbox_buf, 0x00, sizeof(textbox_buf)); // Clear buffer
+            text_update_transforms(&textbox);
         }
 
         text_update_transforms(&editing_mode);
@@ -76,9 +113,13 @@ void ui_update_render(editor_state* editor) {
     text_render(editing_mode);
     text_render(camera_mode_text);
     text_render(part_name);
+    text_render(textbox);
 }
 
 void ui_teardown() {
     text_free(part_name);
+    text_free(editing_mode);
+    text_free(camera_mode_text);
+    text_free(textbox);
 }
 

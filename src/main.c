@@ -50,6 +50,7 @@ int main(int argc, char** argv) {
         LOG_MSG(error, "Editor init failure\n");
         return 1;
     }
+    editor.window = window; // TODO: This is dumb, put this in the editor init.
 
     if (!text_renderer_setup("bin/ProFontIIxNerdFontPropo-Regular.ttf")) {
         LOG_MSG(error, "Text renderer init failure\n");

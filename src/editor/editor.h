@@ -57,6 +57,7 @@ typedef struct {
     input_internal prev_input; // Input from last frame
     bool vsync;
     bool init_result; // Only used during init to communicate failure
+    GLFWwindow* window; // Used to register keyboard callbacks
 
     // Rendering state that everyone can re-use
     gl_obj vcolor_shader; // Shader for drawing objects with vertex colors

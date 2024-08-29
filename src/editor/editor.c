@@ -156,7 +156,7 @@ void update_edit_mode(editor_state* editor) {
         forward_diff -= LS_y * !last_LS_y;
     }
 
-    vec3s16 sel_box_prev = editor->sel_box;
+    const vec3s16 sel_box_prev = editor->sel_box;
 
     // Set our view direction to have a magnitude of 1 on the horizontal axis
     // we're facing the most strongly, and 0 in all other directions.
@@ -245,43 +245,55 @@ void update_edit_mode(editor_state* editor) {
 
     const bool select_button_pressed = (input.e && !editor->prev_input.e) || (input.gp.a && !editor->prev_input.gp.a);
     const bool unselect_button_pressed = (input.r && !editor->prev_input.r) || (input.gp.b && !editor->prev_input.gp.b);
-    if (unselect_button_pressed && editor->sel_mode == SEL_NONE && !rotation) {
-        list_add(&editor->unselected_parts, (void*)&p);
-        list_remove_val(&editor->selected_parts, (void*)&p);
-        update_selectionmask(editor);
-        update_vacancymask(editor);
-    }
-    else if (select_button_pressed && editor->sel_mode != SEL_BAD && !rotation) {
-        // Handle user trying to select a part (unless the selection has overlaps).
-        if (editor->sel_mode == SEL_ACTIVE) {
-            // User pressed the button while moving parts, which means
-            // we should put them down.
-            list_merge(&editor->unselected_parts, editor->selected_parts);
-            list_clear(&editor->selected_parts);
-            update_selectionmask(editor); // This will boil down to just clearing the grid
-            update_vacancymask(editor); // Need to add those parts to vacancy grid
-            editor->sel_mode = SEL_NONE; // Now you can start moving the parts
-        } else if (p->id != 0) {
-            if (cell_is_selected(editor, p->pos)) {
-                // User pressed the button while selecting parts on an
-                // already-selected part, which means they want to start moving
-                // them. No change to the vacancy/selection grids.
-                editor->sel_mode = SEL_ACTIVE;
-
-                // Set cursor to the selection center
-                const vec3s center = vehicle_find_center(editor, SEARCH_SELECTED);
-                editor->sel_box = (vec3s16){
-                    floorf(center.x),
-                    floorf(center.y),
-                    floorf(center.z),
-                };
-            } else {
-                // Select the part
-                list_add(&editor->selected_parts, (void*)p);
+    const bool delete_button_pressed = (input.c && !editor->prev_input.c) || (input.gp.y && !editor->prev_input.gp.y);
+    if (editor->sel_mode != SEL_BAD && !rotation) {
+        if (editor->sel_mode == SEL_NONE) {
+            if (unselect_button_pressed) {
+                list_add(&editor->unselected_parts, (void*)p);
+                list_remove_val(&editor->selected_parts, (void*)p);
+                update_selectionmask(editor);
+                update_vacancymask(editor);
+            }
+            else if (delete_button_pressed) {
+                // Try to delete it from both lists
+                list_remove_val(&editor->selected_parts, (void*)p);
                 list_remove_val(&editor->unselected_parts, (void*)p);
                 update_selectionmask(editor);
                 update_vacancymask(editor);
-                editor->sel_mode = SEL_NONE;
+            }
+        }
+        if (select_button_pressed) {
+            // Handle user trying to select a part, unless the selection has overlaps
+            if (editor->sel_mode == SEL_ACTIVE) {
+                // User pressed the button while moving parts, which means
+                // we should put them down.
+                list_merge(&editor->unselected_parts, editor->selected_parts);
+                list_clear(&editor->selected_parts);
+                update_selectionmask(editor); // This will boil down to just clearing the grid
+                update_vacancymask(editor); // Need to add those parts to vacancy grid
+                editor->sel_mode = SEL_NONE; // Now you can start moving the parts
+            } else if (p->id != 0) {
+                if (cell_is_selected(editor, p->pos)) {
+                    // User pressed the button while selecting parts on an
+                    // already-selected part, which means they want to start moving
+                    // them. No change to the vacancy/selection grids.
+                    editor->sel_mode = SEL_ACTIVE;
+
+                    // Set cursor to the selection center
+                    const vec3s center = vehicle_find_center(editor, SEARCH_SELECTED);
+                    editor->sel_box = (vec3s16){
+                        floorf(center.x),
+                        floorf(center.y),
+                        floorf(center.z),
+                    };
+                } else {
+                    // Select the part
+                    list_add(&editor->selected_parts, (void*)p);
+                    list_remove_val(&editor->unselected_parts, (void*)p);
+                    update_selectionmask(editor);
+                    update_vacancymask(editor);
+                    editor->sel_mode = SEL_NONE;
+                }
             }
         }
     }
