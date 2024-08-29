@@ -20,9 +20,10 @@ typedef enum {
 }partsearch_type;
 
 typedef struct {
-    part_info info;
+    part_volume relative_occupation;
     part_entry part;
     bool done;
+    u32 cell_idx;
 }part_cell_iterator;
 
 typedef struct {

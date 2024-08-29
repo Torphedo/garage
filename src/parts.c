@@ -14,68 +14,44 @@ obj_path part_get_obj_path(u32 id) {
     return out;
 }
 
-// A part that only takes up one cell on its origin
-static const vec3s8 single_cell_occ[] = {
-    {0},
-};
-
 // Double-height part with the origin on top
-static const vec3s8 doubleheight_down_occ[] = {
-    {0, -1, 0},
-    {0},
+static const part_volume doubleheight_down_occ = {
+    .cells = {
+        {0, -1, 0},
+        {0},
+    }
 };
 
 // Double-height part with the origin on the bottom
-static const vec3s8 doubleheight_up_occ[] = {
-    {0, 1, 0},
-    {0},
+static const part_volume doubleheight_up_occ = {
+    .cells = {
+        {0, 1, 0},
+        {0},
+    }
 };
 
 // Same as the double-height part, w/ extra cell on the back for the air tanks
-static const vec3s8 scuba_seat_occ[] = {
-    {0, 1, -1},
-    {0, 1, 0},
-    {0},
+static const part_volume scuba_seat_occ = {
+    .cells = {
+        {0, 1, -1},
+        {0, 1, 0},
+        {0},
+    }
 };
 
 // Vertical 3x3 for propellers & energy shield
-static const vec3s8 flat_square_3_occ[] = {
-    {1, -1, 0},
-    {1, 0, 0},
-    {1, 1, 0},
-    {0, -1, 0},
-    {0, 1, 0},
-    {-1, -1, 0},
-    {-1, 0, 0},
-    {-1, 1, 0},
-    {0},
-};
-
-static const vec3s8 box_occ[] = {
-    {0, 0, -1},
-    {1, 0, -1},
-    {-1, 0, -1},
-    {0, 1, -1},
-    {1, 1, -1},
-    {-1, 1, -1},
-    {0, 0, 1},
-    {1, 0, 1},
-    {-1, 0, 1},
-    {0, 1, 1},
-    {1, 1, 1},
-    {-1, 1, 1},
-    {0, 0, 2},
-    {1, 0, 2},
-    {-1, 0, 2},
-    {0, 1, 2},
-    {1, 1, 2},
-    {-1, 1, 2},
-    {1, 0, 0},
-    {-1, 0, 0},
-    {0, 1, 0},
-    {1, 1, 0},
-    {-1, 1, 0},
-    {0, 0, 0},
+static const part_volume flat_square_3_occ = {
+    .cells = {
+        {1, -1, 0},
+        {1, 0, 0},
+        {1, 1, 0},
+        {0, -1, 0},
+        {0, 1, 0},
+        {-1, -1, 0},
+        {-1, 0, 0},
+        {-1, 1, 0},
+        {0},
+    }
 };
 
 part_info part_get_info(part_id id) {
@@ -169,7 +145,34 @@ part_info part_get_info(part_id id) {
         break;
     case BOX:
         out.name = "Box";
-        out.relative_occupation = box_occ;
+        out.relative_occupation = (part_volume){
+            .cells = {
+                {0, 0, -1},
+                {1, 0, -1},
+                {-1, 0, -1},
+                {0, 1, -1},
+                {1, 1, -1},
+                {-1, 1, -1},
+                {0, 0, 1},
+                {1, 0, 1},
+                {-1, 0, 1},
+                {0, 1, 1},
+                {1, 1, 1},
+                {-1, 1, 1},
+                {0, 0, 2},
+                {1, 0, 2},
+                {-1, 0, 2},
+                {0, 1, 2},
+                {1, 1, 2},
+                {-1, 1, 2},
+                {1, 0, 0},
+                {-1, 0, 0},
+                {0, 1, 0},
+                {1, 1, 0},
+                {-1, 1, 0},
+                {0, 0, 0},
+            }
+        };
         break;
     case BOX_LARGE:
         out.name = "Large Box";
@@ -459,8 +462,5 @@ part_info part_get_info(part_id id) {
         break;
     }
 
-    if (out.relative_occupation == NULL) {
-        out.relative_occupation = single_cell_occ;
-    }
     return out;
 }

@@ -190,6 +190,7 @@ typedef enum {
 enum {
     NUM_PARTS = 122,
     CONNECT_MASK = 8,
+    PART_MAX_VOLUME = 8 * 7 * 2, // The largest part in the game is 8x7x2
 };
 
 // This only exists to let us return an array without the compiler complaining
@@ -198,11 +199,15 @@ typedef struct {
     char str[sizeof("bin/") + 8 + sizeof(".obj") + 1];
 }obj_path;
 
+typedef struct {
+    vec3s8 cells[PART_MAX_VOLUME];
+}part_volume;
+
 // Coordinate arrays are terminated by an all-zero entry representing the origin
 typedef struct {
     const char* name; // Human-readable part name
     // The points relative to the origin this part occupies
-    const vec3s8* relative_occupation;
+    part_volume relative_occupation;
     // Array of points relative to the part's origin where another part is
     // allowed to connect.
     const vec3s8* relative_connections;

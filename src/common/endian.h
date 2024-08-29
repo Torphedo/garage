@@ -26,18 +26,18 @@ static inline bool is_little_endian() {
 }
 
 // Byte-swap any value to the opposite endian.
-#define ENDIAN_FLIP(T, val)                         \
-do {                                                \
-    union {                                         \
-       T portable;                                  \
-       u8 bytes[sizeof(T)];                         \
-    }_foreign;                                      \
-                                                    \
-    for (size_t _i = 0; _i < sizeof(T); _i++) {     \
-        size_t shift = (sizeof(T) - 1 - _i) * 8;    \
-        _foreign.bytes[_i] = (val >> shift) & 0xFF; \
-    }                                               \
-    val = _foreign.portable;                        \
+#define ENDIAN_FLIP(T, val)                             \
+do {                                                    \
+    union {                                             \
+       T portable;                                      \
+       u8 bytes[sizeof(T)];                             \
+    }_foreign;                                          \
+                                                        \
+    for (size_t _i = 0; _i < sizeof(T); _i++) {         \
+        const size_t _shift = (sizeof(T) - 1 - _i) * 8; \
+        _foreign.bytes[_i] = (val >> _shift) & 0xFF;    \
+    }                                                   \
+    val = _foreign.portable;                            \
 } while(0)
 
 // Forces a float to be interpreted as a u32, so the compiler won't complain

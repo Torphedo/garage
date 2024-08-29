@@ -230,7 +230,7 @@ bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_dif
 // Setup an iterator from a part entry. Returns an iteration context.
 part_cell_iterator part_cell_iterator_setup(part_entry p) {
     part_cell_iterator out = {
-        .info = part_get_info(p.id),
+        .relative_occupation = part_get_info(p.id).relative_occupation,
         .part = p,
         .done = false,
     };
@@ -239,34 +239,31 @@ part_cell_iterator part_cell_iterator_setup(part_entry p) {
 
 // Get the next item and advance.
 vec3s8 part_cell_iterator_next(part_cell_iterator* ctx) {
-    // Early exit if iteration is already finished
-    if (ctx->done) {
-        return (vec3s8){0, 0, 0};
-    }
-
     // Get the origin and current relative cell we're working with
-    vec3s relative_cell = vec3_from_vec3s8(*ctx->info.relative_occupation, 1.0f);
-    vec3s8 origin = ctx->part.pos;
+    const vec3s relative_cell = vec3_from_vec3s8(ctx->relative_occupation.cells[ctx->cell_idx], 1.0f);
+    const vec3s8 origin = ctx->part.pos;
 
     // Get quaternion of part rotation
     // Sorry for the ugly cast, this is just making it treat a vec3 as vec3s because they're the same
-    versors quaternion = glms_euler_xyz_quat(*(vec3s*)&ctx->part.rot);
+    const versors quaternion = glms_euler_xyz_quat(*(vec3s*)&ctx->part.rot);
 
     // Rotate the relative point about the part origin
-    vec3s rotated_point = glms_quat_rotatev(quaternion, relative_cell);
+    const vec3s rotated_point = glms_quat_rotatev(quaternion, relative_cell);
 
     // Get the final coordinate by adding the relative rotated point to origin
-    vec3s8 cell = {
+    const vec3s8 cell = {
         MAX(origin.x + roundf(rotated_point.x), 0),
         MAX(origin.y + roundf(rotated_point.y), 0),
         MAX(origin.z + roundf(rotated_point.z), 0),
     };
 
     // Array ends with an all-zero entry, so if we just hit that, we're done
-    ctx->done = vec3s8_eq(*ctx->info.relative_occupation, (vec3s8){0});
+    ctx->done = glms_vec3_eqv(relative_cell, (vec3s){0});
 
-    // Increment the current position
-    ctx->info.relative_occupation++;
+    // Increment the current position if needed
+    if (!ctx->done) {
+        ctx->cell_idx++;
+    }
 
     return cell;
 }
@@ -274,7 +271,7 @@ vec3s8 part_cell_iterator_next(part_cell_iterator* ctx) {
 part_iterator part_iterator_setup(editor_state editor, partsearch_type search_type) {
     part_iterator output = {
         .partlists = {editor.selected_parts, editor.unselected_parts},
-        .search_type = search_type
+        .search_type = search_type,
     };
 
     switch (search_type) {
