@@ -20,7 +20,7 @@ typedef enum {
 }partsearch_type;
 
 typedef struct {
-    part_volume relative_occupation;
+    part_info info;
     part_entry part;
     bool done;
     u32 cell_idx;

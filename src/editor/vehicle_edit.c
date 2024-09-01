@@ -230,7 +230,7 @@ bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_dif
 // Setup an iterator from a part entry. Returns an iteration context.
 part_cell_iterator part_cell_iterator_setup(part_entry p) {
     part_cell_iterator out = {
-        .relative_occupation = part_get_info(p.id).relative_occupation,
+        .info = part_get_info(p.id),
         .part = p,
         .done = false,
     };
@@ -240,7 +240,7 @@ part_cell_iterator part_cell_iterator_setup(part_entry p) {
 // Get the next item and advance.
 vec3s8 part_cell_iterator_next(part_cell_iterator* ctx) {
     // Get the origin and current relative cell we're working with
-    const vec3s relative_cell = vec3_from_vec3s8(ctx->relative_occupation.cells[ctx->cell_idx], 1.0f);
+    const vec3s relative_cell = vec3_from_vec3s8(ctx->info.relative_occupation[ctx->cell_idx], 1.0f);
     const vec3s8 origin = ctx->part.pos;
 
     // Get quaternion of part rotation
@@ -258,6 +258,7 @@ vec3s8 part_cell_iterator_next(part_cell_iterator* ctx) {
     };
 
     // Array ends with an all-zero entry, so if we just hit that, we're done
+    // TODO: We can also do a bounds check against max volume here
     ctx->done = glms_vec3_eqv(relative_cell, (vec3s){0});
 
     // Increment the current position if needed

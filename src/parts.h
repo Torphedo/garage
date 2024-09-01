@@ -206,12 +206,15 @@ typedef struct {
 // Coordinate arrays are terminated by an all-zero entry representing the origin
 typedef struct {
     const char* name; // Human-readable part name
+    part_id id;
     // The points relative to the origin this part occupies
-    part_volume relative_occupation;
+    vec3s8 relative_occupation[PART_MAX_VOLUME];
     // Array of points relative to the part's origin where another part is
     // allowed to connect.
     const vec3s8* relative_connections;
 }part_info;
+
+extern const part_info partdata[NUM_PARTS];
 
 // Returns a struct with info about a part so I don't have to make multiple
 // 300+ line switch statements

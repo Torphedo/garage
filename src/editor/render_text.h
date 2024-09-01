@@ -13,9 +13,12 @@ typedef struct {
     vec4* texcoords;  // Top-left & bottom right UVs of each character's quad
     u32 num_chars;
     float scale; // Text scale
+    // TODO: Make this a vec2s so it's assignable
     vec2 pos;    // X/Y pos of the first character
-    char* text;  // UTF-8 text data, or NULL
+    const char* text;  // UTF-8 text data, or NULL
 }text_state;
+
+static const float text_default_scale = 0.03f;
 
 // Call these at program startup/shutdown.
 
@@ -37,6 +40,8 @@ void text_renderer_cleanup();
 //
 // [scale] is the font size, & [pos] is the 2D position of the first character
 text_state text_render_prep(const char* text, u32 len, float scale, vec2 pos);
+
+float text_get_lineheight(text_state t);
 
 // Uses the UTF-8 in the text pointer to update the transforms and texture
 // coordinates for each character. Call this if the pointer or string contents

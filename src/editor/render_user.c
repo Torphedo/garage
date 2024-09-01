@@ -10,7 +10,8 @@
 #include "vehicle_edit.h"
 #include "render_text.h"
 
-char partname_buf[32] = "Large Folding Propeller";
+// TODO: Move a bunch of this stuff into editor struct
+char partname_buf[32] = "Large Folding Propeller"; // Longest part name
 text_state part_name = {0};
 text_state editing_mode = {0};
 text_state camera_mode_text = {0};
@@ -19,10 +20,13 @@ text_state camera_mode_text = {0};
 char textbox_buf[500] = {0};
 text_state textbox = {0};
 
+// Use an atomic bool b/c I'm not sure if the callback is on the same thread
 atomic_bool enable_textinput = false;
+atomic_bool searchbuf_updated = false; // Set true on every codepoint callback
 
 // This receives UTF-8 codepoint data from GLFW on every key press
 void character_callback(GLFWwindow* window, unsigned int codepoint) {
+    searchbuf_updated = true;
     if (enable_textinput) {
         const utf8 encoding = codepoint_to_utf8(codepoint);
 
@@ -36,16 +40,71 @@ void character_callback(GLFWwindow* window, unsigned int codepoint) {
             LOG_MSG(debug, "Buffer full, not saving character %s\n", encoding.data);
         }
     }
+    // TODO: Clone dmenu lol
+}
+
+enum {
+    // Render this many results at a time
+    PARTSEARCH_MENUSIZE = 7,
+};
+
+// Skip past this many matching entries before we start rendering (resets when
+// target string changes, used to fake scrolling)
+u32 partsearch_startoffset = 0;
+text_state partsearch_results[PARTSEARCH_MENUSIZE];
+const float partsearch_startheight = 0.5f;
+
+void partsearch_update_render() {
+    if (searchbuf_updated) {
+        partsearch_startoffset = 0;
+        u32 partsearch_menupos = 0; // Current offset in array of results
+        for (u32 i = 0; i < NUM_PARTS; i++) {
+            if (partsearch_menupos >= PARTSEARCH_MENUSIZE) {
+                break;
+            }
+
+            const char* cur_part_name = partdata[i].name;
+            if (cur_part_name == NULL) {
+                continue;
+            }
+            if (strcasestr(cur_part_name, textbox_buf) != NULL) {
+                text_state* result = &partsearch_results[partsearch_menupos++];
+                result->text = cur_part_name;
+                const float lineheight = text_get_lineheight(*result);
+                // Subtract here because down is -Y
+                result->pos[1] = partsearch_startheight - (lineheight * partsearch_menupos);
+                text_update_transforms(result);
+            }
+        }
+
+        // Make any remaining menu "slots" empty
+        for (u32 i = partsearch_menupos; i < PARTSEARCH_MENUSIZE; i++) {
+            text_state* result = &partsearch_results[partsearch_menupos++];
+            result->text = "";
+            text_update_transforms(result);
+        }
+        searchbuf_updated = false;
+    }
+
+    // Render
+    for (u32 i = 0; i < PARTSEARCH_MENUSIZE; i++) {
+        text_render(partsearch_results[i]);
+    }
+
 }
 
 void ui_update_render(editor_state* editor) {
     // Setup on first run
     static bool initialized = false;
     if (!initialized) {
-        part_name = text_render_prep(partname_buf, sizeof(partname_buf), 0.03f, (vec2){-1.0f, -0.7f});
-        editing_mode = text_render_prep(NULL, 32, 0.03f, (vec2){-1.0f, 0.85f});
-        camera_mode_text = text_render_prep(NULL, 32, 0.03f, (vec2){-1.0f, 0.75f});
-        textbox = text_render_prep(textbox_buf, sizeof(textbox_buf), 0.03f, (vec2){-1.0f, 0.65f});
+        part_name = text_render_prep(partname_buf, sizeof(partname_buf), text_default_scale, (vec2){-1.0f, -0.7f});
+        editing_mode = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.85f});
+        camera_mode_text = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.75f});
+        textbox = text_render_prep(textbox_buf, sizeof(textbox_buf), text_default_scale, (vec2){-1.0f, 0.65f});
+        for (u32 i = 0; i < ARRAY_SIZE(partsearch_results); i++) {
+            // Y coord is set on the fly, we init to 0
+            partsearch_results[i] = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0});
+        }
         glfwSetCharCallback(editor->window, character_callback);
         initialized = true;
     }
@@ -85,6 +144,8 @@ void ui_update_render(editor_state* editor) {
             enable_textinput = false;
             memset(textbox_buf, 0x00, sizeof(textbox_buf)); // Clear buffer
             text_update_transforms(&textbox);
+            searchbuf_updated = true;
+            partsearch_update_render();
         }
 
         text_update_transforms(&editing_mode);
@@ -110,10 +171,20 @@ void ui_update_render(editor_state* editor) {
         last_cam_mode = editor->cam.mode;
     }
 
+    // Handle backspace character because it's not sent to character callback
+    if (input.backspace && !editor->prev_input.backspace) {
+        textbox_buf[strlen(textbox_buf) - 1] = 0;
+        text_update_transforms(&textbox);
+        searchbuf_updated = true;
+    }
+
     text_render(editing_mode);
     text_render(camera_mode_text);
     text_render(part_name);
     text_render(textbox);
+    if (editor->mode == MODE_MENU) {
+        partsearch_update_render();
+    }
 }
 
 void ui_teardown() {

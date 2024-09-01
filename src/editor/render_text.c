@@ -234,10 +234,7 @@ text_state text_render_prep(const char* text, u32 len, float scale, vec2 pos) {
     }
 
     // Copy arguments into struct.
-    // We discard const here, but I pinky promise this is only so you can
-    // change the pointer value to NULL later ;)
-    // (allows you to free the string itself, but keep rendering it)
-    text_state ctx = { .text = (char*)text, .scale = scale, .pos[0] = pos[0], .pos[1] = pos[1], };
+    text_state ctx = { .text = text, .scale = scale, .pos[0] = pos[0], .pos[1] = pos[1], };
 
     if (len > 0) {
         // Allows caller to override allocation size
@@ -281,6 +278,14 @@ text_state text_render_prep(const char* text, u32 len, float scale, vec2 pos) {
         text_update_transforms(&ctx); // Make sure caller is ready to render
     }
     return ctx;
+}
+
+float text_get_lineheight(text_state t) {
+    // I got this magic number by finding screenspace line height via
+    // trial & error, then dividing it by the current scale factor.
+    // (original values are 0.03 scale for 0.1 line height)
+    const float multiplier = (10.0f / 3.0f);
+    return t.scale * multiplier;
 }
 
 void text_update_transforms(text_state* ctx) {
