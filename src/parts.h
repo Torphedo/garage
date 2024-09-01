@@ -98,9 +98,9 @@ typedef enum {
     SELF_DESTRUCT   = 0x1F583430,
     SPEC_O_SPY      = 0x1F0002C7,
     // Unknown IDs
-    CHAMELEON       = 0x00000000,
-    ROBO_FIX        = 0x00000000,
-    STICKY_BALL     = 0x00000000,
+    CHAMELEON       = 0xCCCCCCCC,
+    ROBO_FIX        = 0xCCCCCCCC,
+    STICKY_BALL     = 0xCCCCCCCC,
 
     LIQUID_SQUIRTER = 0x1F41AAC0,
     SPOILER         = 0x1FB56B94,
@@ -118,7 +118,7 @@ typedef enum {
     ARMOR         = 0x1F2BF215,
     ENERGY_SHIELD = 0x1F953740,
     // Unknown ID
-    SMOKE_SPHERE  = 0x00000000,
+    SMOKE_SPHERE  = 0xCCCCCCCC,
 
     // <== Fly & Float ==>
         // Fly & Float -> Wings
@@ -153,7 +153,7 @@ typedef enum {
         CLOCKWORK_KAZ  = 0x1F603CC3,
         EMP            = 0x1F31CA4C,
         // Unknown ID
-        CITRUS_SLICK   = 0x00000000,
+        CITRUS_SLICK   = 0xCCCCCCCC,
 
         // Weapons -> Ammo-Free
         FULGORES_FIST = 0x1F4BC61E,
@@ -172,19 +172,19 @@ typedef enum {
     RADIO           = 0x1F97C327,
 
     // <== Stop N' Swop ==>
-    BEACON          = 0x00000000,
-    DISCO_BALL      = 0x00000000,
-    FLAG            = 0x00000000,
-    FLUFFY_DICE     = 0x00000000,
+    BEACON          = 0xCCCCCCCC,
+    DISCO_BALL      = 0xCCCCCCCC,
+    FLAG            = 0xCCCCCCCC,
+    FLUFFY_DICE     = 0xCCCCCCCC,
     GOLDFISH        = 0x1FE338DD,
-    GOOGLY_EYES     = 0x00000000,
-    MOLE_ON_A_POLE  = 0x00000000,
+    GOOGLY_EYES     = 0xCCCCCCCC,
+    MOLE_ON_A_POLE  = 0xCCCCCCCC,
 
     // <== Unused ==>
-    WHEEL_CATERPILLAR = 0x00000000,
-    AUTOPILOT         = 0x00000000,
-    REMOTE_CONTROLLER = 0x00000000,
-    SAWBLADE          = 0x00000000,
+    WHEEL_CATERPILLAR = 0xCCCCCCCC,
+    AUTOPILOT         = 0xCCCCCCCC,
+    REMOTE_CONTROLLER = 0xCCCCCCCC,
+    SAWBLADE          = 0xCCCCCCCC,
 }part_id;
 
 enum {
@@ -214,7 +214,10 @@ typedef struct {
     const vec3s8* relative_connections;
 }part_info;
 
-extern const part_info partdata[NUM_PARTS];
+// If it makes sense for your search to find an empty part info with a name
+// that just tells you the part doesn't exist, include the +1 or use 
+// ARRAY_SIZE() for your upper bound. Otherwise, use NUM_PARTS.
+extern const part_info partdata[NUM_PARTS + 1];
 
 // Returns a struct with info about a part so I don't have to make multiple
 // 300+ line switch statements

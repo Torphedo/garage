@@ -13,7 +13,7 @@ obj_path part_get_obj_path(u32 id) {
     return out;
 }
 
-const part_info partdata[NUM_PARTS] = {
+const part_info partdata[NUM_PARTS + 1] = {
     // Seats
     {
         .id = SEAT_STANDARD,
@@ -342,6 +342,18 @@ const part_info partdata[NUM_PARTS] = {
         .name = "Spec-O-Spy",
     },
     {
+        .id = CHAMELEON,
+        .name = "Chameleon",
+    },
+    {
+        .id = ROBO_FIX,
+        .name = "Robo-Fix",
+    },
+    {
+        .id = STICKY_BALL,
+        .name = "Sticky Ball",
+    },
+    {
         .id = LIQUID_SQUIRTER,
         .name = "Liquid Squirter",
     },
@@ -405,6 +417,10 @@ const part_info partdata[NUM_PARTS] = {
             {-1, 1, 0},
             {0},
         },
+    },
+    {
+        .id = SMOKE_SPHERE,
+        .name = "Smoke Sphere",
     },
 
     // Wings
@@ -526,6 +542,10 @@ const part_info partdata[NUM_PARTS] = {
         .id = EMP,
         .name = "EMP",
     },
+    {
+        .id = CITRUS_SLICK,
+        .name = "Citrus Slick",
+    },
 
     // Weapons (ammo-free)
     {
@@ -574,18 +594,63 @@ const part_info partdata[NUM_PARTS] = {
         .id = RADIO,
         .name = "Radio",
     },
+
+    // Stop N' Swap
+    {
+        .id = BEACON,
+        .name = "Beacon",
+    },
+    {
+        .id = DISCO_BALL,
+        .name = "Disco Ball",
+    },
+    {
+        .id = FLAG,
+        .name = "Flag",
+    },
+    {
+        .id = FLUFFY_DICE,
+        .name = "Fluffy Dice",
+    },
     {
         .id = GOLDFISH,
         .name = "Goldfish",
     },
     {
+        .id = GOOGLY_EYES,
+        .name = "Googly Eyes",
+    },
+    {
+        .id = MOLE_ON_A_POLE,
+        .name = "Mole-On-A-Pole",
+    },
+
+    // Unused parts (names are from wiki, IDs unknown)
+    {
+        .id = WHEEL_CATERPILLAR,
+        .name = "Caterpillar Wheel",
+    },
+    {
+        .id = AUTOPILOT,
+        .name = "Autopilot",
+    },
+    {
+        .id = REMOTE_CONTROLLER,
+        .name = "Remote Controller",
+    },
+    {
+        .id = SAWBLADE,
+        .name = "Sawblade",
+    },
+
+    {
         .id = 0,
         .name = "[Unknown/Missing part]",
-    }
+    },
 };
 
 part_info part_get_info(part_id id) {
-    for (u32 i = 0; i < NUM_PARTS; i++) {
+    for (u32 i = 0; i < ARRAY_SIZE(partdata); i++) {
         if (partdata[i].id == id) {
             return partdata[i];
         }
