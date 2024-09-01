@@ -13,19 +13,13 @@
 #include "vehicle_edit.h"
 #include "render_text.h"
 
-// TODO: Move a bunch of this stuff into editor struct
-char partname_buf[32] = "Large Folding Propeller"; // Longest part name
-text_state part_name = {0};
-text_state editing_mode = {0};
-text_state camera_mode_text = {0};
-
-// 500 characters because that's how many the text rendering shader can handle
-char textbox_buf[500] = {0};
-text_state textbox = {0};
-
-// Use an atomic bool b/c I'm not sure if the callback is on the same thread
+// Use an atomic bool b/c I'm not sure if the callback is on the same thread.
+// We can't put any of these globals in the editor struct b/c the callback
+// can't access it.
 atomic_bool enable_textinput = false;
 atomic_bool searchbuf_updated = false; // Set true on every codepoint callback
+// 500 characters because that's how many the text rendering shader can handle
+char textbox_buf[500] = {0};
 
 // This receives UTF-8 codepoint data from GLFW on every key press
 void character_callback(GLFWwindow* window, unsigned int codepoint) {
@@ -38,55 +32,95 @@ void character_callback(GLFWwindow* window, unsigned int codepoint) {
         // Only copy if the buffer has room
         if (dest_len < sizeof(textbox_buf) - utf8_len) {
             strncat(textbox_buf, encoding.data, utf8_len);
-            text_update_transforms(&textbox);
         } else {
             LOG_MSG(debug, "Buffer full, not saving character %s\n", encoding.data);
         }
     }
-    // TODO: Clone dmenu lol
 }
 
-enum {
-    // Render this many results at a time
-    PARTSEARCH_MENUSIZE = 10,
-};
-
-// Skip past this many matching entries before we start rendering (resets when
-// target string changes, used to fake scrolling)
-u32 partsearch_startoffset = 0;
-text_state partsearch_results[PARTSEARCH_MENUSIZE];
-const float partsearch_startheight = 0.5f;
-
 void partsearch_update_render(editor_state* editor) {
-    if (searchbuf_updated) {
-        partsearch_startoffset = 0;
-        u32 partsearch_menupos = 0; // Current offset in array of results
+    if (input.enter && !editor->prev_input.enter) {
+        editor->mode = MODE_EDIT;
+        editor->sel_mode = SEL_ACTIVE;
+        part_entry new_part = {
+            .pos = {
+                CLAMP(0, editor->sel_box.x, INT8_MAX),
+                CLAMP(0, editor->sel_box.y, INT8_MAX),
+                CLAMP(0, editor->sel_box.z, INT8_MAX),
+            },
+            .color = {255, 255, 255, 255},
+        };
+
+        bool failure = true;
         for (u32 i = 0; i < NUM_PARTS; i++) {
-            if (partsearch_menupos >= PARTSEARCH_MENUSIZE) {
+            const part_info info = partdata[i];
+            const char* selected_item = editor->partsearch_results[editor->partsearch_selected_item].text;
+            if (selected_item == NULL) {
+                break;
+            }
+            if (strcmp(info.name, selected_item) == 0) {
+                failure = false;
+                new_part.id = info.id;
+            }
+        }
+        if (!failure) {
+            // Add the part
+            list_add(&editor->selected_parts, &new_part);
+            editor->v.part_count++;
+            update_selectionmask(editor);
+        }
+    }
+
+    const float partsearch_startheight = 0.4f;
+    if (searchbuf_updated) {
+        text_update_transforms(&editor->textbox);
+        editor->partsearch_startoffset = 0;
+        u32 menupos = 0; // Current offset in array of results
+        for (u32 i = 0; i < NUM_PARTS; i++) {
+            if (menupos >= PARTSEARCH_MENUSIZE) {
                 break;
             }
 
             const char* cur_part_name = partdata[i].name;
             if (cur_part_name == NULL) {
+                // This can happen for parts 
                 continue;
             }
             if (strcasestr(cur_part_name, textbox_buf) != NULL) {
-                text_state* result = &partsearch_results[partsearch_menupos++];
+                text_state* result = &editor->partsearch_results[menupos++];
                 result->text = cur_part_name;
                 const float lineheight = text_get_lineheight(*result);
                 // Subtract here because down is -Y
-                result->pos[1] = partsearch_startheight - (lineheight * partsearch_menupos);
+                result->pos[1] = partsearch_startheight - (lineheight * menupos);
                 text_update_transforms(result);
             }
         }
+        editor->partsearch_filled_slots = menupos; // Save how many slots we filled
 
         // Make any remaining menu "slots" empty
-        for (u32 i = partsearch_menupos; i < PARTSEARCH_MENUSIZE; i++) {
-            text_state* result = &partsearch_results[partsearch_menupos++];
+        for (u32 i = menupos; i < PARTSEARCH_MENUSIZE; i++) {
+            text_state* result = &editor->partsearch_results[i];
             result->text = "";
             text_update_transforms(result);
         }
         searchbuf_updated = false;
+    }
+    if (input.tab && !editor->prev_input.tab) {
+        s8 diff = 1;
+        if (input.shift) {
+            if (editor->partsearch_selected_item <= 0) {
+                diff = 0;
+            } else {
+                diff = -1;
+            }
+        }
+        editor->partsearch_selected_item += diff;
+    }
+    // Clamp so it doesn't go over the number of filled slots
+    editor->partsearch_selected_item = CLAMP(0, editor->partsearch_selected_item, editor->partsearch_filled_slots);
+    // Clamp allows this to happen :(
+    if (editor->partsearch_selected_item == editor->partsearch_filled_slots) {
+        editor->partsearch_selected_item--;
     }
 
     glUseProgram(editor->vcolor_shader);
@@ -99,28 +133,53 @@ void partsearch_update_render(editor_state* editor) {
     // coordinates ahead aren't screen-space coords.
     glm_scale_uni(mdl, 1.0f / QUAD_SIZE);
     glm_rotate_x(mdl, glm_rad(90.0f), mdl); // Face quad towards camera
-    glm_translate(mdl, (vec3){0.0f, 0.10f, 2.00f});
+    glm_translate(mdl, (vec3){0.0f, 0.20f, 3.5f});
 
-    glm_scale(mdl, (vec3){0.55f, 1.0f, 0.7f}); // Scale to reasonable size
-    const vec4 white = {0.95f, 0.95f, 0.95f, 1.0f};
+    glm_scale(mdl, (vec3){0.55f, 1.0f, 0.75f}); // Scale to reasonable size
+    const vec4 outer_color = {0.95f, 0.95f, 0.95f, 1.0f};
 
-    // Render white outer border
+    // Render outer border
     glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float*)mdl);
-    glUniform4fv(editor->u_paint, 1, (const float*)white);
+    glUniform4fv(editor->u_paint, 1, (const float*)outer_color);
     glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
 
-    glm_scale(mdl, (vec3){0.98f, 1.0f, 0.95f}); // Scale to a smaller box
-    glm_translate(mdl, (vec3){0.00f, -0.01f, 0.00f}); // Move in front of the other quad
-    const vec4 blue = {0.2f, 0.2f, 1.0f, 1.0f};
+    {
+        // Sorry, this is a stupid hack where I just pass it the default scale.
+        // We should make it just take a scale value.
+        const float lineheight = text_get_lineheight((text_state){.scale = text_default_scale});
+        // Subtract here because down is -Y
+        const float ypos = partsearch_startheight - (lineheight * (editor->partsearch_selected_item + 1));
+        mat4 highlight_box = {0};
+        glm_mat4_identity(highlight_box);
 
-    // Render inner blue panel
+        // Sorry for all the magic numbers, they just come from trial & error.
+        // We're redoing the work above so we can use real screenspace coords
+        // and perfectly align the box to the screenspace coords of the text.
+        glm_translate(highlight_box, (vec3){0.0f, ypos - 0.06f, 0.00f});
+        glm_scale_uni(highlight_box, 1.0f / QUAD_SIZE);
+        glm_scale(highlight_box, (vec3){0.55f * 0.97f, lineheight * 0.5f, 1});
+        glm_rotate_x(highlight_box, glm_rad(90.0f), highlight_box); // Face quad towards camera
+
+        const vec4 highlight_color = {0, 0, 0, 1};
+
+        // Render highlight bar
+        glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float*)highlight_box);
+        glUniform4fv(editor->u_paint, 1, (const float*)highlight_color);
+        glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
+    }
+
+    glm_scale(mdl, (vec3){0.97f, 1.0f, 0.95f}); // Scale to a smaller box
+    glm_translate(mdl, (vec3){0.00f, -0.03f, 0.00f}); // Move in front of the other quad
+    const vec4 inner_color = {0.2f, 0.2f, 1.0f, 1.0f};
+
+    // Render inner panel
     glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float*)mdl);
-    glUniform4fv(editor->u_paint, 1, (const float*)blue);
+    glUniform4fv(editor->u_paint, 1, (const float*)inner_color);
     glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
 
-    // Render
+    // Render search results
     for (u32 i = 0; i < PARTSEARCH_MENUSIZE; i++) {
-        text_render(partsearch_results[i]);
+        text_render(editor->partsearch_results[i]);
     }
 
 }
@@ -129,16 +188,18 @@ void ui_update_render(editor_state* editor) {
     // Setup on first run
     static bool initialized = false;
     if (!initialized) {
-        part_name = text_render_prep(partname_buf, sizeof(partname_buf), text_default_scale, (vec2){-1.0f, -0.7f});
-        editing_mode = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.85f});
-        camera_mode_text = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.75f});
-        textbox = text_render_prep(textbox_buf, sizeof(textbox_buf), text_default_scale, (vec2){-0.5f, 0.55f});
-        for (u32 i = 0; i < ARRAY_SIZE(partsearch_results); i++) {
+        editor->part_name = text_render_prep(editor->partname_buf, sizeof(editor->partname_buf), text_default_scale, (vec2){-1.0f, -0.7f});
+        editor->editing_mode = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.85f});
+        editor->camera_mode_text = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.75f});
+        editor->textbox = text_render_prep(textbox_buf, sizeof(textbox_buf), text_default_scale, (vec2){-0.5f, 0.55f});
+        for (u32 i = 0; i < ARRAY_SIZE(editor->partsearch_results); i++) {
             // Y coord is set on the fly, we init to 0
-            partsearch_results[i] = text_render_prep(NULL, 32, text_default_scale, (vec2){-0.5f, 0});
+            text_state* result = &editor->partsearch_results[i];
+            *result = text_render_prep(NULL, 32, text_default_scale, (vec2){-0.5f, 0});
         }
         glfwSetCharCallback(editor->window, character_callback);
         initialized = true;
+        searchbuf_updated = true;
     }
 
     // Invalid cursor position forces the text to update on the first frame
@@ -149,9 +210,9 @@ void ui_update_render(editor_state* editor) {
         const vec3s8 pos = {editor->sel_box.x, editor->sel_box.y, editor->sel_box.z};
         const part_entry* part = part_by_pos(editor, pos, SEARCH_ALL);
         const part_info cur_part = part_get_info(part->id);
-        strncpy(partname_buf, cur_part.name, sizeof(partname_buf));
+        strncpy(editor->partname_buf, cur_part.name, sizeof(editor->partname_buf));
         // Update part name & selection box
-        text_update_transforms(&part_name);
+        text_update_transforms(&editor->part_name);
         last_selbox = editor->sel_box;
     }
 
@@ -159,79 +220,79 @@ void ui_update_render(editor_state* editor) {
     if (last_edit_mode != editor->mode) {
         switch (editor->mode) {
         case MODE_EDIT:
-            editing_mode.text = "[Editing]";
+            editor->editing_mode.text = "[Editing]";
             break;
         case MODE_MOVCAM:
-            editing_mode.text = "[Freecam]";
+            editor->editing_mode.text = "[Freecam]";
             break;
         case MODE_MENU:
-            editing_mode.text = "[Menu] (controls locked)";
+            editor->editing_mode.text = "[Menu] (controls locked)";
             enable_textinput = true;
             break;
         default:
-            editing_mode.text = "Unknown editor mode";
+            editor->editing_mode.text = "Unknown editor mode";
         }
         if (last_edit_mode == MODE_MENU) {
             // Disable when leaving menu mode
             enable_textinput = false;
             memset(textbox_buf, 0x00, sizeof(textbox_buf)); // Clear buffer
-            text_update_transforms(&textbox);
+            text_update_transforms(&editor->textbox);
 
             // Also clear part search menu
             searchbuf_updated = true;
             partsearch_update_render(editor);
         }
 
-        text_update_transforms(&editing_mode);
+        text_update_transforms(&editor->editing_mode);
         last_edit_mode = editor->mode;
     }
     static camera_mode last_cam_mode = CAMERA_MODE_ENUM_MAX;
     if (last_cam_mode != editor->cam.mode) {
         switch (editor->cam.mode) {
         case CAMERA_ORBIT:
-            camera_mode_text.text = "CAMSTYLE: Orbit";
+            editor->camera_mode_text.text = "CAMSTYLE: Orbit";
             break;
         case CAMERA_POV:
-            camera_mode_text.text = "CAMSTYLE: Minecraft";
+            editor->camera_mode_text.text = "CAMSTYLE: Minecraft";
             break;
         case CAMERA_FLY:
-            camera_mode_text.text = "CAMSTYLE: Flying";
+            editor->camera_mode_text.text = "CAMSTYLE: Flying";
             break;
         default:
-            camera_mode_text.text = "CAMSTYLE: Unknown";
+            editor->camera_mode_text.text = "CAMSTYLE: Unknown";
         }
 
-        text_update_transforms(&camera_mode_text);
+        text_update_transforms(&editor->camera_mode_text);
         last_cam_mode = editor->cam.mode;
     }
 
     // Handle backspace character because it's not sent to character callback
     if (input.backspace && !editor->prev_input.backspace) {
         textbox_buf[strlen(textbox_buf) - 1] = 0;
-        text_update_transforms(&textbox);
+        text_update_transforms(&editor->textbox);
         searchbuf_updated = true;
     }
 
     if (editor->mode == MODE_MENU) {
         partsearch_update_render(editor);
+        text_render(editor->textbox);
     }
     else {
-        text_render(part_name);
+        text_render(editor->part_name);
     }
 
-    text_render(editing_mode);
-    text_render(camera_mode_text);
-    text_render(textbox);
+    text_render(editor->editing_mode);
+    text_render(editor->camera_mode_text);
 
     // Reset state
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-void ui_teardown() {
-    text_free(part_name);
-    text_free(editing_mode);
-    text_free(camera_mode_text);
-    text_free(textbox);
+void ui_teardown(editor_state* editor) {
+    text_free(editor->part_name);
+    text_free(editor->editing_mode);
+    text_free(editor->camera_mode_text);
+    text_free(editor->textbox);
 }
 

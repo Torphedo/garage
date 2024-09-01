@@ -260,6 +260,7 @@ void update_edit_mode(editor_state* editor) {
                 list_remove_val(&editor->unselected_parts, (void*)p);
                 update_selectionmask(editor);
                 update_vacancymask(editor);
+                editor->v.part_count--;
             }
         }
         if (select_button_pressed) {
@@ -341,15 +342,18 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
         set_vsync(editor->vsync);
     }
 
-    editor_mode old_mode = editor->mode;
     // Cycle if Tab or X are pressed
     bool cycle_mode = (input.tab && !editor->prev_input.tab) || (input.gp.x && !editor->prev_input.gp.x);
-    if (cycle_mode) {
+    if (cycle_mode && editor->mode != MODE_MENU) {
         // Cycle through modes. Ctrl-Tab goes backwards.
         editor->mode = (editor->mode + (input.control ? -1 : 1)) % 2;
     }
     if (input.escape && !editor->prev_input.escape) {
-        editor->mode = MODE_MENU;
+        if (editor->mode == MODE_MENU) {
+            editor->mode = MODE_MOVCAM;
+        } else {
+            editor->mode = MODE_MENU;
+        }
     }
 
     if (editor->mode == MODE_EDIT) {

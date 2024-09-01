@@ -139,7 +139,7 @@ int main(int argc, char** argv) {
     // Cleanup
     text_free(fps_display);
     garage_destroy(&garage);
-    ui_teardown();
+    ui_teardown(&editor);
 
     text_renderer_cleanup();
     editor_teardown(&editor);

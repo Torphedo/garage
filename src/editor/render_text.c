@@ -356,7 +356,7 @@ void text_update_transforms(text_state* ctx) {
             // Then go down by the amount of empty space between the line top
             // and character top, and go back up by the offset from baseline.
             cur_y - ((ascent + (ascent - height) - start_height) * scale),
-            0, // No depth needed
+            -0.5f, // Always render on top
         };
         glm_translate(model, pos_diff);
         glm_scale(model, (vec3){scale * width, scale * aspect * height, scale});

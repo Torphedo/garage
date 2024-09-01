@@ -10,6 +10,7 @@
 
 #include <vehicle.h>
 #include "camera.h"
+#include "render_text.h"
 
 typedef enum {
     MODE_MOVCAM, // Selection box locked, camera unlocked (freecam)
@@ -27,6 +28,9 @@ typedef enum {
 enum {
     PART_POS_SCALE = 2, // Coordinate multiplier for rendering (can add spacing in the part grid)
     VEH_MASK_BYTE_WIDTH = (VEH_MAX_DIM / 8),
+
+    // Render this many part search results at a time
+    PARTSEARCH_MENUSIZE = 10,
 };
 
 // Used to store a compact 3D grid of parts at 1 bit per cell.
@@ -51,6 +55,20 @@ typedef struct {
     vec3s16 sel_box; // Selection box position
     editor_mode mode;
     selection_state sel_mode;
+
+    // UI state
+    text_state part_name;
+    char partname_buf[32]; // Backing text buffer, enough for longest part name
+    text_state editing_mode;
+    text_state camera_mode_text;
+    text_state textbox;
+    text_state partsearch_results[PARTSEARCH_MENUSIZE];
+    // Skip past this many matching entries before we start rendering (resets when
+    // target string changes, used to fake scrolling)
+    u32 partsearch_startoffset;
+    u8 partsearch_selected_item; // Index of selected search result
+    u32 partsearch_filled_slots; // Number of non-empty search result slots
+
 
     // Extra state that doesn't affect what the user sees
     double delta_time; // Measured in seconds
