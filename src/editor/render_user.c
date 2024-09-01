@@ -1,10 +1,13 @@
 #include <string.h>
 #include <stdatomic.h>
 
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
+#include <cglm/cglm.h>
 
 #include <common/utf8.h>
 #include <common/logging.h>
+#include <common/primitives.h>
 #include <parts.h>
 #include "editor.h"
 #include "vehicle_edit.h"
@@ -45,7 +48,7 @@ void character_callback(GLFWwindow* window, unsigned int codepoint) {
 
 enum {
     // Render this many results at a time
-    PARTSEARCH_MENUSIZE = 7,
+    PARTSEARCH_MENUSIZE = 10,
 };
 
 // Skip past this many matching entries before we start rendering (resets when
@@ -54,7 +57,7 @@ u32 partsearch_startoffset = 0;
 text_state partsearch_results[PARTSEARCH_MENUSIZE];
 const float partsearch_startheight = 0.5f;
 
-void partsearch_update_render() {
+void partsearch_update_render(editor_state* editor) {
     if (searchbuf_updated) {
         partsearch_startoffset = 0;
         u32 partsearch_menupos = 0; // Current offset in array of results
@@ -86,6 +89,35 @@ void partsearch_update_render() {
         searchbuf_updated = false;
     }
 
+    glUseProgram(editor->vcolor_shader);
+    glBindVertexArray(quad.vao);
+
+    // Setup model transform
+    mat4 mdl = {0};
+    glm_mat4_identity(mdl);
+    // Scale to screen space. This messes up our coordinates, so the
+    // coordinates ahead aren't screen-space coords.
+    glm_scale_uni(mdl, 1.0f / QUAD_SIZE);
+    glm_rotate_x(mdl, glm_rad(90.0f), mdl); // Face quad towards camera
+    glm_translate(mdl, (vec3){0.0f, 0.10f, 2.00f});
+
+    glm_scale(mdl, (vec3){0.55f, 1.0f, 0.7f}); // Scale to reasonable size
+    const vec4 white = {0.95f, 0.95f, 0.95f, 1.0f};
+
+    // Render white outer border
+    glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float*)mdl);
+    glUniform4fv(editor->u_paint, 1, (const float*)white);
+    glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
+
+    glm_scale(mdl, (vec3){0.98f, 1.0f, 0.95f}); // Scale to a smaller box
+    glm_translate(mdl, (vec3){0.00f, -0.01f, 0.00f}); // Move in front of the other quad
+    const vec4 blue = {0.2f, 0.2f, 1.0f, 1.0f};
+
+    // Render inner blue panel
+    glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float*)mdl);
+    glUniform4fv(editor->u_paint, 1, (const float*)blue);
+    glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
+
     // Render
     for (u32 i = 0; i < PARTSEARCH_MENUSIZE; i++) {
         text_render(partsearch_results[i]);
@@ -100,10 +132,10 @@ void ui_update_render(editor_state* editor) {
         part_name = text_render_prep(partname_buf, sizeof(partname_buf), text_default_scale, (vec2){-1.0f, -0.7f});
         editing_mode = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.85f});
         camera_mode_text = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.75f});
-        textbox = text_render_prep(textbox_buf, sizeof(textbox_buf), text_default_scale, (vec2){-1.0f, 0.65f});
+        textbox = text_render_prep(textbox_buf, sizeof(textbox_buf), text_default_scale, (vec2){-0.5f, 0.55f});
         for (u32 i = 0; i < ARRAY_SIZE(partsearch_results); i++) {
             // Y coord is set on the fly, we init to 0
-            partsearch_results[i] = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0});
+            partsearch_results[i] = text_render_prep(NULL, 32, text_default_scale, (vec2){-0.5f, 0});
         }
         glfwSetCharCallback(editor->window, character_callback);
         initialized = true;
@@ -144,8 +176,10 @@ void ui_update_render(editor_state* editor) {
             enable_textinput = false;
             memset(textbox_buf, 0x00, sizeof(textbox_buf)); // Clear buffer
             text_update_transforms(&textbox);
+
+            // Also clear part search menu
             searchbuf_updated = true;
-            partsearch_update_render();
+            partsearch_update_render(editor);
         }
 
         text_update_transforms(&editing_mode);
@@ -178,13 +212,20 @@ void ui_update_render(editor_state* editor) {
         searchbuf_updated = true;
     }
 
+    if (editor->mode == MODE_MENU) {
+        partsearch_update_render(editor);
+    }
+    else {
+        text_render(part_name);
+    }
+
     text_render(editing_mode);
     text_render(camera_mode_text);
-    text_render(part_name);
     text_render(textbox);
-    if (editor->mode == MODE_MENU) {
-        partsearch_update_render();
-    }
+
+    // Reset state
+    glBindVertexArray(0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
 void ui_teardown() {
