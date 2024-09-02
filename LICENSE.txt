@@ -1,0 +1,38 @@
+This program's dependencies are licensed under zlib, MIT, Unlicense, and public
+domain licenses. Full license notices for each dependency are in their
+respective files/folders. The summary is:
+
+ext/incbin [C99+ subsitute for #embed]: Unlicense/public domain
+ext/stb_*.h [BCn texture compression, text rasterizer]: Public domain
+ext/glad [OpenGL loader]: Generated code in this repository under public domain
+ext/cglm [linear algebra]: MIT
+ext/glfw [windowing/input]: zlib
+ext/physfs [filesystem/archives]: zlib
+src/common/sha1.c: public domain
+bin/ProFontIIx.ttf: MIT
+
+The following files were written entirely by the repository author(s), and are
+governed by the license at the end of this document:
+    - All files in the same directory as this LICENSE file
+    - All files under the "src" and "test" directories except
+      "src/common/sha1.c", which is released into the public domain
+    - All files under the "bin" directory, except file(s) ending with ".ttf"
+
+Copyright (c) 2023-2024 Torphedo
+  
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+    
+    1. The origin of this software must not be misrepresented; you must not
+       claim that you wrote the original software. If you use this software
+       in a product, an acknowledgment in the product documentation would be
+       appreciated but is not required. 
+    2. Altered source versions must be plainly marked as such, and must not be
+       misrepresented as being the original software.
+    3. This notice may not be removed or altered from any source distribution.
+
