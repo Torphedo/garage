@@ -120,6 +120,10 @@ int main(int argc, char** argv) {
         // End frame
     }
 
+    // When we get here we're on the way to shutdown, close the window to make
+    // the program feel more responsive
+    glfwDestroyWindow(editor.window);
+
     // Print vehicle details (mostly a leftover from old versions of this program)
     LOG_MSG(info, "\"");
     print_c16s(editor.v.name); // We need a special function to portably print UTF-16

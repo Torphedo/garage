@@ -1,4 +1,25 @@
 #include <string.h>
+#include <common/platform.h>
+
+#ifdef PLATFORM_WINDOWS
+#include <shlwapi.h>
+// They have a conflicting macro or enum name or something. Annoying.
+#undef SEARCH_ALL
+// strcasestr() is a glibc extension, on Windows we need to use their equivalent
+const char* strcasestr(const char* a, const char* b) {
+    // glibc's implementation considers empty strings to be a substring of any
+    // other string, so this ensures we match that behaviour.
+    if (strlen(a) == 0) {
+        return b;
+    }
+    if (strlen(b) == 0) {
+        return a;
+    }
+    // TODO: See if this works on UTF8? Not that it really matters in our use case.
+    return StrStrIA(a, b);
+}
+#endif
+
 #include <stdatomic.h>
 
 #include <glad/glad.h>
@@ -185,6 +206,7 @@ void partsearch_update_render(editor_state* editor) {
 }
 
 void ui_update_render(editor_state* editor) {
+    const double time_start = glfwGetTime();
     // Setup on first run
     static bool initialized = false;
     if (!initialized) {
@@ -287,6 +309,11 @@ void ui_update_render(editor_state* editor) {
     // Reset state
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+    const double time_end = glfwGetTime();
+    const double elapsed = time_end - time_start;
+    if (elapsed > 1.0 / 1000) {
+        LOG_MSG(debug, "Finished in %.3lfms\n", elapsed * 1000);
+    }
 }
 
 void ui_teardown(editor_state* editor) {
