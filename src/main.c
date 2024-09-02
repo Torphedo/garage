@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
     }
     editor.window = window; // TODO: This is dumb, put this in the editor init.
 
-    if (!text_renderer_setup("bin/ProFontIIxNerdFontPropo-Regular.ttf")) {
+    if (!text_renderer_setup("bin/ProFontIIx.ttf")) {
         LOG_MSG(error, "Text renderer init failure\n");
         return 1;
     }
