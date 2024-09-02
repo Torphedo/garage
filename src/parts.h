@@ -207,6 +207,7 @@ typedef struct {
 typedef struct {
     const char* name; // Human-readable part name
     part_id id;
+    float weight;
     // The points relative to the origin this part occupies
     vec3s8 relative_occupation[PART_MAX_VOLUME];
     // Array of points relative to the part's origin where another part is

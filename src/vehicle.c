@@ -33,8 +33,8 @@ void vehicle_header_byteswap(vehicle_header* v) {
             ENDIAN_FLIP(c16, v->name[i]);
         }
         ENDIAN_FLIP_FLOAT(v->weight);
-        ENDIAN_FLIP_FLOAT(v->unknownf);
-        ENDIAN_FLIP_FLOAT(v->unknownf_1);
+        ENDIAN_FLIP_FLOAT(v->power);
+        ENDIAN_FLIP_FLOAT(v->integrity);
     }
 }
 

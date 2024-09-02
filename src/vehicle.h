@@ -11,10 +11,12 @@ typedef struct {
     u16 part_count;
     u8 is_one_piece;
     u8 unk;
-    float unknownf; // Usually an exact integer?
+    // Seems to indicate engine/propulsion power, but grows non-linearly. For
+    // small engines: 1 -> 40, 2 -> 60, 3 -> 70
+    float power;
     u8 unk1[8];
     float weight;
-    float unknownf_1;
+    float integrity; // As more disconnected parts are added, this goes down. Try placing 4 parts not touching, then join them together and compare values.
     u8 unk2[0x8]; // This is very incomplete, there's lots of other data here.
     c16 name[0x20];
     u8 unk3[0x18];

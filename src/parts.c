@@ -34,6 +34,7 @@ const part_info partdata[NUM_PARTS + 1] = {
     {
         .id = SEAT_STRONG,
         .name = "Strong Seat",
+        .weight = 40.0f,
         .relative_occupation = {
             {0, 1, 0},
             {0},
@@ -118,6 +119,7 @@ const part_info partdata[NUM_PARTS + 1] = {
     {
         .id = JET_SMALL,
         .name = "Small Jet",
+        .weight = 40.0f,
     },
     {
         .id = JET_LARGE,
@@ -209,10 +211,12 @@ const part_info partdata[NUM_PARTS + 1] = {
     {
         .id = LIGHT_CUBE,
         .name = "Light Cube",
+        .weight = 10.0f,
     },
     {
         .id = LIGHT_WEDGE,
         .name = "Light Wedge",
+        .weight = 7.5f,
     },
     {
         .id = LIGHT_CORNER,
@@ -285,38 +289,47 @@ const part_info partdata[NUM_PARTS + 1] = {
     {
         .id = SUPER_CUBE,
         .name = "Super Cube",
+        .weight = 10.0f,
     },
     {
         .id = SUPER_WEDGE,
         .name = "Super Wedge",
+        .weight = 7.5f,
     },
     {
         .id = SUPER_CORNER,
         .name = "Super Corner",
+        .weight = 5.0f,
     },
     {
         .id = SUPER_POLE,
         .name = "Super Pole",
+        .weight = 5.0f,
     },
     {
         .id = SUPER_L_POLE,
         .name = "Super L-Pole",
+        .weight = 5.0f,
     },
     {
         .id = SUPER_T_POLE,
         .name = "Super T-Pole",
+        .weight = 5.0f,
     },
     {
         .id = SUPER_PANEL,
         .name = "Super Panel",
+        .weight = 7.5f,
     },
     {
         .id = SUPER_L_PANEL,
         .name = "Super L-Panel",
+        .weight = 7.5f,
     },
     {
         .id = SUPER_T_PANEL,
         .name = "Super T-Panel",
+        .weight = 7.5f,
     },
 
     // Gadgets
@@ -447,6 +460,7 @@ const part_info partdata[NUM_PARTS + 1] = {
     {
         .id = PROPELLER_SMALL,
         .name = "Small Propeller",
+        .weight = 10.0f,
     },
     {
         .id = PROPELLER_LARGE,
