@@ -60,7 +60,7 @@ void character_callback(GLFWwindow* window, unsigned int codepoint) {
 }
 
 void partsearch_update_render(editor_state* editor) {
-    if (input.enter && !editor->prev_input.enter) {
+    if ((input.enter && !editor->prev_input.enter) || (input.gp.a && !editor->prev_input.gp.a)) {
         editor->mode = MODE_EDIT;
         editor->sel_mode = SEL_ACTIVE;
         part_entry new_part = {
@@ -126,17 +126,19 @@ void partsearch_update_render(editor_state* editor) {
         }
         searchbuf_updated = false;
     }
-    if (input.tab && !editor->prev_input.tab) {
-        s8 diff = 1;
-        if (input.shift) {
-            if (editor->partsearch_selected_item <= 0) {
-                diff = 0;
-            } else {
-                diff = -1;
-            }
-        }
-        editor->partsearch_selected_item += diff;
+    const bool up = (input.tab && !editor->prev_input.tab && !input.shift) || (input.down && !editor->prev_input.down) || (input.gp.down && !editor->prev_input.gp.down)  || ((input.LS.y >= deadzone) && (editor->prev_input.LS.y < deadzone));
+    const bool down = (input.tab && !editor->prev_input.tab && input.shift) || (input.up && !editor->prev_input.up) || (input.gp.up && !editor->prev_input.gp.up) || ((input.LS.y <= deadzone) && (editor->prev_input.LS.y > deadzone));
+
+    s8 diff = 0;
+    if (up) {
+        diff = 1;
     }
+    if (down) {
+        if (editor->partsearch_selected_item > 0) {
+            diff = -1;
+        }
+    }
+    editor->partsearch_selected_item += diff;
     // Clamp so it doesn't go over the number of filled slots
     editor->partsearch_selected_item = CLAMP(0, editor->partsearch_selected_item, editor->partsearch_filled_slots);
     // Clamp allows this to happen :(

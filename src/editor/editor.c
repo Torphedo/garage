@@ -377,7 +377,7 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
         // Cycle through modes. Ctrl-Tab goes backwards.
         editor->mode = (editor->mode + (input.control ? -1 : 1)) % 2;
     }
-    if (input.escape && !editor->prev_input.escape) {
+    if ((input.escape && !editor->prev_input.escape) || (input.gp.start && !editor->prev_input.gp.start)) {
         if (editor->mode == MODE_MENU) {
             editor->mode = MODE_MOVCAM;
         } else {
