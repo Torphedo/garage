@@ -1,4 +1,5 @@
 #include <stdbool.h>
+#include <stdio.h>
 #include <memory.h>
 
 #include <glad/glad.h>
@@ -300,6 +301,31 @@ void update_edit_mode(editor_state* editor) {
     }
 }
 
+void editor_save_to_file(editor_state editor, const char* output_path) {
+    FILE* f = fopen(output_path, "wb");
+    if (f == NULL) {
+        return;
+    }
+    // Save vehicle header. Byteswapping is OK b/c this is a copy of the data
+    vehicle_header_byteswap(&editor.v);
+    fwrite(&editor.v, sizeof(editor.v), 1, f);
+
+    // Save each part
+    part_iterator iter = part_iterator_setup(editor, SEARCH_ALL);
+    while (!iter.done) {
+        part_entry part = *part_iterator_next(&iter);
+        part_byteswap(&part); // This is a copy, byteswapping is OK
+        fwrite(&part, sizeof(part), 1, f);
+    }
+
+    // The game always seems to write 4 all-zero bytes at the end, so we do it
+    // too just in case it's important.
+    const u32 pad = 0;
+    fwrite(&pad, sizeof(pad), 1, f);
+
+    fclose(f);
+}
+
 // Update the GUI state according to new user input.
 bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
     const double time_start = glfwGetTime();
@@ -340,6 +366,9 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
         // Toggle vsync
         editor->vsync = !editor->vsync;
         set_vsync(editor->vsync);
+    }
+    if (input.control && input.s && !editor->prev_input.s) {
+        editor_save_to_file(*editor, "vehicle.bin");
     }
 
     // Cycle if Tab or X are pressed
