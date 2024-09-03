@@ -44,9 +44,15 @@ void print_c16s(const c16* str);
 // Round a number up to any boundary
 #define ALIGN_UP(x, bound) (x + (bound - (x % bound)))
 
+// sys/param.h defines these on some platforms, which is included in platform.h
+#ifndef MAX
 // Return the larger of 2 values
 #define MAX(a, b) ((a > b) ? a : b)
+#endif
+#ifndef MIN
+// Return the smaller of 2 values
 #define MIN(a, b) ((a < b) ? a : b)
+#endif
 // Returns low or high bound if [val] is out of bounds, otherwise return [val]
 #define CLAMP(low, val, high) ((val < low) ? low : MIN(val, high))
 
