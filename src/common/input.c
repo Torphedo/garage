@@ -1,5 +1,6 @@
 #include <GLFW/glfw3.h>
 
+#include <common/int.h>
 #include "input.h"
 
 input_internal input = {0};

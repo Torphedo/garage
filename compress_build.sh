@@ -12,8 +12,6 @@ if [ -z $1 ]; then
     false
 else
     compress "$1/garage"
-    compress "$1/test/test"
-    compress "$1/txt2h"
 
     true
 fi

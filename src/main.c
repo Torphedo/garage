@@ -44,13 +44,12 @@ int main(int argc, char** argv) {
     }
 
     const char* vehicle_path = argv[1]; // Give our first argument a convenient name
-    editor_state editor = editor_init(vehicle_path);
+    editor_state editor = editor_init(vehicle_path, window);
     // This is a generic failure flag for any problems with startup
     if (!editor.init_result) {
         LOG_MSG(error, "Editor init failure\n");
         return 1;
     }
-    editor.window = window; // TODO: This is dumb, put this in the editor init.
 
     if (!text_renderer_setup("bin/ProFontIIx.ttf")) {
         LOG_MSG(error, "Text renderer init failure\n");

@@ -126,18 +126,27 @@ void partsearch_update_render(editor_state* editor) {
         }
         searchbuf_updated = false;
     }
-    const bool up = (input.tab && !editor->prev_input.tab && !input.shift) || (input.down && !editor->prev_input.down) || (input.gp.down && !editor->prev_input.gp.down)  || ((input.LS.y >= deadzone) && (editor->prev_input.LS.y < deadzone));
-    const bool down = (input.tab && !editor->prev_input.tab && input.shift) || (input.up && !editor->prev_input.up) || (input.gp.up && !editor->prev_input.gp.up) || ((input.LS.y <= deadzone) && (editor->prev_input.LS.y > deadzone));
+    // Up and down are kind of backwards. "Up" means increasing the menu index,
+    // which is visually downwards.
+    const bool up = (input.tab && !editor->prev_input.tab && !input.shift)  || down_rising_edge(*editor) || (move_y_rising_edge(*editor) == -1);
+    const bool down = (input.tab && !editor->prev_input.tab && input.shift) || up_rising_edge(*editor) || (move_y_rising_edge(*editor) == 1);
 
     s8 diff = 0;
-    if (up) {
+    if (up && !input.w) {
         diff = 1;
     }
-    if (down) {
+    if (down && !input.s) {
         if (editor->partsearch_selected_item > 0) {
             diff = -1;
         }
     }
+    // We have to check for W and S here because otherwise typing them would
+    // move the selected item, which is unintuitive
+    if (input.w || input.s) {
+        diff = 0;
+    }
+
+    // TODO: Everything after this is terrible.
     editor->partsearch_selected_item += diff;
     // Clamp so it doesn't go over the number of filled slots
     editor->partsearch_selected_item = CLAMP(0, editor->partsearch_selected_item, editor->partsearch_filled_slots);

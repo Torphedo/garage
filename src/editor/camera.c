@@ -79,15 +79,20 @@ void camera_update(camera* cam, double delta_time) {
         .y = input.scroll.y - last_scroll.y
     };
 
-    vec3s cam_dir = glms_normalize(camera_facing(*cam));
-    float multiplier = delta_time * cam->move_speed;
-    float forward  = multiplier * (input.w - input.s);
-    float side     = multiplier * (input.a - input.d);
-    float vertical = multiplier * (input.space - input.shift);
+    const vec3s cam_dir = glms_normalize(camera_facing(*cam));
+    const float multiplier = delta_time * cam->move_speed;
+
+    // This just sets each axis to zero if it's below the deadzone threshold
+    const float LS_x = input.LS.x * (fabsf(input.LS.x) > deadzone);
+    const float LS_y = input.LS.y * (fabsf(input.LS.y) > deadzone);
+
+    const float forward  = multiplier * ((input.w - input.s) - LS_y);
+    const float side     = multiplier * ((input.a - input.d) - LS_x);
+    float vertical = multiplier * ((input.space - input.shift) + (input.RT - input.LT));
 
     // Exclude vertical view component so it doesn't affect horizontal movement
     vec3s horizontal = glms_normalize((vec3s){cam_dir.x, 0, cam_dir.z});
-    vec3s cam_side = glms_vec3_rotate(horizontal, glm_rad(90), camera_up);
+    const vec3s cam_side = glms_vec3_rotate(horizontal, glm_rad(90), camera_up);
     // Make forward/back move along camera vector in fly mode
     if (cam->mode == CAMERA_FLY) {
         horizontal = cam_dir;

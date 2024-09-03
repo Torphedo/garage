@@ -17,6 +17,114 @@
 #include "editor.h"
 #include "vehicle_edit.h"
 
+
+// A "confirm" action (like A button)
+bool confirm_rising_edge(editor_state editor) {
+    const bool keyboard = (input.e && !editor.prev_input.e);
+    const bool gamepad = (input.gp.a && !editor.prev_input.gp.a);
+    return keyboard || gamepad;
+}
+
+// A "cancel" action (like B button)
+bool cancel_rising_edge(editor_state editor) {
+    const bool keyboard = (input.q && !editor.prev_input.q);
+    const bool gamepad = (input.gp.b && !editor.prev_input.gp.b);
+    return keyboard || gamepad;
+}
+
+// A "pause" action (like start button)
+bool pause_rising_edge(editor_state editor) {
+    const bool keyboard = (input.escape && !editor.prev_input.escape);
+    const bool gamepad = (input.gp.start && !editor.prev_input.gp.start);
+    return keyboard || gamepad;
+}
+
+// An "up" action (like dpad)
+bool up_rising_edge(editor_state editor) {
+    const bool keyboard = (input.up && !editor.prev_input.up);
+    const bool gamepad = (input.gp.up && !editor.prev_input.gp.up);
+    return keyboard || gamepad;
+}
+
+// A "down" action (like dpad)
+bool down_rising_edge(editor_state editor) {
+    const bool keyboard = (input.down && !editor.prev_input.down);
+    const bool gamepad = (input.gp.down && !editor.prev_input.gp.down);
+    return keyboard || gamepad;
+}
+
+// A "left" action (like dpad)
+bool left_rising_edge(editor_state editor) {
+    const bool keyboard = (input.left && !editor.prev_input.left);
+    const bool gamepad = (input.gp.left && !editor.prev_input.gp.left);
+    return keyboard || gamepad;
+}
+
+// A "right" action (like dpad)
+bool right_rising_edge(editor_state editor) {
+    const bool keyboard = (input.right && !editor.prev_input.right);
+    const bool gamepad = (input.gp.right && !editor.prev_input.gp.right);
+    return keyboard || gamepad;
+}
+
+// This has less of a gamepad equivalent, but is like the space key
+bool vertical_up_rising_edge(editor_state editor) {
+    // Sorry, this is a little confusing. The trigger's neutral position is -1,
+    // with 1 being "fully pressed". So (deadzone - 1) is the neutral position
+    // plus the deadzone.
+    const float trigger_deadzone = (-1.0f) + deadzone;
+    const bool gamepad = (input.RT > trigger_deadzone) && !(editor.prev_input.RT > trigger_deadzone);
+
+    const bool keyboard = (input.space && !editor.prev_input.space);
+    return keyboard || gamepad;
+}
+
+// This has less of a gamepad equivalent, but is like a shift or crouch key
+bool vertical_down_rising_edge(editor_state editor) {
+    const float trigger_deadzone = (-1.0f) + deadzone;
+    const bool gamepad = (input.LT > trigger_deadzone) && !(editor.prev_input.LT > trigger_deadzone);
+
+    const bool keyboard = (input.shift && !editor.prev_input.shift);
+    return keyboard || gamepad;
+}
+
+// Unit direction vector of movement on the X axis ("A/D" key or LS X axis)
+// Returns -1, 0, or 1.
+s8 move_x_rising_edge(editor_state editor) {
+    // Dividing by itself gives 1, and using absolute value preserves sign.
+    // This gives us -1 for any negative value, and 1 for any positive one.
+    float stick_vec = input.LS.x / fabsf(input.LS.x);
+    if (fabsf(input.LS.x) < deadzone || fabsf(editor.prev_input.LS.x) > deadzone) {
+        // If we're in the deadzone or were outside it last frame, don't count it.
+        stick_vec = 0;
+    }
+
+    const s8 keyboard_diff = (input.d && !editor.prev_input.d) - (input.a && !editor.prev_input.a);
+
+    const s8 result = CLAMP(-1, keyboard_diff + stick_vec, 1);
+    return result;
+}
+
+// Unit direction vector of movement on the Y axis ("W/S" key or LS Y axis)
+// Returns -1, 0, or 1.
+s8 move_y_rising_edge(editor_state editor) {
+    // Dividing by itself gives 1, and using absolute value preserves sign.
+    // This gives us -1 for any negative value, and 1 for any positive one.
+    float stick_vec = input.LS.y / fabsf(input.LS.y);
+    stick_vec = -stick_vec; // Y axis is the opposite sign of the intuitive way
+    if (fabsf(input.LS.y) < deadzone || fabsf(editor.prev_input.LS.y) > deadzone) {
+        // If we're in the deadzone or were outside it last frame, don't count it.
+        stick_vec = 0;
+    }
+
+    const s8 keyboard_diff = (input.w && !editor.prev_input.w) - (input.s && !editor.prev_input.s);
+
+    const s8 result = CLAMP(-1, keyboard_diff + stick_vec, 1);
+    return result;
+}
+
+
+
 // This doesn't enforce what the bound VAO is... make sure to only call it with
 // the cube VAO bound.
 void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
@@ -93,70 +201,27 @@ void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
     }
 }
 
-
 void update_edit_mode(editor_state* editor) {
-    // Gamepad rotations directions
-    const bool gp_forward = input.gp.up && !editor->prev_input.gp.up;
-    const bool gp_back = input.gp.down && !editor->prev_input.gp.down;
-    const bool gp_left = input.gp.left && !editor->prev_input.gp.left;
-    const bool gp_right = input.gp.right && !editor->prev_input.gp.right;
-    const bool gp_roll_right = input.gp.rb && !editor->prev_input.gp.rb;
-    const bool gp_roll_left = input.gp.lb && !editor->prev_input.gp.lb;
-
-    // I made a lot of variables here, but I'm just trying to preserve some
-    // semblance of readability :)
-    const bool gamepad_rotation = gp_forward || gp_back || gp_left || gp_right || gp_roll_left || gp_roll_right;
-
-    const bool rotation = input.control || gamepad_rotation;
     // Handle moving the selector box
     const vec3s cam_view = glms_normalize(camera_facing(editor->cam));
     // Absolute value of camera vector
     const vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
 
-    s8 forward_diff = 0;
-    s8 side_diff = 0;
-    s8 roll_diff = 0;
-    s8 vertical_diff = 0;
-    {
-        // Sorry this is a nightmare... we subtract 1 from the deadzone because
-        // triggers start at -1, with 1 being "fully pressed". So deadzone - 1
-        // is the neutral position plus the deadzone.
-        const bool LT = (input.LT > deadzone - 1) && !(editor->prev_input.LT > deadzone - 1);
-        const bool RT = (input.RT > deadzone - 1) && !(editor->prev_input.RT > deadzone - 1);
+    const s8 movediff_forward = move_y_rising_edge(*editor);
+    const s8 movediff_side = move_x_rising_edge(*editor);
+    s8 forward_diff = up_rising_edge(*editor) - down_rising_edge(*editor);
+    s8 side_diff = right_rising_edge(*editor) - left_rising_edge(*editor);
+    const s8 vertical_diff = vertical_up_rising_edge(*editor) - vertical_down_rising_edge(*editor);
 
-        // Combine keyboard and gamepad inputs
-        const s8 forward = (input.w && !editor->prev_input.w) + gp_forward;
-        const s8 back = (input.s && !editor->prev_input.s) + gp_back;
-        const s8 left = (input.a && !editor->prev_input.a) + gp_left;
-        const s8 right = (input.d && !editor->prev_input.d) + gp_right;
-        const s8 roll_left = (input.q && !editor->prev_input.q) + gp_roll_left;
-        const s8 roll_right = (input.e && !editor->prev_input.e) + gp_roll_right;
-        const s8 up = (input.space && !editor->prev_input.space) + RT;
-        const s8 down = (input.shift && !editor->prev_input.shift) + LT;
+    const bool gp_roll_right = input.gp.rb && !editor->prev_input.gp.rb;
+    const bool gp_roll_left = input.gp.lb && !editor->prev_input.gp.lb;
+    const s8 roll_left = (input.z && !editor->prev_input.z) + gp_roll_left;
+    const s8 roll_right = (input.c && !editor->prev_input.c) + gp_roll_right;
 
-        // Combine our directions into signed values on each axis
-        forward_diff = forward - back;
-        side_diff = right - left;
-        roll_diff = roll_right - roll_left;
-        vertical_diff = up - down;
+    // Combine keyboard and gamepad inputs
+    const s8 roll_diff = roll_right - roll_left;
 
-        // Set anything below the deadzone to zero
-        float LS_x = input.LS.x * (fabsf(input.LS.x) > deadzone);
-        float LS_y = input.LS.y * (fabsf(input.LS.y) > deadzone);
-
-        // Over deadzone positive -> 1, negative -> -1
-        LS_x = CLAMP(-1, LS_x / deadzone, 1);
-        LS_y = CLAMP(-1, LS_y / deadzone, 1);
-
-        // Whether the axis was over the threshold last frame
-        const bool last_LS_x = fabsf(editor->prev_input.LS.x) > deadzone;
-        const bool last_LS_y = fabsf(editor->prev_input.LS.y) > deadzone;
-
-        // Move if we're over the deadzone, but only if we weren't last frame.
-        side_diff += LS_x * !last_LS_x;
-        forward_diff -= LS_y * !last_LS_y;
-    }
-
+    const bool rotation = ((forward_diff + side_diff + roll_diff) != 0);
     const vec3s16 sel_box_prev = editor->sel_box;
 
     // Set our view direction to have a magnitude of 1 on the horizontal axis
@@ -189,8 +254,8 @@ void update_edit_mode(editor_state* editor) {
         vec3s right_vec = {-horizontal_vec.z, 0, horizontal_vec.x};
 
         for (u8 i = 0; i < 3; i++) {
-            editor->sel_box.raw[i] += forward_diff * horizontal_vec.raw[i];
-            editor->sel_box.raw[i] += side_diff * right_vec.raw[i];
+            editor->sel_box.raw[i] += movediff_forward * horizontal_vec.raw[i];
+            editor->sel_box.raw[i] += movediff_side * right_vec.raw[i];
         }
 
         // Handle vertical movement
@@ -244,7 +309,7 @@ void update_edit_mode(editor_state* editor) {
     const vec3s8 pos = {editor->sel_box.x, editor->sel_box.y, editor->sel_box.z};
     const part_entry* p = part_by_pos(editor, pos, SEARCH_ALL);
 
-    const bool select_button_pressed = (input.e && !editor->prev_input.e) || (input.gp.a && !editor->prev_input.gp.a);
+    const bool select_button_pressed = confirm_rising_edge(*editor);
     const bool unselect_button_pressed = (input.r && !editor->prev_input.r) || (input.gp.b && !editor->prev_input.gp.b);
     const bool delete_button_pressed = (input.c && !editor->prev_input.c) || (input.gp.y && !editor->prev_input.gp.y);
     if (editor->sel_mode != SEL_BAD && !rotation) {
@@ -333,12 +398,11 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
     update_mods(window); // Update input.shift, input.ctrl, etc.
     gamepad_update();
 
-    bool change_camstyle = (input.f && !editor->prev_input.f);
+    bool change_camstyle = (input.click_middle && !editor->prev_input.click_middle);
     change_camstyle |= (input.gp.r3 && !editor->prev_input.gp.r3);
     if (change_camstyle) {
         // Cycle through camera modes
-        camera_mode mode = editor->cam.mode + 1;
-        mode %= CAMERA_MODE_ENUM_MAX;
+        camera_mode mode = (editor->cam.mode + 1) % CAMERA_MODE_ENUM_MAX;
         // This function handles the special camera settings per mode
         camera_set_mode(&editor->cam, mode);
     }
@@ -377,7 +441,7 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
         // Cycle through modes. Ctrl-Tab goes backwards.
         editor->mode = (editor->mode + (input.control ? -1 : 1)) % 2;
     }
-    if ((input.escape && !editor->prev_input.escape) || (input.gp.start && !editor->prev_input.gp.start)) {
+    if (pause_rising_edge(*editor)) {
         if (editor->mode == MODE_MENU) {
             editor->mode = MODE_MOVCAM;
         } else {
@@ -413,12 +477,13 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
     return true;
 }
 
-editor_state editor_init(const char* vehicle_path) {
+editor_state editor_init(const char* vehicle_path, GLFWwindow* window) {
     const double time_start = glfwGetTime();
     editor_state editor = {
         .vacancy_mask = calloc(1, sizeof(vehicle_bitmask)),
         .selected_mask = calloc(1, sizeof(vehicle_bitmask)),
         .cam = camera_default(),
+        .window = window,
         .init_result = false, // Default to failure, this will only be set to success if all checks pass
     };
     if (editor.vacancy_mask == NULL || editor.selected_mask == NULL) {

@@ -4,9 +4,7 @@
 #include <stdbool.h>
 
 #include <GLFW/glfw3.h>
-
-#include "int.h"
-#include "vector.h"
+#include <cglm/struct.h>
 
 // TLDR: We have to keep state ourselves because relying on the callback creates
 // a delay between pressing a button and it being considered "held", which feels

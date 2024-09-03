@@ -75,6 +75,7 @@ typedef struct {
     input_internal prev_input; // Input from last frame
     bool vsync;
     bool init_result; // Only used during init to communicate failure
+    // TODO: Can't we just pass the window pointer to the UI init function?
     GLFWwindow* window; // Used to register keyboard callbacks
 
     // Rendering state that everyone can re-use
@@ -84,14 +85,66 @@ typedef struct {
     gl_obj u_paint; // Vertex color multiplier
 }editor_state;
 
+// TODO: Move input code out of common/ and move these functions into there
+// This collection of functions lets us check for a user intent like "forward",
+// instead of separately checking for the W key, gamepad stick thresholds,
+// arrow keys, and the dpad up key.
+
+// "Rising edge" means the condition is only true on the first frame the
+// relevant button is pressed. (Thinking of "pressed" as a electrical signal
+// set high, it triggers only on the edge where the signal rises). Honestly,
+// I found out about this terminology from Minecraft redstone circuits :)
+
+// These are all written to roughly reflect a gamepad, check the implementation
+// to see what the keyboard mappings are. I didn't want to document those b/c
+// the comments will quickly be outdated if the keys change
+
+// A "confirm" action (like A button)
+bool confirm_rising_edge(editor_state editor);
+
+// A "cancel" action (like B button)
+bool cancel_rising_edge(editor_state editor);
+
+// A "pause" action (like start button)
+bool pause_rising_edge(editor_state editor);
+
+// An "up" action (like dpad)
+bool up_rising_edge(editor_state editor);
+
+// A "down" action (like dpad)
+bool down_rising_edge(editor_state editor);
+
+// A "left" action (like dpad)
+bool left_rising_edge(editor_state editor);
+
+// A "right" action (like dpad)
+bool right_rising_edge(editor_state editor);
+
+// This has less of a gamepad equivalent, but is like the space key
+bool vertical_up_rising_edge(editor_state editor);
+
+// This has less of a gamepad equivalent, but is like a shift or crouch key
+bool vertical_down_rising_edge(editor_state editor);
+
+// Unit direction vector of movement on the X axis ("A/D" key or LS X axis)
+// Returns -1, 0, or 1.
+s8 move_x_rising_edge(editor_state editor);
+
+// Unit direction vector of movement on the Y axis ("W/S" key or LS Y axis)
+// Returns -1, 0, or 1.
+s8 move_y_rising_edge(editor_state editor);
+
+
+void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask);
+
 // Update our state according to new user input.
 bool editor_update_with_input(editor_state* editor, GLFWwindow* window);
 
-// Compile the basic common shader, upload buffers for primitives, setup uniforms
-editor_state editor_init(const char* vehicle_path);
+// Compile the common vertex color-based shader, upload buffers for primitives,
+// setup uniforms & camera, load vehicle data
+editor_state editor_init(const char* vehicle_path, GLFWwindow* window);
 
 // Delete resources created in editor_init().
 void editor_teardown(editor_state* editor);
-void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask);
 
 #endif // EDITOR_H
