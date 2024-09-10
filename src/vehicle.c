@@ -1,6 +1,5 @@
 #include <stdlib.h>
 #include <stdbool.h>
-#include <malloc.h>
 
 #include <common/endian.h>
 #include <common/file.h>

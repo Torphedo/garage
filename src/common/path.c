@@ -1,6 +1,6 @@
+#include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
-#include <malloc.h>
 
 #include "int.h"
 #include "file.h"
@@ -97,7 +97,7 @@ char* get_self_path(const char* argv_0) {
 
         // On Apple we use _NSGetExecutablePath()
         #else
-            u32 size_out = 0; // Temp variable
+            u32 size_out = size; // Temp variable
             if (_NSGetExecutablePath(out, &size_out) != 0) {
                 LOG_MSG(error, "Nothing was written, or the path was too big to fit in %d bytes\n", size);
             }

@@ -1,5 +1,5 @@
+#include <stdlib.h>
 #include <stdio.h>
-#include <malloc.h>
 
 #include "common/endian.h"
 #include "common/logging.h"

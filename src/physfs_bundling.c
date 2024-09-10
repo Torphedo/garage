@@ -1,4 +1,4 @@
-#include <malloc.h>
+#include <stdlib.h>
 #include <stdio.h>
 
 #define INCNBIN_PREFIX
@@ -44,7 +44,7 @@ bool setup_physfs(const char* argv0) {
 }
 
 void dump_assets() {
-    FILE* dump = fopen("data.7z", "wb");
+    FILE* dump = fopen("data.zip", "wb");
     if (dump == NULL) {
         return;
     }

@@ -6,8 +6,8 @@ out vec2 texcoord;
 
 // As a temporary solution, we can just make this array really big. Long-term,
 // we probably need to use an instanced array in the vertex spec
-uniform vec4 texcoords[500];
-uniform mat4 transforms[500];
+uniform vec4 texcoords[200];
+uniform mat4 transforms[200];
 
 void main() {
     gl_Position = transforms[gl_InstanceID] * vec4(a_pos, 1.0);
