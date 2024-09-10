@@ -84,7 +84,7 @@ if (NOT MSVC)
         # Setting the working dir stops it from making ".." the archive root.
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMAND "cmake"
-        ARGS -E tar c ${CMAKE_CURRENT_BINARY_DIR}/data.zip --format=zip ${CMAKE_SOURCE_DIR}/bin/ ${CMAKE_SOURCE_DIR}/src/editor/shader/
+        ARGS -E tar c ${CMAKE_CURRENT_BINARY_DIR}/data.zip --format=zip ${CMAKE_SOURCE_DIR}/CREDITS ${CMAKE_SOURCE_DIR}/bin/ ${CMAKE_SOURCE_DIR}/src/editor/shader/
     )
 else()
     add_custom_command(
@@ -94,7 +94,7 @@ else()
         # Setting the working dir stops it from making ".." the archive root... this is really stupid.
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMAND "cmake"
-        ARGS -E tar c ${CMAKE_CURRENT_BINARY_DIR}/data.zip --format=zip ${CMAKE_SOURCE_DIR}/bin/ ${CMAKE_SOURCE_DIR}/src/editor/shader/
+        ARGS -E tar c ${CMAKE_CURRENT_BINARY_DIR}/data.zip --format=zip ${CMAKE_SOURCE_DIR}/CREDITS ${CMAKE_SOURCE_DIR}/bin/ ${CMAKE_SOURCE_DIR}/src/editor/shader/
 
         # On MSVC we need to use incbin to generate a .c file because they don't have an inline assembler.
         COMMAND incbin
