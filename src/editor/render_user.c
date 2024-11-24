@@ -28,7 +28,7 @@ const char* strcasestr(const char* a, const char* b) {
 
 #include <common/utf8.h>
 #include <common/logging.h>
-#include <common/primitives.h>
+#include <common/gl/primitives.h>
 #include <parts.h>
 #include "editor.h"
 #include "vehicle_edit.h"

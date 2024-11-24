@@ -3,10 +3,10 @@
 
 #include <glad/glad.h>
 
-#include "common/int.h"
-#include "common/logging.h"
-#include "common/gl_setup.h"
-#include "common/input.h"
+#include <common/int.h>
+#include <common/logging.h>
+#include <common/gl/gl_setup.h>
+#include <common/gl/input.h>
 
 #include "editor/render_garage.h"
 #include "editor/render_debug.h"

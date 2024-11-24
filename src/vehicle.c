@@ -3,7 +3,7 @@
 
 #include <common/endian.h>
 #include <common/file.h>
-#include <common/vector.h>
+#include <common/gl/vector.h>
 #include <common/logging.h>
 #include <cglm/cglm.h>
 

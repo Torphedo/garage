@@ -4,7 +4,7 @@
 #include <cglm/cglm.h>
 
 #include <common/logging.h>
-#include <common/primitives.h>
+#include <common/gl/primitives.h>
 #include <common/file.h>
 #include <physfs_bundling.h>
 

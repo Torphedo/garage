@@ -7,9 +7,9 @@
 
 #include <common/int.h>
 #include <common/logging.h>
-#include <common/shader.h>
-#include <common/primitives.h>
-#include <common/gl_setup.h>
+#include <common/gl/shader.h>
+#include <common/gl/primitives.h>
+#include <common/gl/gl_setup.h>
 
 #include <vehicle.h>
 #include <physfs_bundling.h>

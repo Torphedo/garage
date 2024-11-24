@@ -4,8 +4,7 @@
 // hex editor when missing from his list.
 
 #include "common/int.h"
-#include "common/vector.h"
-#include "vehicle.h"
+#include "common/gl/vector.h"
 
 // Part IDs are written are as they appear in the hex editor, in the order of
 // the in-game menu. Use part_get_info() to get a string for a part ID.

@@ -3,10 +3,10 @@
 #include <assert.h>
 
 #include <common/int.h>
-#include <common/vector.h>
-#include <common/input.h>
-#include <common/model.h>
 #include <common/list.h>
+#include <common/gl/vector.h>
+#include <common/gl/input.h>
+#include <common/gl/model.h>
 
 #include <vehicle.h>
 #include "camera.h"

@@ -7,7 +7,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 
 add_subdirectory(ext/glfw)
 
-include_directories("src" "ext/glfw/include" "ext/glad/include" "ext/cglm/include" "ext" "ext/physfs/src")
+include_directories("src" "ext/bobtail" "ext/glfw/include" "ext/glad/include" "ext/cglm/include" "ext" "ext/physfs/src")
 
 # Internal build tool to generate headers for GLSL shaders
 add_executable(incbin "ext/incbin.c")
@@ -32,22 +32,9 @@ set(PHYSFS_ARCHIVE_ISO9660 FALSE CACHE BOOL "ISO9660 support")
 set(PHYSFS_TARGETNAME_UNINSTALL "physfs_uninstall" CACHE STRING "Name of 'uninstall' build target")
 add_subdirectory(ext/physfs)
 
-add_library(common STATIC
-    src/common/int.c
-    src/common/file.c
-    src/common/vector.c
-    src/common/logging.c
-    src/common/sha1.c
-    src/common/image.c
-    src/common/gl_debug.c
-    src/common/gl_setup.c
-    src/common/input.c
-    src/common/shader.c
-    src/common/primitives.c
-    src/common/model.c
-    src/common/path.c
-    src/common/list.c
-)
+# We have to enable the OpenGL features before using them
+set(BOBTAIL_OPENGL ON)
+add_subdirectory(ext/bobtail)
 
 add_executable(garage
     src/editor/camera.c
@@ -74,7 +61,7 @@ add_executable(garage
     ext/stb_truetype.c
 )
 
-target_link_libraries(garage PRIVATE glfw common physfs-static)
+target_link_libraries(garage PRIVATE glfw bobtail physfs-static)
 
 if (NOT MSVC)
     # Generate a data.zip with our assets
@@ -116,5 +103,6 @@ add_executable(test
     ${test_sources}
     test/main.c
 )
-target_link_libraries(test PRIVATE common)
+
+target_link_libraries(test PRIVATE bobtail)
 

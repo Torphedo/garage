@@ -1,7 +1,7 @@
 #ifndef RENDER_GARAGE_H
 #define RENDER_GARAGE_H
+#include <common/gl/model.h>
 #include "editor.h"
-#include <common/model.h>
 #include <parts.h>
 
 // This file renders the garage "floor" and all of the vehicle parts.

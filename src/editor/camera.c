@@ -1,6 +1,6 @@
 #include <cglm/cglm.h>
 
-#include <common/input.h>
+#include <common/gl/input.h>
 
 #include "camera.h"
 #include "editor.h"

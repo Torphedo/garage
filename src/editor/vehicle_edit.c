@@ -1,7 +1,7 @@
 #include <memory.h>
 #include <math.h>
 
-#include <common/vector.h>
+#include <common/gl/vector.h>
 #include <common/int.h>
 #include <common/logging.h>
 

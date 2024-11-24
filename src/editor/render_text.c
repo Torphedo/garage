@@ -13,18 +13,20 @@
 #include <common/logging.h>
 #include <common/image.h>
 #include <common/utf8.h>
-#include <common/shader.h>
-#include <common/primitives.h>
+#include <common/gl/shader.h>
+#include <common/gl/primitives.h>
 #include <physfs_bundling.h>
 
 #include "render_text.h"
 #include "timing_targets.h"
 
 // A vertex with position and texture coordinates
+/*
 typedef struct {
     vec3 position;
     vec2 texcoord;
 }tex_vertex;
+*/
 
 enum {
     TTF_TEX_WIDTH = 512,
