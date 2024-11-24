@@ -67,6 +67,7 @@ add_executable(garage
     src/vehicle.c
     src/parts.c
     src/stfs.c
+    src/timing_targets.c
 
     ext/glad/src/glad.c
     ext/stb_dxt.c

@@ -12,6 +12,7 @@
 #include "vehicle_edit.h"
 #include "editor.h"
 #include "render_garage.h"
+#include "timing_targets.h"
 
 model get_or_load_model(garage_state* state, part_id id) {
     for (u8 i = 0; i < ARRAY_SIZE(state->models); i++) {
@@ -61,12 +62,7 @@ garage_state garage_init(editor_state* editor) {
         get_or_load_model(&state, p->id);
     }
 
-
-    const double time_end = glfwGetTime();
-    const double elapsed = time_end - time_start;
-    if (elapsed > 1.0 / 1000) {
-        LOG_MSG(debug, "Finished in %.3lfms\n", elapsed * 1000);
-    }
+    DBG_ASSERT_PERF(time_start, 1);
     return state;
 }
 

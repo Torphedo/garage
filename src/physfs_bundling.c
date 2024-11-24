@@ -10,7 +10,10 @@
 #include <common/path.h>
 #include <common/logging.h>
 #include <common/int.h>
+#include "timing_targets.h"
 
+// Embed file into the program. On everything but MSVC, this just becomes an
+// assembler macro.
 INCBIN(asset_archive, "data.zip");
 
 bool setup_physfs(const char* argv0) {
@@ -26,20 +29,18 @@ bool setup_physfs(const char* argv0) {
         LOG_MSG(debug, "Mounted %s as virtual filesystem root\n", self_path);
     }
 
-    // We give it a suggested filenames with a slash because it's invalid on all
+    // The "gasset_archive_data" symbol is defined by the INCBIN() macro above,
+    // it prepends "g" (maybe for "global"?) and appends "_data" and "_size".
+    // We give it a suggested filename with a slash because it's invalid on all
     // filesystems, so there'll never be a name conflict
     if (PHYSFS_mountMemory(gasset_archive_data, gasset_archive_size, NULL, "/embedded_data.zip", "/", 1) == 0) {
         LOG_MSG(error, "Somehow failed to mount bundled assets!\n");
-        return  false;
+        return false;
     }
 
     free(self_path);
 
-    const double physfs_time_end = glfwGetTime();
-    const double elapsed = physfs_time_end - physfs_time_start;
-    if (elapsed > 1.0 / 1000) {
-        LOG_MSG(debug, "Finished in %.3lf ms\n", elapsed * 1000);
-    }
+    DBG_ASSERT_PERF(physfs_time_start, 1);
     return true;
 }
 
@@ -76,4 +77,3 @@ u8* physfs_load_file(const char* path) {
 
     return data;
 }
-

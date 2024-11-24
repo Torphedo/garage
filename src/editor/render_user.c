@@ -33,6 +33,7 @@ const char* strcasestr(const char* a, const char* b) {
 #include "editor.h"
 #include "vehicle_edit.h"
 #include "render_text.h"
+#include "timing_targets.h"
 
 // Use an atomic bool b/c I'm not sure if the callback is on the same thread.
 // We can't put any of these globals in the editor struct b/c the callback
@@ -320,11 +321,8 @@ void ui_update_render(editor_state* editor) {
     // Reset state
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
-    const double time_end = glfwGetTime();
-    const double elapsed = time_end - time_start;
-    if (elapsed > 1.0 / 1000) {
-        LOG_MSG(debug, "Finished in %.3lfms\n", elapsed * 1000);
-    }
+
+    DBG_ASSERT_PERF(time_start, 1);
 }
 
 void ui_teardown(editor_state* editor) {

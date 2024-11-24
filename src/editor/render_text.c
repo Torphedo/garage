@@ -18,6 +18,7 @@
 #include <physfs_bundling.h>
 
 #include "render_text.h"
+#include "timing_targets.h"
 
 // A vertex with position and texture coordinates
 typedef struct {
@@ -208,11 +209,7 @@ bool text_renderer_setup(const char* ttf_path) {
 
     initialized = true;
 
-    const double time_end = glfwGetTime();
-    const double elapsed = time_end - time_start;
-    if (elapsed > 1.0 / 1000) {
-        LOG_MSG(debug, "Finished in %.3lfms\n", elapsed * 1000);
-    }
+    DBG_ASSERT_PERF(time_start, 1);
     return true;
 }
 

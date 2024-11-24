@@ -15,6 +15,7 @@
 #include <physfs_bundling.h>
 #include "camera.h"
 #include "editor.h"
+#include "timing_targets.h"
 #include "vehicle_edit.h"
 
 
@@ -469,11 +470,7 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
             editor->cam.mouse_sens = camera_default().mouse_sens;
     }
 
-    const double time_end = glfwGetTime();
-    const double elapsed = time_end - time_start;
-    if (elapsed > 1.0 / 1000) {
-        LOG_MSG(debug, "Finished in %.3lfms\n", elapsed * 1000);
-    }
+    DBG_ASSERT_PERF(time_start, 1);
     return true;
 }
 
@@ -539,11 +536,7 @@ editor_state editor_init(const char* vehicle_path, GLFWwindow* window) {
     model_upload(&cube);
 
     editor.init_result = true;
-    const double time_end = glfwGetTime();
-    const double elapsed = time_end - time_start;
-    if (elapsed > 1.0 / 1000) {
-        LOG_MSG(debug, "Finished in %.3lfms\n", elapsed * 1000);
-    }
+    DBG_ASSERT_PERF(time_start, 1);
     return editor;
 }
 
