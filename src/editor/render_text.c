@@ -20,14 +20,6 @@
 #include "render_text.h"
 #include "timing_targets.h"
 
-// A vertex with position and texture coordinates
-/*
-typedef struct {
-    vec3 position;
-    vec2 texcoord;
-}tex_vertex;
-*/
-
 enum {
     TTF_TEX_WIDTH = 512,
     TTF_TEX_HEIGHT = 512,
