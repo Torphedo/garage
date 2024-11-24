@@ -280,6 +280,7 @@ float text_get_lineheight(text_state t) {
 }
 
 void text_update_transforms(text_state* ctx) {
+    const double start_time = glfwGetTime();
     if (ctx->text == NULL) {
         LOG_MSG(warning, "Someone asked for a text update, but there's nothing to update to... [ignored]\n");
         return;
@@ -361,6 +362,8 @@ void text_update_transforms(text_state* ctx) {
 
         char_idx++;
     }
+
+    DBG_ASSERT_PERF(start_time, 1);
 }
 
 void text_render(text_state ctx) {

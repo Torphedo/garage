@@ -40,8 +40,8 @@ const char* strcasestr(const char* a, const char* b) {
 // can't access it.
 atomic_bool enable_textinput = false;
 atomic_bool searchbuf_updated = false; // Set true on every codepoint callback
-// 500 characters because that's how many the text rendering shader can handle
-char textbox_buf[500] = {0};
+// 200 characters because that's how many the text rendering shader can handle
+char textbox_buf[200] = {0};
 
 // This receives UTF-8 codepoint data from GLFW on every key press
 void character_callback(GLFWwindow* window, unsigned int codepoint) {
@@ -60,7 +60,18 @@ void character_callback(GLFWwindow* window, unsigned int codepoint) {
     }
 }
 
-void partsearch_update_render(editor_state* editor) {
+void draw_rect_panel(editor_state* editor, const mat4 quad_transform, const vec4 color) {
+    glUseProgram(editor->vcolor_shader);
+    glBindVertexArray(quad.vao);
+
+    // Render panel
+    glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float*)quad_transform);
+    glUniform4fv(editor->u_paint, 1, (const float*)color);
+    glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
+}
+
+void partsearch_update(editor_state* editor) {
+    const double start_time = glfwGetTime();
     if ((input.enter && !editor->prev_input.enter) || (input.gp.a && !editor->prev_input.gp.a)) {
         editor->mode = MODE_EDIT;
         editor->sel_mode = SEL_ACTIVE;
@@ -93,13 +104,38 @@ void partsearch_update_render(editor_state* editor) {
         }
     }
 
+    // Up and down are kind of backwards. "Up" means increasing the menu index,
+    // which is visually downwards.
+    const bool up = (input.tab && !editor->prev_input.tab && !input.shift)  || down_rising_edge(*editor) || (move_y_rising_edge(*editor) == -1);
+    const bool down = (input.tab && !editor->prev_input.tab && input.shift) || up_rising_edge(*editor) || (move_y_rising_edge(*editor) == 1);
+
+    s8 diff = 0;
+    if (up) {
+        diff = 1;
+    }
+    if (down) {
+        diff = -1;
+    }
+    // We have to check for W and S here because otherwise typing them would
+    // move the selected item, which is unintuitive
+    if (input.w || input.s) {
+        diff = 0;
+    }
+
+    editor->partsearch_selected_item += diff;
+    // Clamp so it doesn't go over the number of filled slots
+    editor->partsearch_selected_item = CLAMP(0, editor->partsearch_selected_item, editor->partsearch_filled_slots - 1);
+
+    // Update search results when the contents of the search box change
     const float partsearch_startheight = 0.4f;
     if (searchbuf_updated) {
+        // Update textbox display
         text_update_transforms(&editor->textbox);
         editor->partsearch_startoffset = 0;
         u32 menupos = 0; // Current offset in array of results
         for (u32 i = 0; i < NUM_PARTS; i++) {
             if (menupos >= PARTSEARCH_MENUSIZE) {
+                // Stop searching when we fill all of our result slots
                 break;
             }
 
@@ -127,39 +163,14 @@ void partsearch_update_render(editor_state* editor) {
         }
         searchbuf_updated = false;
     }
-    // Up and down are kind of backwards. "Up" means increasing the menu index,
-    // which is visually downwards.
-    const bool up = (input.tab && !editor->prev_input.tab && !input.shift)  || down_rising_edge(*editor) || (move_y_rising_edge(*editor) == -1);
-    const bool down = (input.tab && !editor->prev_input.tab && input.shift) || up_rising_edge(*editor) || (move_y_rising_edge(*editor) == 1);
 
-    s8 diff = 0;
-    if (up && !input.w) {
-        diff = 1;
-    }
-    if (down && !input.s) {
-        if (editor->partsearch_selected_item > 0) {
-            diff = -1;
-        }
-    }
-    // We have to check for W and S here because otherwise typing them would
-    // move the selected item, which is unintuitive
-    if (input.w || input.s) {
-        diff = 0;
-    }
+    DBG_ASSERT_PERF(start_time, 1.2);
+}
 
-    // TODO: Everything after this is terrible.
-    editor->partsearch_selected_item += diff;
-    // Clamp so it doesn't go over the number of filled slots
-    editor->partsearch_selected_item = CLAMP(0, editor->partsearch_selected_item, editor->partsearch_filled_slots);
-    // Clamp allows this to happen :(
-    if (editor->partsearch_selected_item == editor->partsearch_filled_slots) {
-        editor->partsearch_selected_item--;
-    }
-
-    glUseProgram(editor->vcolor_shader);
-    glBindVertexArray(quad.vao);
-
-    // Setup model transform
+void partsearch_render(editor_state* editor) {
+    const double start_time = glfwGetTime();
+    const float partsearch_startheight = 0.4f;
+    // Setup quad transform
     mat4 mdl = {0};
     glm_mat4_identity(mdl);
     // Scale to screen space. This messes up our coordinates, so the
@@ -167,14 +178,10 @@ void partsearch_update_render(editor_state* editor) {
     glm_scale_uni(mdl, 1.0f / QUAD_SIZE);
     glm_rotate_x(mdl, glm_rad(90.0f), mdl); // Face quad towards camera
     glm_translate(mdl, (vec3){0.0f, 0.20f, 3.5f});
-
     glm_scale(mdl, (vec3){0.55f, 1.0f, 0.75f}); // Scale to reasonable size
-    const vec4 outer_color = {0.95f, 0.95f, 0.95f, 1.0f};
 
-    // Render outer border
-    glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float*)mdl);
-    glUniform4fv(editor->u_paint, 1, (const float*)outer_color);
-    glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
+    const vec4 outer_color = {0.95f, 0.95f, 0.95f, 1.0f};
+    draw_rect_panel(editor, mdl, outer_color);
 
     {
         // Sorry, this is a stupid hack where I just pass it the default scale.
@@ -182,39 +189,34 @@ void partsearch_update_render(editor_state* editor) {
         const float lineheight = text_get_lineheight((text_state){.scale = text_default_scale});
         // Subtract here because down is -Y
         const float ypos = partsearch_startheight - (lineheight * (editor->partsearch_selected_item + 1));
-        mat4 highlight_box = {0};
-        glm_mat4_identity(highlight_box);
 
+        // Setup transform for highlight box
         // Sorry for all the magic numbers, they just come from trial & error.
         // We're redoing the work above so we can use real screenspace coords
         // and perfectly align the box to the screenspace coords of the text.
-        glm_translate(highlight_box, (vec3){0.0f, ypos - 0.06f, 0.00f});
-        glm_scale_uni(highlight_box, 1.0f / QUAD_SIZE);
-        glm_scale(highlight_box, (vec3){0.55f * 0.97f, lineheight * 0.5f, 1});
-        glm_rotate_x(highlight_box, glm_rad(90.0f), highlight_box); // Face quad towards camera
-
-        const vec4 highlight_color = {0, 0, 0, 1};
+        mat4 highlight_trans = {0};
+        glm_mat4_identity(highlight_trans);
+        glm_translate(highlight_trans, (vec3){0.0f, ypos - 0.06f, 0.00f});
+        glm_scale_uni(highlight_trans, 1.0f / QUAD_SIZE);
+        glm_scale(highlight_trans, (vec3){0.55f * 0.97f, lineheight * 0.5f, 1});
+        glm_rotate_x(highlight_trans, glm_rad(90.0f), highlight_trans); // Face quad towards camera
 
         // Render highlight bar
-        glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float*)highlight_box);
-        glUniform4fv(editor->u_paint, 1, (const float*)highlight_color);
-        glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
+        draw_rect_panel(editor, highlight_trans, (vec4){0, 0, 0, 1});
     }
 
+    // Render inner panel
     glm_scale(mdl, (vec3){0.97f, 1.0f, 0.95f}); // Scale to a smaller box
     glm_translate(mdl, (vec3){0.00f, -0.03f, 0.00f}); // Move in front of the other quad
     const vec4 inner_color = {0.2f, 0.2f, 1.0f, 1.0f};
-
-    // Render inner panel
-    glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float*)mdl);
-    glUniform4fv(editor->u_paint, 1, (const float*)inner_color);
-    glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
+    draw_rect_panel(editor, mdl, inner_color);
 
     // Render search results
     for (u32 i = 0; i < PARTSEARCH_MENUSIZE; i++) {
         text_render(editor->partsearch_results[i]);
     }
 
+    DBG_ASSERT_PERF(start_time, 1.2);
 }
 
 void ui_update_render(editor_state* editor) {
@@ -274,7 +276,6 @@ void ui_update_render(editor_state* editor) {
 
             // Also clear part search menu
             searchbuf_updated = true;
-            partsearch_update_render(editor);
         }
 
         text_update_transforms(&editor->editing_mode);
@@ -308,7 +309,8 @@ void ui_update_render(editor_state* editor) {
     }
 
     if (editor->mode == MODE_MENU) {
-        partsearch_update_render(editor);
+        partsearch_update(editor);
+        partsearch_render(editor);
         text_render(editor->textbox);
     }
     else {
@@ -322,7 +324,7 @@ void ui_update_render(editor_state* editor) {
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    DBG_ASSERT_PERF(time_start, 1);
+    DBG_ASSERT_PERF(time_start, 1.2);
 }
 
 void ui_teardown(editor_state* editor) {
@@ -330,5 +332,8 @@ void ui_teardown(editor_state* editor) {
     text_free(editor->editing_mode);
     text_free(editor->camera_mode_text);
     text_free(editor->textbox);
-}
 
+    for (u32 i = 0; i < ARRAY_SIZE(editor->partsearch_results); i++) {
+        text_free(editor->partsearch_results[i]);
+    }
+}
