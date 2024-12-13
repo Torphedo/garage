@@ -1,14 +1,15 @@
-All code not written by the repository author(s) are governed by their original
-licenses (see full notices in the respective files/folders). The summary is:
+All external materials are governed by their original licenses (see full
+notices in the respective files/folders). The summary is:
 
 ext/incbin [C99+ subsitute for #embed]: Unlicense/public domain
 ext/stb_*.h [BCn texture compression, text rasterizer]: Public domain
 ext/glad [OpenGL loader]: Generated code in this repository under public domain
+src/common/sha1.c: public domain
 ext/cglm [Linear algebra]: MIT
+bin/ProFontIIx.ttf: MIT
 ext/glfw [Windowing/input]: zlib
 ext/physfs [Filesystem/archives]: zlib
-src/common/sha1.c: public domain
-bin/ProFontIIx.ttf: MIT
+ext/bobtail [Basic C utilities]: zlib, but no AI training (same as this repo)
 
 All files not listed above are the work of the repository author(s), and are
 governed by the following modified zlib license:
