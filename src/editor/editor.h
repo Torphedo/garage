@@ -38,8 +38,12 @@ enum {
 // for storing which cells are selected.
 typedef u8 vehicle_bitmask[VEH_MAX_DIM][VEH_MAX_DIM][VEH_MASK_BYTE_WIDTH];
 static_assert(sizeof(vehicle_bitmask) == 0x40000, "vehicle_bitmask size is wrong!");
+// If I could go back and undo 1 architectural decision, I'd probably remove
+// this and just loop through each part and every cell it occupies. It's
+// probably not a major performance hit, and would keep the code much simpler.
 
-// Current state of the vehicle editor & GUI in general
+// Current state of the vehicle editor & GUI in general. In a hypothetical C++
+// rewrite, this would do well as a class.
 typedef struct {
     // Vehicle/part data
     vehicle_header v;
@@ -61,7 +65,9 @@ typedef struct {
     char partname_buf[32]; // Backing text buffer, enough for longest part name
     text_state editing_mode;
     text_state camera_mode_text;
-    text_state textbox;
+
+    // State for the part search menu
+    text_state textbox; // User input search box
     text_state partsearch_results[PARTSEARCH_MENUSIZE];
     // Skip past this many matching entries before we start rendering (resets when
     // target string changes, used to fake scrolling)
@@ -85,10 +91,9 @@ typedef struct {
     gl_obj u_paint; // Vertex color multiplier
 }editor_state;
 
-// TODO: Move input code out of common/ and move these functions into there
 // This collection of functions lets us check for a user intent like "forward",
 // instead of separately checking for the W key, gamepad stick thresholds,
-// arrow keys, and the dpad up key.
+// arrow keys, and the dpad up key across the whole codebase.
 
 // "Rising edge" means the condition is only true on the first frame the
 // relevant button is pressed. (Thinking of "pressed" as a electrical signal

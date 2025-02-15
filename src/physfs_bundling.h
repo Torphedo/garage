@@ -16,4 +16,3 @@ void dump_assets();
 u8* physfs_load_file(const char* path);
 
 #endif // #ifndef PHYSFS_BUNDLING_H
-

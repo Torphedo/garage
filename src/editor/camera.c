@@ -3,7 +3,6 @@
 #include <common/gl/input.h>
 
 #include "camera.h"
-#include "editor.h"
 
 // Restrict a number to a certain range
 float clampf(float x, float min, float max) {
@@ -22,9 +21,9 @@ float clampf(float x, float min, float max) {
 // rotation angles
 vec3s orbit_pos_by_angles(camera cam) {
     // Get combined quaternion of rotation about Y & Z axes
-    versors xrot = glms_quatv(cam.orbit_angles.x, (vec3s){0,1,0});
-    versors yrot = glms_quatv(cam.orbit_angles.y, (vec3s){0,0,1});
-    versors total_rot = glms_quat_mul(xrot, yrot);
+    const versors xrot = glms_quatv(cam.orbit_angles.x, (vec3s){0, 1, 0});
+    const versors yrot = glms_quatv(cam.orbit_angles.y, (vec3s){0, 0, 1});
+    const versors total_rot = glms_quat_mul(xrot, yrot);
 
     vec3s pos_difference = glms_quat_rotatev(total_rot, (vec3s){cam.radius,0,0});
     return pos_difference;
@@ -62,10 +61,11 @@ vec2s get_cursor_delta(camera* cam, vec2s cursor_pos) {
     return cursor_delta;
 }
 
-// Don't use this. Kinda sucks.
+// Don't use this, it kinda sucks. We'd need to rewrite how the camera works
+// for roll to work (not that we really need ot want roll).
 void update_roll(float delta_time, float angle_diff) {
     static const vec3s axis_forward = {0.0f, 0.0f, 1.0f};
-    float roll = angle_diff * 5.0f * delta_time;
+    const float roll = angle_diff * 5.0f * delta_time;
     camera_up = glms_vec3_rotate(camera_up, roll, axis_forward);
 }
 
@@ -78,6 +78,9 @@ void camera_update(camera* cam, double delta_time) {
         .x = input.scroll.x - last_scroll.x,
         .y = input.scroll.y - last_scroll.y
     };
+    // Save state so we can find the delta next time we're called
+    last_scroll = input.scroll;
+
 
     const vec3s cam_dir = glms_normalize(camera_facing(*cam));
     const float multiplier = delta_time * cam->move_speed;
@@ -104,9 +107,6 @@ void camera_update(camera* cam, double delta_time) {
     pos_delta = glms_vec3_add(pos_delta, glms_vec3_scale(cam_side, side));
     pos_delta.y += vertical;
 
-    // Save state so we can find the delta next time we're called
-    last_scroll = input.scroll;
-
     // Update angles & zoom from mouse input
     cam->orbit_angles = glms_vec2_add(cam->orbit_angles, cursor_delta);
     cam->radius -= scroll_delta.y;
@@ -115,10 +115,11 @@ void camera_update(camera* cam, double delta_time) {
     // Update target pos using delta from user input
     cam->target = glms_vec3_add(cam->target, pos_delta);
 
-    // Rendering breaks at exactly 90 and we don't want to be upside-down
+    // Rendering breaks @ exactly 90 with Euler rotations, and we don't want to
+    // be upside-down.
     cam->orbit_angles.y = clampf(cam->orbit_angles.y, glm_rad(-89.999f), glm_rad(89.999f));
 
-    // Add target position to relative orbit position
+    // Add target position to relative orbit position to get final position
     cam->pos = glms_vec3_add(cam->target, orbit_pos_by_angles(*cam));
 }
 
@@ -131,12 +132,12 @@ vec3s camera_facing(camera cam) {
     }
 }
 
-void camera_set_mode(camera* cam, camera_mode mode) {
-    if (mode == cam->mode) {
-        return;
+void camera_set_mode(camera* cam, camera_mode new_mode) {
+    if (new_mode == cam->mode) {
+        return; // Nothing to do.
     }
 
-    switch (mode) {
+    switch (new_mode) {
         case CAMERA_ORBIT:
             cam->invert_mouse_x = true; 
             cam->invert_mouse_y = false;
@@ -149,18 +150,19 @@ void camera_set_mode(camera* cam, camera_mode mode) {
             cam->mouse_sens = 0.005f;
             break;
     }
-    // If endering or leaving orbit mode, the target will be swapped with the
+    // If entering or leaving orbit mode, the target will be swapped with the
     // camera. We need to face the opposite direction to correct for the change
-    bool needs_view_flip = (cam->mode == CAMERA_ORBIT || mode == CAMERA_ORBIT);
+    bool needs_view_flip = (cam->mode == CAMERA_ORBIT || new_mode == CAMERA_ORBIT);
     if (needs_view_flip) {
         cam->orbit_angles.x = fmodf(cam->orbit_angles.x + glm_rad(180), 360);
         cam->orbit_angles.y = -cam->orbit_angles.y;
     }
     
     // Set mode
-    cam->mode = mode;
+    cam->mode = new_mode;
 }
 
+// Wrapper function avoids verbose initialization code in other functions
 void camera_set_target(camera* cam, vec3s pos) {
     cam->target = (vec3s){
         .x = pos.x,
@@ -169,12 +171,12 @@ void camera_set_target(camera* cam, vec3s pos) {
     };
 }
 
-void camera_view_matrix(camera cam, mat4 view) {
+void camera_view_matrix(camera cam, mat4 view_out) {
     if (cam.mode == CAMERA_ORBIT) {
-        glm_lookat((float*)&cam.pos, (float*)&cam.target, (float*)&camera_up, view);
+        glm_lookat((float*)&cam.pos, (float*)&cam.target, (float*)&camera_up, view_out);
     } else {
         // In fly mode, the target & camera are swapped
-        glm_lookat((float*)&cam.target, (float*)&cam.pos, (float*)&camera_up, view);
+        glm_lookat((float*)&cam.target, (float*)&cam.pos, (float*)&camera_up, view_out);
     }
 }
 
@@ -184,7 +186,7 @@ void camera_proj_view(camera cam, mat4 out) {
     // Projection matrix
     mat4 projection = {0};
     const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-    float aspect = (float)mode->width / (float)mode->height;
+    const float aspect = (float)mode->width / (float)mode->height;
     glm_perspective_rh_no(glm_rad(45), aspect, 0.1f, 1000.0f, projection);
 
     // Camera matrix

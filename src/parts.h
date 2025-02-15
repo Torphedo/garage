@@ -1,7 +1,7 @@
 #ifndef PART_IDS_H
 #define PART_IDS_H
-// IDs are taken from mojobojo's 2009 vehicle editor, or found manually with a
-// hex editor when missing from his list.
+// Most IDs are taken from mojobojo's 2009 vehicle editor (thanks mojobojo <3),
+// or found manually with a hex editor for those missing from his list.
 
 #include "common/int.h"
 #include "common/gl/vector.h"
@@ -180,6 +180,8 @@ typedef enum {
     MOLE_ON_A_POLE  = 0xCCCCCCCC,
 
     // <== Unused ==>
+    // These are listed on the wiki as unused, but I have no direct evidence
+    // they exist or any way to load them. - Torph
     WHEEL_CATERPILLAR = 0xCCCCCCCC,
     AUTOPILOT         = 0xCCCCCCCC,
     REMOTE_CONTROLLER = 0xCCCCCCCC,
@@ -202,7 +204,8 @@ typedef struct {
     vec3s8 cells[PART_MAX_VOLUME];
 }part_volume;
 
-// Coordinate arrays are terminated by an all-zero entry representing the origin
+// Coordinate arrays are terminated by an all-zero entry representing the
+// origin, since all parts occupy their origin
 typedef struct {
     const char* name; // Human-readable part name
     part_id id;

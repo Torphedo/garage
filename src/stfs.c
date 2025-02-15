@@ -207,4 +207,3 @@ u8* stfs_get_vehicle(const char* path) {
 
     return buf;
 }
-

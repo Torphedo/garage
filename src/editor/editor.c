@@ -490,7 +490,7 @@ editor_state editor_init(const char* vehicle_path, GLFWwindow* window) {
 
     vehicle* v = vehicle_load(vehicle_path);
     if (v == NULL) {
-        LOG_MSG(error, "Failed to load vehicle from \"%s\"", vehicle_path);
+        LOG_MSG(error, "Failed to load vehicle from \"%s\"\n", vehicle_path);
         return editor;
     }
 

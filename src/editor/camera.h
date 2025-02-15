@@ -8,7 +8,7 @@ static vec3s camera_up = {0.0f, 1.0f, 0.0f};
 typedef enum {
     CAMERA_ORBIT, // 3rd-person dual-stick style
     CAMERA_POV, // POV Minecraft-style
-    CAMERA_FLY, // Flying (freecam style)
+    CAMERA_FLY, // Flying (freecam style, like Source Engine spectator)
     CAMERA_MODE_ENUM_MAX,
 }camera_mode;
 
@@ -34,11 +34,19 @@ static camera camera_default() {
     };
 }
 
-void camera_set_mode(camera* cam, camera_mode mode);
+/// @brief Updates the camera mode.
+///
+/// Use this instead of accessing the field directly, otherwise it may break.
+/// @param cam The camera to modify
+/// @param new_mode The new mode to use
+void camera_set_mode(camera* cam, camera_mode new_mode);
 
+/// @brief Update the camera state (should be called each frame)
+/// @param The camera to modify
+/// @param delta_time Time elapsed since the last call
 void camera_update(camera* cam, double delta_time);
 
-// Vector of the direction the camera is looking
+/// @brief Gets the direction the camera is looking (*not* normalized!)
 vec3s camera_facing(camera cam);
 
 void camera_set_target(camera* cam, vec3s pos);

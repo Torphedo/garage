@@ -3,19 +3,26 @@
 /* (Partially) implements the STFS filesystem for Xbox 360. The main focus is
  * the CON variant used for console-signed data like save files.
  *
+ * This lets users just copy vehicle saves to a USB stick and edit them, rather
+ * than having to use some old tool from a forum to convert them back and forth.
+ *
  * Structures come from:
  *     - https://www.arkem.org/xbox360-file-reference.pdf
  *     - https://free60.org/System-Software/Formats/STFS
  *     - Source code of DJ Shepard's X360 library (C#):
  *       https://cdn.discordapp.com/attachments/425101066938482718/1239776230090346576/X360.zip
  *
- *  Arrays of 3 u8's or s8's are representing 24-bit integers.
+ *  The arrays of 3 u8's / s8's are representing 24-bit integers.
+ *  The implementation is a little janky and rushed.
  */
 #include <assert.h>
 
-#include "common/int.h"
-#include "common/file.h"
-#include "common/sha1.h"
+#include <common/int.h>
+#include <common/file.h>
+#include <common/sha1.h>
+
+// TODO: If we move to C++, make these all sized enums so they can be used in
+// struct definitions with a known size.
 
 typedef enum {
     STFS_CON  = MAGIC('C', 'O', 'N', ' '), // "CON " (console-signed)
@@ -92,7 +99,8 @@ typedef enum {
     STATUS_NEW_ALLOC = 0xC0,
 }stfs_status;
 
-// Disable struct padding
+// Disable struct padding, otherwise our structs won't match the file and
+// loading will break.
 #pragma pack(push, r1, 1)
 
 // There's an array of this structure, 1 per file/directory

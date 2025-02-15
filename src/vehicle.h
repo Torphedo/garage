@@ -11,8 +11,9 @@ typedef struct {
     u16 part_count;
     u8 is_one_piece;
     u8 unk;
-    // Seems to indicate engine/propulsion power, but grows non-linearly. For
-    // small engines: 1 -> 40, 2 -> 60, 3 -> 70
+    // Seems to indicate the vehicle's total engine/propulsion power, but grows
+    // with diminishing returns (probably to nerf giant piles of engines).
+    // For small engines: 1 -> 40, 2 -> 60, 3 -> 70
     float power;
     u8 unk1[8];
     float weight;
@@ -37,7 +38,7 @@ typedef struct {
     u8 modifier; // Used for part settings, if applicable (e.g. wheel steering mode)
     u8 pad2;
     u32 id; // part_id enum
-    vec3 rot; // 3D Euler rotation in radians. The preview will render w/ arbitrary angles, but upon loading rounds to 90 degrees
+    vec3 rot; // 3D Euler rotation in radians. The preview will render w/ arbitrary angles, but upon loading it rounds to 90 degrees
     rgba8 color; // Game stores arbitrary colors, but only the preset colors are allowed
     u32 pad3;
 }part_entry;
@@ -64,14 +65,9 @@ void part_byteswap(part_entry* part);
 // Byte-swap an existing vehicle header
 void vehicle_header_byteswap(vehicle_header* v);
 
-// Everything after this point involves runtime data structures for the editor.
-// If you're using this header to write your own program, the rest won't be
-// useful unless you adopt the same data structures.
-
 enum {
     // Max size of a vehicle on any axis
     VEH_MAX_DIM = (INT8_MAX + 1),
 };
 
 #endif // VEHICLE_H
-
