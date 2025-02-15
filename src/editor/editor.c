@@ -204,7 +204,7 @@ void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
 
 void update_edit_mode(editor_state* editor) {
     // Handle moving the selector box
-    const vec3s cam_view = glms_normalize(camera_facing(editor->cam));
+    const vec3s cam_view = camera_facing(editor->cam);
     // Absolute value of camera vector
     const vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
 

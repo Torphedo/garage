@@ -168,7 +168,7 @@ void garage_render(garage_state* state, editor_state* editor) {
 
     // Lock camera onto selection box during editing
     if (editor->mode == MODE_EDIT) {
-        camera_set_target(&editor->cam, pos);
+        editor->cam.target = pos;
     }
 
     // Reset state

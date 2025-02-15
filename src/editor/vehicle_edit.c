@@ -143,7 +143,7 @@ vec3s vehicle_find_center(const editor_state* editor, partsearch_type search_typ
 
 
 bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_diff, s8 roll_diff) {
-    vec3s cam_view = glms_normalize(camera_facing(editor->cam));
+    vec3s cam_view = camera_facing(editor->cam);
     // Absolute value of camera vector
     vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
 

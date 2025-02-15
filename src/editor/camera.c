@@ -82,7 +82,7 @@ void camera_update(camera* cam, double delta_time) {
     last_scroll = input.scroll;
 
 
-    const vec3s cam_dir = glms_normalize(camera_facing(*cam));
+    const vec3s cam_dir = camera_facing(*cam);
     const float multiplier = delta_time * cam->move_speed;
 
     // This just sets each axis to zero if it's below the deadzone threshold
@@ -124,12 +124,10 @@ void camera_update(camera* cam, double delta_time) {
 }
 
 vec3s camera_facing(camera cam) {
-    if (cam.mode == CAMERA_ORBIT) {
-        return glms_vec3_sub(cam.target, cam.pos);
-    } else {
-        // In fly mode, the target & camera are swapped
-        return glms_vec3_sub(cam.pos, cam.target);
-    }
+    // In fly mode, the target & camera are swapped
+    const vec3s target = (cam.mode == CAMERA_ORBIT) ? cam.target : cam.pos;
+    const vec3s pos = (cam.mode == CAMERA_ORBIT) ? cam.pos : cam.target;
+    return glms_normalize(glms_vec3_sub(target, pos));
 }
 
 void camera_set_mode(camera* cam, camera_mode new_mode) {
@@ -160,15 +158,6 @@ void camera_set_mode(camera* cam, camera_mode new_mode) {
     
     // Set mode
     cam->mode = new_mode;
-}
-
-// Wrapper function avoids verbose initialization code in other functions
-void camera_set_target(camera* cam, vec3s pos) {
-    cam->target = (vec3s){
-        .x = pos.x,
-        .y = pos.y,
-        .z = pos.z,
-    };
 }
 
 void camera_view_matrix(camera cam, mat4 view_out) {

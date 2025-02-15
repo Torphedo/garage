@@ -46,10 +46,8 @@ void camera_set_mode(camera* cam, camera_mode new_mode);
 /// @param delta_time Time elapsed since the last call
 void camera_update(camera* cam, double delta_time);
 
-/// @brief Gets the direction the camera is looking (*not* normalized!)
+/// @brief Gets the unit direction vector the camera is looking
 vec3s camera_facing(camera cam);
-
-void camera_set_target(camera* cam, vec3s pos);
 
 void camera_view_matrix(camera cam, mat4 view);
 
