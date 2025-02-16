@@ -123,16 +123,35 @@ void partsearch_update(editor_state* editor) {
     }
 
     editor->partsearch_selected_item += diff;
+
+    // Whether we needed to fake scroll this frame
+    bool scrolled = false;
+    if (editor->partsearch_selected_item == editor->partsearch_filled_slots || editor->partsearch_selected_item < 0) {
+        // We're out of bounds, do fake scrolling and correct position
+        editor->partsearch_startoffset += diff;
+        editor->partsearch_selected_item -= diff;
+        // Clamp to prevent going out of bounds
+        editor->partsearch_startoffset = CLAMP(0, editor->partsearch_startoffset, NUM_PARTS);
+        scrolled = true;
+    }
+
     // Clamp so it doesn't go over the number of filled slots
     editor->partsearch_selected_item = CLAMP(0, editor->partsearch_selected_item, editor->partsearch_filled_slots - 1);
 
     // Update search results when the contents of the search box change
     const float partsearch_startheight = 0.4f;
     if (searchbuf_updated) {
+        // Reset our position & fake scrolling when search buffer changes
+        editor->partsearch_startoffset = 0;
+        editor->partsearch_selected_item = 0;
+    }
+
+    // Redo our search
+    if (searchbuf_updated || scrolled) {
         // Update textbox display
         text_update_transforms(&editor->textbox);
-        editor->partsearch_startoffset = 0;
         u32 menupos = 0; // Current offset in array of results
+        u32 hit_count = 0; // How many matches we've gotten.
         for (u32 i = 0; i < NUM_PARTS; i++) {
             if (menupos >= PARTSEARCH_MENUSIZE) {
                 // Stop searching when we fill all of our result slots
@@ -145,6 +164,12 @@ void partsearch_update(editor_state* editor) {
                 continue;
             }
             if (strcasestr(cur_part_name, textbox_buf) != NULL) {
+                hit_count++;
+                if (hit_count <= editor->partsearch_startoffset) {
+                    // This match should be scrolled out of sight, skip it.
+                    continue;
+                }
+
                 text_state* result = &editor->partsearch_results[menupos++];
                 result->text = cur_part_name;
                 const float lineheight = text_get_lineheight(*result);

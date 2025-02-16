@@ -71,7 +71,7 @@ typedef struct {
     text_state partsearch_results[PARTSEARCH_MENUSIZE];
     // Skip past this many matching entries before we start rendering (resets when
     // target string changes, used to fake scrolling)
-    u32 partsearch_startoffset;
+    s32 partsearch_startoffset;
     s8 partsearch_selected_item; // Index of selected search result
     u32 partsearch_filled_slots; // Number of non-empty search result slots
 
