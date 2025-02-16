@@ -230,8 +230,7 @@ text_state text_render_prep(const char* text, u32 len, float scale, vec2 pos) {
     if (len > 0) {
         // Allows caller to override allocation size
         ctx.num_chars = len;
-    }
-    else {
+    } else {
         if (text == NULL) {
             LOG_MSG(error, "Caller gave a NULL string with no allocation hint\n");
             return ctx;
@@ -259,8 +258,7 @@ text_state text_render_prep(const char* text, u32 len, float scale, vec2 pos) {
         if (text == NULL) {
             ctx.num_chars = 0;
             return ctx;
-        }
-        else {
+        } else {
             ctx.num_chars = strlen(text);
         }
     }
@@ -386,4 +384,3 @@ void text_free(text_state ctx) {
     free(ctx.transforms);
     free(ctx.texcoords);
 }
-

@@ -26,7 +26,6 @@ void debug_render(editor_state* editor) {
     glUniform4fv(editor->u_paint, 1, (const float*)&color);
     render_vehicle_bitmask(editor, editor->selected_mask);
 
-
     // Reset state
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);

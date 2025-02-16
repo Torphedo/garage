@@ -20,27 +20,31 @@
 #include "parts.h"
 #include "physfs_bundling.h"
 
+// The file IO works a little strangely. We pack all assets in a zip file and
+// statically link it into the executable as part of the build. When we use a
+// filepath, it checks the directory and then the embedded zip file for that
+// path.
 int main(int argc, char** argv) {
     enable_win_ansi(); // Enable color & extra terminal features on Windows
     if (argc != 2) {
         LOG_MSG(error, "No input files.\n");
         LOG_MSG(info, "Usage: garage [vehicle file]\n");
-        return 1;
+        return EXIT_FAILURE;
     }
     if (strcmp(argv[1], "--dump-assets") == 0) {
         dump_assets();
-        return 0;
+        return EXIT_SUCCESS;
     }
 
     GLFWwindow* window = setup_opengl(680, 480, "Garage Opener", ENABLE_DEBUG, GLFW_CURSOR_NORMAL, true);
     if (window == NULL) {
         LOG_MSG(error, "GLFW / OpenGL init error\n");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     // Setup PhysicsFS
     if (!setup_physfs(argv[0])) {
-        return 1;
+        return EXIT_FAILURE;
     }
 
     const char* vehicle_path = argv[1]; // Give our first argument a convenient name
@@ -48,12 +52,12 @@ int main(int argc, char** argv) {
     // This is a generic failure flag for any problems with startup
     if (!editor.init_result) {
         LOG_MSG(error, "Editor init failure\n");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     if (!text_renderer_setup("bin/ProFontIIx.ttf")) {
         LOG_MSG(error, "Text renderer init failure\n");
-        return 1;
+        return EXIT_FAILURE;
     }
 
     garage_state garage = garage_init(&editor);
@@ -72,7 +76,7 @@ int main(int argc, char** argv) {
         two_frames_ago = one_frame_ago;
         one_frame_ago = glfwGetTime();
 
-        // Shift over all the frame times and add in the last one
+        // Shift all the frame times over and add the new one
         memmove(&frame_times[1], frame_times, sizeof(frame_times) - sizeof(*frame_times));
         frame_times[0] = editor.delta_time;
 
@@ -146,8 +150,7 @@ int main(int argc, char** argv) {
 
     text_renderer_cleanup();
     editor_teardown(&editor);
-    glfwTerminate(); // Auto-closes the window if we exited via the quit button
+    glfwTerminate();
 
     return 0;
 }
-

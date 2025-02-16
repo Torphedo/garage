@@ -49,6 +49,7 @@ void camera_update(camera* cam, double delta_time);
 /// @brief Gets the unit direction vector the camera is looking
 vec3s camera_facing(camera cam);
 
+// Get just the camera transform
 void camera_view_matrix(camera cam, mat4 view);
 
 // Get combined projection & view matrix for the current camera position

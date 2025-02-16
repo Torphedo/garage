@@ -28,36 +28,38 @@ void text_renderer_cleanup();
 
 // Call these to render individual strings or text buffers.
 
-// Allocates data needed to render the string. Automatically calls
-// text_update_transforms(), so you can call text_render() right after.
-//
-// [len] is an optional hint of how many characters the text buffer can contain
-// (useful for stack buffers). Passing 0 falls back to strlen().
-//
-// [text] is the text buffer used to update the transforms.
-// You can pass in a NULL pointer, as long as you give an allocation hint.
-// (but this means text_update_transforms() won't be called)
-//
-// [scale] is the font size, & [pos] is the 2D position of the first character
+/// @brief Sets up data needed to render the string.
+///
+/// Automatically calls text_update_transforms(), so you can call text_render() right after.
+/// @param len Optional hint of how many characters the text buffer can contain
+/// (useful for stack buffers). Pass 0 to fall back to strlen().
+///
+/// @param text The text buffer used to update the transforms. Can be NULL, as
+/// long as you give an allocation hint. (but this means
+/// text_update_transforms() won't be called)
+///
+/// @param scale The font size
+/// @param pos The 2D screen position of the first character
 text_state text_render_prep(const char* text, u32 len, float scale, vec2 pos);
 
 float text_get_lineheight(text_state t);
 
-// Uses the UTF-8 in the text pointer to update the transforms and texture
-// coordinates for each character. Call this if the pointer or string contents
-// changed since you last rendered.
-// Safely fails with a warning in the console if it finds a NULL pointer.
+/// @brief Updates rendering state to match the current text state
+///
+/// Text can be any UTF-8. Call this if the pointer or string contents changed
+/// since you last rendered. Safely fails with a warning in the console if it
+/// finds a NULL pointer.
 void text_update_transforms(text_state* ctx);
 
-// Renders the text as it was the last time you called text_update_transforms()
-// The text pointer is unused and not stored anywhere but the context struct.
-// If you have a static string, you might find it convenient to free your text
-// buffer, set it to NULL in the struct, then keep rendering it.
+/// @brief Renders the text as it was the last time you called text_update_transforms()
+///
+/// The text pointer may be free/invalid or NULL without impacting rendering.
+/// If you have a static string, you might find it convenient to free your text
+/// buffer, set it to NULL in the struct, then keep rendering it.
 void text_render(text_state ctx);
 
 // Frees all internal buffers in [ctx]
-// (text pointer isn't freed, because it could be on the stack)
+// Caller is responsible for freeing the text buffer if necessary.
 void text_free(text_state ctx);
 
 #endif // RENDER_TEXT_H
-

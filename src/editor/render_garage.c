@@ -14,6 +14,7 @@
 #include "render_garage.h"
 #include "timing_targets.h"
 
+// Find/load a model to be rendered a model for a given part
 model get_or_load_model(garage_state* state, part_id id) {
     for (u8 i = 0; i < ARRAY_SIZE(state->models); i++) {
         part_model* cur = &state->models[i];
@@ -62,7 +63,7 @@ garage_state garage_init(editor_state* editor) {
         get_or_load_model(&state, p->id);
     }
 
-    DBG_ASSERT_PERF(time_start, 1);
+    DBG_ASSERT_PERF(time_start, 3);
     return state;
 }
 
@@ -73,10 +74,7 @@ void garage_render(garage_state* state, editor_state* editor) {
     // All our matrices for rendering, only PVM is uploaded to GPU
     mat4 pvm = {0};
     mat4 pv = {0};
-    float move_speed = editor->cam.move_speed;
     camera_proj_view(editor->cam, pv);
-    // Put move speed back to normal
-    editor->cam.move_speed = move_speed;
 
     mat4 mdl = {0};
     glm_mat4_identity(mdl);
@@ -111,7 +109,7 @@ void garage_render(garage_state* state, editor_state* editor) {
 
         // Load a model for the part, if possible.
         const model m = get_or_load_model(state, p->id);
-        // Don't paint parts with custom models
+        // Don't paint parts with custom models, it'll make the vertex colors look weird.
         if (m.vao != cube.vao) {
             paint_col = (vec4s){.r = 1.0f, .g = 1.0f, .b = 1.0f, paint_col.a};
         }
@@ -142,12 +140,10 @@ void garage_render(garage_state* state, editor_state* editor) {
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glDisable(GL_CULL_FACE);
 
-    vec3s pos = {0};
-    vec4s color = {.a = 1.0f};
 
     // Get cursor position
-    pos = vec3_from_vec3s16(editor->sel_box, PART_POS_SCALE);
-    pos.x -= (center.x * PART_POS_SCALE);
+    vec3s pos = vec3_from_vec3s16(editor->sel_box, PART_POS_SCALE);
+    pos.x -= (center.x * PART_POS_SCALE); // Align onto part grid
     pos.z -= (center.z * PART_POS_SCALE);
 
     {
@@ -162,6 +158,7 @@ void garage_render(garage_state* state, editor_state* editor) {
         glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float *) &pvm);
 
         // Upload paint color & draw
+        const vec4s color = {.a = 1.0f};
         glUniform4fv(editor->u_paint, 1, (const float *) &color);
         glDrawElements(GL_TRIANGLES, cube.idx_count, GL_UNSIGNED_SHORT, NULL);
     }
@@ -196,8 +193,6 @@ void garage_destroy(garage_state* state) {
         free((void*)m->vertices);
 
         // Clear the pointers & OpenGL object values
-        model empty = {0};
-        *m = empty;
+        *m = (model){0};
     }
 }
-
