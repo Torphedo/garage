@@ -47,3 +47,50 @@ Once you've found your vehicle files, drag-and-drop any of them onto Garage
 Opener to open them. The console's STFS container will be handled automatically
 (assuming your vehicle is < 680KiB, which it should be).
 
+## Controls
+| Keyboard / Mouse Bind   | Gamepad Bind     | Action                                 |
+| ----------------------- | ---------------- | -------------------------------------- |
+| W/A/S/D                 | Left Stick       | Move camera/selected part(s)           |
+| Scroll Wheel            |                  | Zoom in/out (Orbit camera mode only)   |
+| Left Click + Drag       | Right Stick      | Pan camera                             |
+| Space                   | RT               | Move camera/part up                    |
+| Shift                   | LT               | Move camera/part down                  |
+| E                       | A                | Select/pick up part                    |
+| Z/C                     | LB/RB            | Rotate selection about view axis       |
+| Left/Right Arrows       | Left/Right D-Pad | Rotate selection about vertical axis   |
+| Up/Down Arrows          | Up/Down D-Pad    | Rotate selection about horizontal axis |
+| Middle Click            | RS Click / R3    | Cycle camera mode                      |
+| Tab                     | X                | Cycle editor mode                      |
+| Escape                  | Start            | Toggle menu mode                       |
+| Enter                   | A                | Place part (from menu)                 |
+| Up/Down Arrows          | Up/Down LS/D-Pad | Navigate search results (from menu)    |
+
+If the editing controls seem a bit strange, it's because they're made to match
+the original game's controls as closely as possible. The biggest disparity is
+that you can't hold a direction to continuously move a part, which is my fault
+and not from the game.
+
+### Camera Modes
+- Orbit (3rd-person style, follows invisible target at a set radius)
+- Minecraft (controls like Minecraft, 1st-person)
+- Flying (controls like Source Engine spectator mode, 1st-person)
+
+The 1st-person modes don't make sense when moving parts around, but the editor
+*will* let you move things from the perspective of the selected parts if you
+want.
+
+### Editor Modes
+- Freecam
+- Editing (able to select and move parts)
+- Menu (part search menu)
+
+You can cycle between Freecam and Editing, then switch to the menu with another
+keybind. The part search is usable on controller, but you'll need the keyboard
+to type into the search box.
+
+### Selection & Collision
+Since not many parts have models, the space taken up by a part is shown as a
+bunch of blue boxes surrounding it. These turn green when selected, and a
+change to red means your selection is overlapping and can't be placed. You can
+select multiple parts, but you won't start moving them around until you try to
+select a selected part (this is from the original game's editor).
