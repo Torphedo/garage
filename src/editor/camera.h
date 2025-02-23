@@ -27,7 +27,7 @@ typedef struct {
 
 static camera camera_default() {
     return (camera) {
-        .radius = 4.0f,
+        .radius = 30.0f,
         .move_speed = 15.0f,
         .mouse_sens = 0.015f,
         .invert_mouse_x = true,
