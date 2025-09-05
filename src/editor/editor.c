@@ -94,8 +94,8 @@ bool vertical_down_rising_edge(editor_state editor) {
 s8 move_x_rising_edge(editor_state editor) {
     // Dividing by itself gives 1, and using absolute value preserves sign.
     // This gives us -1 for any negative value, and 1 for any positive one.
-    float stick_vec = input.LS.x / fabsf(input.LS.x);
-    if (fabsf(input.LS.x) < deadzone || fabsf(editor.prev_input.LS.x) > deadzone) {
+    float stick_vec = input.LS_x / fabsf(input.LS_x);
+    if (fabsf(input.LS_x) < deadzone || fabsf(editor.prev_input.LS_x) > deadzone) {
         // If we're in the deadzone or were outside it last frame, don't count it.
         stick_vec = 0;
     }
@@ -111,9 +111,9 @@ s8 move_x_rising_edge(editor_state editor) {
 s8 move_y_rising_edge(editor_state editor) {
     // Dividing by itself gives 1, and using absolute value preserves sign.
     // This gives us -1 for any negative value, and 1 for any positive one.
-    float stick_vec = input.LS.y / fabsf(input.LS.y);
+    float stick_vec = input.LS_y / fabsf(input.LS_y);
     stick_vec = -stick_vec; // Y axis is the opposite sign of the intuitive way
-    if (fabsf(input.LS.y) < deadzone || fabsf(editor.prev_input.LS.y) > deadzone) {
+    if (fabsf(input.LS_y) < deadzone || fabsf(editor.prev_input.LS_y) > deadzone) {
         // If we're in the deadzone or were outside it last frame, don't count it.
         stick_vec = 0;
     }

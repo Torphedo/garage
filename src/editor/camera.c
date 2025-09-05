@@ -34,7 +34,8 @@ vec2s get_cursor_delta(camera* cam, vec2s cursor_pos) {
 
     // Nullify movement unless click is held
     if (!input.click_left) {
-        last_cursor = input.cursor;
+        last_cursor.x = input.cursor_x;
+        last_cursor.y = input.cursor_y;
     }
 
     vec2s cursor_delta = {
@@ -45,9 +46,9 @@ vec2s get_cursor_delta(camera* cam, vec2s cursor_pos) {
     // Save state so we can find the delta next time we're called
     last_cursor = cursor_pos;
 
-    if (fabsf(input.RS.x) > deadzone || fabsf(input.RS.y) > deadzone) {
-        cursor_delta.x = input.RS.x * cam->mouse_sens * 5;
-        cursor_delta.y = input.RS.y * cam->mouse_sens * 5;
+    if (fabsf(input.RS_x) > deadzone || fabsf(input.RS_y) > deadzone) {
+        cursor_delta.x = input.RS_x * cam->mouse_sens * 5;
+        cursor_delta.y = input.RS_y * cam->mouse_sens * 5;
     }
 
     // Invert sign as needed.
@@ -72,22 +73,24 @@ void update_roll(float delta_time, float angle_diff) {
 void camera_update(camera* cam, double delta_time) {
     static vec2s last_scroll = {0};
 
-    const vec2s cursor_delta = get_cursor_delta(cam, input.cursor);
+    const vec2s scroll = {input.scroll_x, input.scroll_y};
+    const vec2s cursor = {input.cursor_x, input.cursor_y};
+    const vec2s cursor_delta = get_cursor_delta(cam, cursor);
 
     const vec2s scroll_delta = {
-        .x = input.scroll.x - last_scroll.x,
-        .y = input.scroll.y - last_scroll.y
+        .x = input.scroll_x - last_scroll.x,
+        .y = input.scroll_y - last_scroll.y
     };
     // Save state so we can find the delta next time we're called
-    last_scroll = input.scroll;
+    last_scroll = scroll;
 
 
     const vec3s cam_dir = camera_facing(*cam);
     const float multiplier = delta_time * cam->move_speed;
 
     // This just sets each axis to zero if it's below the deadzone threshold
-    const float LS_x = input.LS.x * (fabsf(input.LS.x) > deadzone);
-    const float LS_y = input.LS.y * (fabsf(input.LS.y) > deadzone);
+    const float LS_x = input.LS_x * (fabsf(input.LS_x) > deadzone);
+    const float LS_y = input.LS_y * (fabsf(input.LS_y) > deadzone);
 
     const float forward  = multiplier * ((input.w - input.s) - LS_y);
     const float side     = multiplier * ((input.a - input.d) - LS_x);

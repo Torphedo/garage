@@ -1,6 +1,6 @@
 #ifndef CAMERA_H
 #define CAMERA_H
-#include <cglm/cglm.h>
+#include <cglm/struct.h>
 
 // Up axis for our camera
 static vec3s camera_up = {0.0f, 1.0f, 0.0f};
