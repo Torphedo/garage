@@ -8,7 +8,7 @@
 #include <cglm/cglm.h>
 
 #include <common/int.h>
-#include <common/gl/vector.h>
+#include <vector.h>
 #include <vehicle.h>
 #include <parts.h>
 #include "editor.h"

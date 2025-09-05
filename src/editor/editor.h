@@ -4,9 +4,9 @@
 
 #include <common/int.h>
 #include <common/list.h>
-#include <common/gl/vector.h>
 #include <common/gl/input.h>
-#include <common/gl/model.h>
+#include <vector.h>
+#include <model.h>
 
 #include <vehicle.h>
 #include "camera.h"

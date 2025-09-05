@@ -56,6 +56,10 @@ add_executable(garage
     src/stfs.c
     src/timing_targets.c
 
+    src/primitives.c
+    src/model.c
+    src/vector.c
+
     ext/glad/src/glad.c
     ext/stb_dxt.c
     ext/stb_truetype.c

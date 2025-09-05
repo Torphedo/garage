@@ -1,6 +1,6 @@
 #include <glad/glad.h>
 
-#include <common/gl/primitives.h>
+#include <primitives.h>
 #include "render_debug.h"
 
 void debug_render(editor_state* editor) {

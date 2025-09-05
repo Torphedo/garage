@@ -2,7 +2,7 @@
 #define VEHICLE_H
 #include <assert.h>
 #include <common/int.h>
-#include <common/gl/vector.h>
+#include <vector.h>
 // Vehicle data structures for Nuts & Bolts. The header has a lot of holes, but
 // the part entries are mostly complete.
 

@@ -1,13 +1,13 @@
 #include <memory.h>
 #include <math.h>
 
-#include <common/gl/vector.h>
 #include <common/int.h>
 #include <common/logging.h>
+#include <common/list.h>
+#include <vector.h>
 
 #include <parts.h>
 #include "vehicle_edit.h"
-#include "common/list.h"
 #include "editor.h"
 #include "camera.h"
 

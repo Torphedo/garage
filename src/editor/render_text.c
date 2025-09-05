@@ -14,7 +14,7 @@
 #include <common/image.h>
 #include <common/utf8.h>
 #include <common/gl/shader.h>
-#include <common/gl/primitives.h>
+#include <primitives.h>
 #include <physfs_bundling.h>
 
 #include "render_text.h"

@@ -1,11 +1,10 @@
-#include <stdlib.h>
 #include <stdbool.h>
 
 #include <common/endian.h>
 #include <common/file.h>
-#include <common/gl/vector.h>
 #include <common/logging.h>
 #include <cglm/cglm.h>
+#include <vector.h>
 
 #include "vehicle.h"
 #include "parts.h"

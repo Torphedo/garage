@@ -3,8 +3,8 @@
 // Most IDs are taken from mojobojo's 2009 vehicle editor (thanks mojobojo <3),
 // or found manually with a hex editor for those missing from his list.
 
-#include "common/int.h"
-#include "common/gl/vector.h"
+#include <common/int.h>
+#include <vector.h>
 
 // Part IDs are written are as they appear in the hex editor, in the order of
 // the in-game menu. Use part_get_info() to get a string for a part ID.

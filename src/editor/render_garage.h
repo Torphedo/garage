@@ -1,6 +1,6 @@
 #ifndef RENDER_GARAGE_H
 #define RENDER_GARAGE_H
-#include <common/gl/model.h>
+#include <model.h>
 #include "editor.h"
 #include <parts.h>
 
