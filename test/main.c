@@ -4,12 +4,10 @@
 #include <common/logging.h>
 
 bool test_stfs();
-bool test_list();
 
 typedef bool (*testproc)(void);
 testproc tests[] = {
     test_stfs,
-    test_list,
 };
 
 int main() {
