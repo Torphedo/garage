@@ -2,6 +2,7 @@
 #include <common/platform.h>
 
 #ifdef PLATFORM_WINDOWS
+#include <windows.h>
 #include <shlwapi.h>
 // They have a conflicting macro or enum name or something. Annoying.
 #undef SEARCH_ALL
@@ -16,11 +17,9 @@ const char* strcasestr(const char* a, const char* b) {
         return a;
     }
     // TODO: See if this works on UTF8? Not that it really matters in our use case.
-    return StrStrIA(a, b);
+    return strstr(a, b);
 }
 #endif
-
-#include <stdatomic.h>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -39,8 +38,8 @@ const char* strcasestr(const char* a, const char* b) {
 // Use an atomic bool b/c I'm not sure if the callback is on the same thread.
 // We can't put any of these globals in the editor struct b/c the callback
 // can't access it.
-atomic_bool enable_textinput = false;
-atomic_bool searchbuf_updated = false; // Set true on every codepoint callback
+bool enable_textinput = false;
+bool searchbuf_updated = false; // Set true on every codepoint callback
 // 200 characters because that's how many the text rendering shader can handle
 char textbox_buf[200] = {0};
 
