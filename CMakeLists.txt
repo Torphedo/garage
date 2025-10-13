@@ -1,13 +1,12 @@
 cmake_minimum_required(VERSION 3.18)
-project(garage C)
+project(garage C CXX)
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 14)
 # Emit a compile_commands.json for use with clangd in LSPs
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE INTERNAL "")
 
-add_subdirectory(ext/glfw)
-
-include_directories("src" "ext/bobtail" "ext/glfw/include" "ext/glad/include" "ext/cglm/include" "ext" "ext/physfs/src")
+include_directories("src" "ext/bobtail" "ext/glad/include" "ext/cglm/include" "ext" "ext/physfs/src")
 
 # Internal build tool to generate headers for GLSL shaders
 add_executable(incbin "ext/incbin.c")
@@ -35,10 +34,11 @@ add_subdirectory(ext/physfs)
 # We have to enable the OpenGL features before using them
 set(BOBTAIL_OPENGL ON)
 add_subdirectory(ext/bobtail)
+add_subdirectory(ext/coregui)
 
 add_executable(garage
     src/editor/camera.c
-    src/editor/render_garage.c
+    src/editor/render_garage.cxx
     src/editor/render_debug.c
     src/editor/render_text.c
     src/editor/render_user.c
@@ -49,7 +49,7 @@ add_executable(garage
     # build
     ${CMAKE_CURRENT_BINARY_DIR}/generate_datafile
 
-    src/main.c
+    src/main.cxx
     src/physfs_bundling.c
     src/vehicle.c
     src/parts.c
@@ -65,7 +65,7 @@ add_executable(garage
     ext/stb_truetype.c
 )
 
-target_link_libraries(garage PRIVATE glfw bobtail physfs-static)
+target_link_libraries(garage PRIVATE bobtail coregui physfs-static)
 
 if (NOT MSVC)
     # Generate a data.zip with our assets

@@ -1,73 +1,80 @@
-#include <stddef.h>
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
 
 #include <glad/glad.h>
 #include <cglm/cglm.h>
 
 #include <common/logging.h>
+
+extern "C" {
 #include <primitives.h>
-#include <common/file.h>
 #include <physfs_bundling.h>
 
 #include "camera.h"
 #include "vehicle_edit.h"
 #include "editor.h"
-#include "render_garage.h"
 #include "timing_targets.h"
+}
+
+#include "render_garage.hxx"
 
 // Find/load a model to be rendered a model for a given part
 model get_or_load_model(garage_state* state, part_id id) {
     for (u8 i = 0; i < ARRAY_SIZE(state->models); i++) {
         part_model* cur = &state->models[i];
         if (cur->id == id) {
-            return cur->model;
+            return cur->m;
         }
         // We hit an empty space without finding our model. We'll try to load it
-        else if (cur->model.vertices == NULL || cur->model.indices == NULL) {
+        else if (cur->m.vertices == NULL || cur->m.indices == NULL) {
             cur->id = id;
             // Path is on the stack, so we don't need to free it
             const char* obj_path = part_get_obj_path(id).str;
             u8* obj_data = physfs_load_file(obj_path);
             if (obj_data != NULL) {
-                cur->model = obj_load(obj_data);
+                cur->m = obj_load(obj_data);
             }
             free(obj_data);
 
-            if (cur->model.vertices == NULL || cur->model.indices == NULL) {
+            if (cur->m.vertices == NULL || cur->m.indices == NULL) {
                 LOG_MSG(error, "Failed to load \"%s\" (0x%X)\n\n", part_get_info(id).name, id);
 
                 // It's not here and we couldn't load it. Fall back to the cube
-                cur->model = cube;
+                cur->m= cube;
                 return cube;
             }
-            model_upload(&cur->model);
+            model_upload(&cur->m);
 
-            LOG_MSG(info, "Loaded \"%s\" from \"%s\" in %.2fKiB\n\n", part_get_info(id).name, obj_path, (float)model_size(cur->model) / 1024.0f);
-            return cur->model;
+            LOG_MSG(info, "Loaded \"%s\" from \"%s\" in %.2fKiB\n\n", part_get_info(id).name, obj_path, (float)model_size(cur->m) / 1024.0f);
+            return cur->m;
         }
     }
 
     // Couldn't find it & we're out of space to add it... return placeholder cube
-    return state->models[0].model;
+    return state->models[0].m;
 }
 
-garage_state garage_init(editor_state* editor) {
+void garage_state::init(editor_state* state) noexcept {
+    this->editor = state;
     const double time_start = glfwGetTime();
-    garage_state state = {0};
 
     // ID 0 will just render a cube
-    state.models[0] = (part_model){.id = 0, .model = cube};
+    models[0] = (part_model){
+        .id = (part_id)0,
+        .m = cube
+    };
 
     part_iterator iter = part_iterator_setup(*editor, SEARCH_ALL);
     while (!iter.done) {
         const part_entry* p = part_iterator_next(&iter);
-        get_or_load_model(&state, p->id);
+        get_or_load_model(this, (part_id)p->id);
     }
 
     DBG_ASSERT_PERF(time_start, 3);
-    return state;
 }
 
-void garage_render(garage_state* state, editor_state* editor) {
+void garage_state::render() noexcept {
     // We need to bind the shader program before uploading uniforms
     glUseProgram(editor->vcolor_shader);
 
@@ -108,7 +115,7 @@ void garage_render(garage_state* state, editor_state* editor) {
         }
 
         // Load a model for the part, if possible.
-        const model m = get_or_load_model(state, p->id);
+        const model m = get_or_load_model(this, (part_id)p->id);
         // Don't paint parts with custom models, it'll make the vertex colors look weird.
         if (m.vao != cube.vao) {
             paint_col = (vec4s){.r = 1.0f, .g = 1.0f, .b = 1.0f, paint_col.a};
@@ -175,24 +182,23 @@ void garage_render(garage_state* state, editor_state* editor) {
     glEnable(GL_CULL_FACE);
 }
 
-void garage_destroy(garage_state* state) {
+void garage_state::destroy() noexcept {
     // Unload all part models
-    for (u8 i = 0; i < ARRAY_SIZE(state->models); i++) {
-        model* m = &state->models[i].model;
+    for (part_model& part : models) {
 
         // This is uninitialized, an unknown part, or a part with no model
         // falling back to the (static) cube model. There's nothing to free.
-        if (state->models[i].id == 0 || m->indices == cube.indices) {
+        if (part.id == 0 || part.m.indices == cube.indices) {
             continue;
         }
 
-        glDeleteBuffers(1, &m->ibuf);
-        glDeleteBuffers(1, &m->vbuf);
-        glDeleteVertexArrays(1, &m->vao);
-        free((void*)m->indices);
-        free((void*)m->vertices);
+        glDeleteBuffers(1, &part.m.ibuf);
+        glDeleteBuffers(1, &part.m.vbuf);
+        glDeleteVertexArrays(1, &part.m.vao);
+        free((void*)part.m.indices);
+        free((void*)part.m.vertices);
 
         // Clear the pointers & OpenGL object values
-        *m = (model){0};
+        memset(&part.m, 0, sizeof(part.m));
     }
 }

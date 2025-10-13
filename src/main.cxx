@@ -8,7 +8,9 @@
 #include <common/gl/gl_setup.h>
 #include <common/gl/input.h>
 
-#include "editor/render_garage.h"
+#include "editor/render_garage.hxx"
+
+extern "C" {
 #include "editor/render_debug.h"
 #include "editor/render_text.h"
 #include "editor/render_user.h"
@@ -19,6 +21,7 @@
 #include "vehicle.h"
 #include "parts.h"
 #include "physfs_bundling.h"
+}
 
 // The file IO works a little strangely. We pack all assets in a zip file and
 // statically link it into the executable as part of the build. When we use a
@@ -60,7 +63,8 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    garage_state garage = garage_init(&editor);
+    garage_state garage;
+    garage.init(&editor);
 
     char fps_text[32] = "FPS: 0 [0.00ms]";
     text_state fps_display = text_render_prep(fps_text, sizeof(fps_text), 0.03f, (vec2){-1, 1});
@@ -93,7 +97,7 @@ int main(int argc, char** argv) {
 
         // Render
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        garage_render(&garage, &editor);
+        garage.render();
         debug_render(&editor);
         ui_update_render(&editor);
 
@@ -137,7 +141,7 @@ int main(int argc, char** argv) {
     while (!iter.done) {
         i++;
         part_entry* p = part_iterator_next(&iter);
-        LOG_MSG(info, "Part %d: 0x%x [%s] ", i, p->id, part_get_info(p->id).name);
+        LOG_MSG(info, "Part %d: 0x%x [%s] ", i, p->id, part_get_info((part_id)p->id).name);
         printf("@ (%d, %d, %d) ", p->pos.x, p->pos.y, p->pos.z);
         printf("painted #%x%x%x", p->color.r, p->color.g, p->color.b);
         printf(", modifier 0x%02hx\n", p->modifier);
@@ -145,7 +149,7 @@ int main(int argc, char** argv) {
 
     // Cleanup
     text_free(fps_display);
-    garage_destroy(&garage);
+    garage.destroy();
     ui_teardown(&editor);
 
     text_renderer_cleanup();
