@@ -499,14 +499,14 @@ editor_state editor_init(const char* vehicle_path, GLFWwindow* window) {
     // Start with enough memory to select all parts without resizing
     editor.selected_parts = list_create(sizeof(part_entry) * v->head.part_count, sizeof(part_entry));
     editor.unselected_parts = list_create(sizeof(part_entry) * v->head.part_count, sizeof(part_entry));
-    if (editor.selected_parts.data == 0 || editor.unselected_parts.data == 0) {
+    if (editor.selected_parts.buf.data == 0 || editor.unselected_parts.buf.data == 0) {
         LOG_MSG(error, "Failed to allocate for dynamic lists\n");
         return editor;
     }
 
 
     // Copy part data into the dynamic list and free the raw vehicle data
-    memcpy((void*)editor.unselected_parts.data, v->parts, sizeof(*v->parts) * v->head.part_count);
+    memcpy((void*)editor.unselected_parts.buf.data, v->parts, sizeof(*v->parts) * v->head.part_count);
     editor.unselected_parts.end_idx = v->head.part_count;
     free(v);
 
@@ -549,8 +549,8 @@ void editor_teardown(editor_state* editor) {
     glDeleteVertexArrays(1, &cube.vao);
     glDeleteBuffers(1, &cube.vbuf);
     glDeleteBuffers(1, &cube.ibuf);
-    free((void*)editor->selected_parts.data);
-    free((void*)editor->unselected_parts.data);
+    list_destroy(&editor->selected_parts);
+    list_destroy(&editor->unselected_parts);
     free(editor->vacancy_mask);
     free(editor->selected_mask);
 }
