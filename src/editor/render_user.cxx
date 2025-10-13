@@ -1,4 +1,4 @@
-#include <string.h>
+#include <cstring>
 #include <common/platform.h>
 
 #ifdef PLATFORM_WINDOWS
@@ -24,16 +24,17 @@ const char* strcasestr(const char* a, const char* b) {
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <cglm/cglm.h>
+#include "render_text.hxx"
+#include "vehicle_edit.hxx"
 
+extern "C" {
 #include <common/utf8.h>
 #include <common/logging.h>
 
 #include <primitives.h>
 #include <parts.h>
-#include "editor.h"
-#include "vehicle_edit.h"
-#include "render_text.h"
 #include "timing_targets.h"
+}
 
 // Use an atomic bool b/c I'm not sure if the callback is on the same thread.
 // We can't put any of these globals in the editor struct b/c the callback
@@ -77,9 +78,9 @@ void partsearch_update(editor_state* editor) {
         editor->sel_mode = SEL_ACTIVE;
         part_entry new_part = {
             .pos = {
-                CLAMP(0, editor->sel_box.x, INT8_MAX),
-                CLAMP(0, editor->sel_box.y, INT8_MAX),
-                CLAMP(0, editor->sel_box.z, INT8_MAX),
+                s8(CLAMP(0, editor->sel_box.x, INT8_MAX)),
+                s8(CLAMP(0, editor->sel_box.y, INT8_MAX)),
+                s8(CLAMP(0, editor->sel_box.z, INT8_MAX)),
             },
             .color = {255, 255, 255, 255},
         };
@@ -268,9 +269,9 @@ void ui_update_render(editor_state* editor) {
 
     // We can skip updating the part name if the cursor hasn't moved
     if (!vec3s16_eq(last_selbox, editor->sel_box)) {
-        const vec3s8 pos = {editor->sel_box.x, editor->sel_box.y, editor->sel_box.z};
+        const vec3s8 pos = {s8(editor->sel_box.x), s8(editor->sel_box.y), s8(editor->sel_box.z)};
         const part_entry* part = part_by_pos(editor, pos, SEARCH_ALL);
-        const part_info cur_part = part_get_info(part->id);
+        const part_info cur_part = part_get_info((part_id)part->id);
         strncpy(editor->partname_buf, cur_part.name, sizeof(editor->partname_buf));
         // Update part name & selection box
         text_update_transforms(&editor->part_name);

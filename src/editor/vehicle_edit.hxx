@@ -1,17 +1,18 @@
-#ifndef VEHICLE_EDIT_H
-#define VEHICLE_EDIT_H
+#pragma once
 // This file is for all vehicle-related code specific to this editor. I
 // separated it out so vehicle.c/h can be used without any other editor code.
-
-#include <stdbool.h>
 
 #include <cglm/cglm.h>
 
 #include <common/int.h>
+
+extern "C" {
 #include <vector.h>
 #include <vehicle.h>
 #include <parts.h>
-#include "editor.h"
+}
+
+#include "editor.hxx"
 
 typedef enum {
     SEARCH_SELECTED,
@@ -78,6 +79,3 @@ part_entry* part_by_pos(editor_state* editor, vec3s8 target, partsearch_type sea
 // vector of the adjustment. This output vector can be NULL.
 // Returns a boolean indicating if the vehicle had to be adjusted.
 bool vehicle_move_part(editor_state* editor, part_entry part, vec3s16 diff, vec3s16* adjust_out);
-
-#endif // VEHICLE_EDIT_H
-

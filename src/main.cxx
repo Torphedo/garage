@@ -1,23 +1,23 @@
-#include <string.h>
-#include <stdio.h>
+#include <cstring>
+#include <cstdio>
 
 #include <glad/glad.h>
 
 #include <common/int.h>
 #include <common/logging.h>
+
+#include "editor/editor.hxx"
+#include "editor/render_text.hxx"
+#include "editor/render_garage.hxx"
+#include "editor/render_user.hxx"
+#include "editor/vehicle_edit.hxx"
+#include "editor/render_debug.hxx"
+
+extern "C" {
 #include <common/gl/gl_setup.h>
 #include <common/gl/input.h>
 
-#include "editor/render_garage.hxx"
-
-extern "C" {
-#include "editor/render_debug.h"
-#include "editor/render_text.h"
-#include "editor/render_user.h"
-#include "editor/editor.h"
-#include "editor/vehicle_edit.h"
 #include "editor/camera.h"
-
 #include "vehicle.h"
 #include "parts.h"
 #include "physfs_bundling.h"

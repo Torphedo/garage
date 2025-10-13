@@ -1,11 +1,10 @@
-#ifndef RENDER_USER_H
-#define RENDER_USER_H
-#include "editor.h"
+#pragma once
+
+extern "C" {
+#include "editor.hxx"
+}
 
 // This file is for rendering the user interface
 
 void ui_update_render(editor_state* editor);
 void ui_teardown(editor_state* editor);
-
-#endif // RENDER_USER_H
-

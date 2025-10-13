@@ -1,25 +1,28 @@
-#ifndef EDITOR_H
-#define EDITOR_H
-#include <assert.h>
+#pragma once
+#include <cassert>
 
 #include <common/int.h>
 #include <common/list.h>
-#include <common/gl/input.h>
+
+extern "C" {
 #include <vector.h>
 #include <model.h>
 
 #include <vehicle.h>
 #include "camera.h"
-#include "render_text.h"
+#include <common/gl/input.h>
+}
 
-typedef enum {
+#include "render_text.hxx"
+
+typedef enum : u8 {
     MODE_MOVCAM, // Selection box locked, camera unlocked (freecam)
     MODE_EDIT, // Camera locked, WASD moves the selection box
     MODE_MENU, // Camera and selection box locked, some menu is enabled
     MODE_ENUM_MAX, // Increment mode and modulo by this to cycle through modes
 }editor_mode;
 
-typedef enum {
+typedef enum : u8 {
     SEL_NONE,   // User is still selecting parts to move
     SEL_ACTIVE, // User is moving parts around, and the selection isn't overlapping anything.
     SEL_BAD,    // User is moving parts around, but placing it down now would cause an overlap.
@@ -151,5 +154,3 @@ editor_state editor_init(const char* vehicle_path, GLFWwindow* window);
 
 // Delete resources created in editor_init().
 void editor_teardown(editor_state* editor);
-
-#endif // EDITOR_H

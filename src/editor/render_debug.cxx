@@ -1,7 +1,7 @@
 #include <glad/glad.h>
 
 #include <primitives.h>
-#include "render_debug.h"
+#include "render_debug.hxx"
 
 void debug_render(editor_state* editor) {
     // Bind our shader & buffers

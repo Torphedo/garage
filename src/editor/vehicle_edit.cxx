@@ -2,14 +2,16 @@
 #include <math.h>
 
 #include <common/int.h>
-#include <common/logging.h>
 #include <common/list.h>
-#include <vector.h>
 
+extern "C" {
+#include <vector.h>
 #include <parts.h>
-#include "vehicle_edit.h"
-#include "editor.h"
 #include "camera.h"
+}
+
+#include "vehicle_edit.hxx"
+#include "editor.hxx"
 
 bool vehiclemask_get_3d(vehicle_bitmask* mask, vec3s8 cell) {
     u8* mask_addr = (u8*)&(*mask)[cell.x][cell.y]; // Target byte
@@ -230,7 +232,7 @@ bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_dif
 // Setup an iterator from a part entry. Returns an iteration context.
 part_cell_iterator part_cell_iterator_setup(part_entry p) {
     part_cell_iterator out = {
-        .info = part_get_info(p.id),
+        .info = part_get_info((part_id)p.id),
         .part = p,
         .done = false,
     };

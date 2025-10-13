@@ -1,24 +1,24 @@
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#include <cstddef>
+#include <cstdlib>
+#include <cstring>
+#include <cassert>
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <stb_truetype.h>
 #include <stb_dxt.h>
-#include <physfs.h>
 
-#include <common/file.h>
 #include <common/logging.h>
-#include <common/image.h>
 #include <common/utf8.h>
+
+extern "C" {
 #include <common/gl/shader.h>
 #include <primitives.h>
 #include <physfs_bundling.h>
-
-#include "render_text.h"
 #include "timing_targets.h"
+}
+
+#include "render_text.hxx"
 
 enum {
     TTF_TEX_WIDTH = 512,
@@ -53,10 +53,10 @@ const tex_vertex texquad_vertices[] = {
 };
 
 model tex_quad = {
-    .vert_count = ARRAY_SIZE(texquad_vertices),
-    .idx_count = ARRAY_SIZE(quad_indices),
     .vertices = texquad_vertices,
     .indices = quad_indices,
+    .vert_count = ARRAY_SIZE(texquad_vertices),
+    .idx_count = ARRAY_SIZE(quad_indices),
 };
 
 bool initialized = false;
@@ -225,7 +225,14 @@ text_state text_render_prep(const char* text, u32 len, float scale, vec2 pos) {
     }
 
     // Copy arguments into struct.
-    text_state ctx = { .text = text, .scale = scale, .pos[0] = pos[0], .pos[1] = pos[1], };
+    text_state ctx = {
+        .scale = scale,
+        .pos = {
+            pos[0],
+            pos[1],
+        },
+        .text = text,
+    };
 
     if (len > 0) {
         // Allows caller to override allocation size
@@ -241,13 +248,13 @@ text_state text_render_prep(const char* text, u32 len, float scale, vec2 pos) {
     // Now that we know how many characters need drawing, we can allocate.
 
     // One transform per instanced character quad
-    ctx.transforms = calloc(ctx.num_chars, sizeof(*ctx.transforms));
+    ctx.transforms = (mat4*)calloc(ctx.num_chars, sizeof(*ctx.transforms));
     if (ctx.transforms == NULL) {
         LOG_MSG(error, "Allocation failed for %d 4x4 matrices!\n", ctx.num_chars);
         return ctx;
     }
     // First 2 coords are top-left UVs, last 2 are the bottom-right UVs.
-    ctx.texcoords = calloc(ctx.num_chars, sizeof(*ctx.texcoords));
+    ctx.texcoords = (vec4*)calloc(ctx.num_chars, sizeof(*ctx.texcoords));
     if (ctx.texcoords == NULL) {
         LOG_MSG(error, "Allocation failed for %d-element vec4 array!\n", ctx.num_chars);
         return ctx;

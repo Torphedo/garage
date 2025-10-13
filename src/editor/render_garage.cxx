@@ -12,11 +12,11 @@ extern "C" {
 #include <physfs_bundling.h>
 
 #include "camera.h"
-#include "vehicle_edit.h"
-#include "editor.h"
 #include "timing_targets.h"
 }
 
+#include "editor.hxx"
+#include "vehicle_edit.hxx"
 #include "render_garage.hxx"
 
 // Find/load a model to be rendered a model for a given part

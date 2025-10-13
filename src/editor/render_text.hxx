@@ -1,7 +1,4 @@
-#ifndef RENDER_TEXT_H
-#define RENDER_TEXT_H
-#include <stdbool.h>
-
+#pragma once
 #include <cglm/cglm.h>
 
 #include <common/int.h>
@@ -61,5 +58,3 @@ void text_render(text_state ctx);
 // Frees all internal buffers in [ctx]
 // Caller is responsible for freeing the text buffer if necessary.
 void text_free(text_state ctx);
-
-#endif // RENDER_TEXT_H

@@ -1,22 +1,22 @@
-#include <stdbool.h>
-#include <stdio.h>
+#include <cstdio>
 #include <memory.h>
 
 #include <glad/glad.h>
 #include <cglm/cglm.h>
 
-#include <common/int.h>
 #include <common/logging.h>
+
+extern "C" {
 #include <common/gl/shader.h>
 #include <common/gl/gl_setup.h>
 #include <primitives.h>
-
 #include <vehicle.h>
 #include <physfs_bundling.h>
-#include "camera.h"
-#include "editor.h"
 #include "timing_targets.h"
-#include "vehicle_edit.h"
+}
+
+#include "editor.hxx"
+#include "vehicle_edit.hxx"
 
 
 // A "confirm" action (like A button)
@@ -144,9 +144,9 @@ void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
     glGetBooleanv(GL_CULL_FACE, &culling_was_enabled);
     glDisable(GL_CULL_FACE);
     // Loop over the bitmask & render everything within the vehicle bounds
-    for (u16 i = 0; i < VEH_MAX_DIM && i < max.x; i++) {
-        for (u16 j = 0; j < VEH_MAX_DIM && j < max.y; j++) {
-            for (u16 k = 0; k < VEH_MAX_DIM && k < max.z; k++) {
+    for (u8 i = 0; i < VEH_MAX_DIM && i < max.x; i++) {
+        for (u8 j = 0; j < VEH_MAX_DIM && j < max.y; j++) {
+            for (u8 k = 0; k < VEH_MAX_DIM && k < max.z; k++) {
                 // Skip the next bits if they're all 0
                 // Keeping this size small lets us "jump into action" faster when
                 // a big empty space is encountered, even though a 64-bit compare
@@ -166,7 +166,7 @@ void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
                 }
 
 
-                const vec3s8 cell = {i, j, k};
+                const vec3s8 cell = {(s8)i, (s8)j, (s8)k};
                 const bool part_present = vehiclemask_get_3d(mask, cell);
                 if (!part_present) {
                     continue;
@@ -403,7 +403,7 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
     change_camstyle |= (input.gp.r3 && !editor->prev_input.gp.r3);
     if (change_camstyle) {
         // Cycle through camera modes
-        camera_mode mode = (editor->cam.mode + 1) % CAMERA_MODE_ENUM_MAX;
+        camera_mode mode = (camera_mode)((editor->cam.mode + 1) % CAMERA_MODE_ENUM_MAX);
         // This function handles the special camera settings per mode
         camera_set_mode(&editor->cam, mode);
     }
@@ -440,7 +440,7 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
     bool cycle_mode = (input.tab && !editor->prev_input.tab) || (input.gp.x && !editor->prev_input.gp.x);
     if (cycle_mode && editor->mode != MODE_MENU) {
         // Cycle through modes. Ctrl-Tab goes backwards.
-        editor->mode = (editor->mode + (input.control ? -1 : 1)) % 2;
+        editor->mode = (editor_mode)((editor->mode + (input.control ? -1 : 1)) % 2);
     }
     if (pause_rising_edge(*editor)) {
         if (editor->mode == MODE_MENU) {
@@ -477,11 +477,11 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
 editor_state editor_init(const char* vehicle_path, GLFWwindow* window) {
     const double time_start = glfwGetTime();
     editor_state editor = {
-        .vacancy_mask = calloc(1, sizeof(vehicle_bitmask)),
-        .selected_mask = calloc(1, sizeof(vehicle_bitmask)),
         .cam = camera_default(),
-        .window = window,
+        .vacancy_mask = (vehicle_bitmask*)calloc(1, sizeof(vehicle_bitmask)),
+        .selected_mask = (vehicle_bitmask*)calloc(1, sizeof(vehicle_bitmask)),
         .init_result = false, // Default to failure, this will only be set to success if all checks pass
+        .window = window,
     };
     if (editor.vacancy_mask == NULL || editor.selected_mask == NULL) {
         LOG_MSG(error, "Failed to alloc a vehicle bitmask\n");

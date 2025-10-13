@@ -2,7 +2,7 @@
 
 extern "C" {
 #include <model.h>
-#include "editor.h"
+#include "editor.hxx"
 #include <parts.h>
 }
 #include "layer.hxx"
