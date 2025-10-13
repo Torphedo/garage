@@ -13,7 +13,7 @@ void debug_render(editor_state* editor) {
     vec4s color = {.b = 1.0f, .a = 1.0f};
     glUniform4fv(editor->u_paint, 1, (const float*)&color);
 
-    render_vehicle_bitmask(editor, editor->vacancy_mask);
+    editor->render_vehicle_bitmask(editor->vacancy_mask);
 
     // Draw green/red boxes around all selected parts as appropriate
     // Set selection box color
@@ -24,7 +24,7 @@ void debug_render(editor_state* editor) {
     }
     color.b = 0.0f;
     glUniform4fv(editor->u_paint, 1, (const float*)&color);
-    render_vehicle_bitmask(editor, editor->selected_mask);
+    editor->render_vehicle_bitmask(editor->selected_mask);
 
     // Reset state
     glBindVertexArray(0);

@@ -51,7 +51,8 @@ int main(int argc, char** argv) {
     }
 
     const char* vehicle_path = argv[1]; // Give our first argument a convenient name
-    editor_state editor = editor_init(vehicle_path, window);
+    editor_state editor;
+    editor.init(vehicle_path, window);
     // This is a generic failure flag for any problems with startup
     if (!editor.init_result) {
         LOG_MSG(error, "Editor init failure\n");
@@ -88,7 +89,7 @@ int main(int argc, char** argv) {
         glfwPollEvents();
 
         // All UI/navigation/keybinds are implemented here
-        if (!editor_update_with_input(&editor, window)) {
+        if (!editor.editor_update_with_input()) {
             // Returns false when the program should exit (for quit keybind)
             break;
         }
@@ -153,7 +154,7 @@ int main(int argc, char** argv) {
     ui_teardown(&editor);
 
     text_renderer_cleanup();
-    editor_teardown(&editor);
+    editor.destroy();
     glfwTerminate();
 
     return 0;

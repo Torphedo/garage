@@ -107,8 +107,8 @@ void partsearch_update(editor_state* editor) {
 
     // Up and down are kind of backwards. "Up" means increasing the menu index,
     // which is visually downwards.
-    const bool up = (input.tab && !editor->prev_input.tab && !input.shift)  || down_rising_edge(*editor) || (move_y_rising_edge(*editor) == -1);
-    const bool down = (input.tab && !editor->prev_input.tab && input.shift) || up_rising_edge(*editor) || (move_y_rising_edge(*editor) == 1);
+    const bool up = (input.tab && !editor->prev_input.tab && !input.shift)  || editor->down_rising_edge() || (editor->move_y_rising_edge() == -1);
+    const bool down = (input.tab && !editor->prev_input.tab && input.shift) || editor->up_rising_edge() || (editor->move_y_rising_edge() == 1);
 
     s8 diff = 0;
     if (up) {

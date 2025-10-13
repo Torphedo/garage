@@ -20,87 +20,87 @@ extern "C" {
 
 
 // A "confirm" action (like A button)
-bool confirm_rising_edge(editor_state editor) {
-    const bool keyboard = (input.e && !editor.prev_input.e);
-    const bool gamepad = (input.gp.a && !editor.prev_input.gp.a);
+bool editor_state::confirm_rising_edge() const noexcept {
+    const bool keyboard = (input.e && !prev_input.e);
+    const bool gamepad = (input.gp.a && !prev_input.gp.a);
     return keyboard || gamepad;
 }
 
 // A "cancel" action (like B button)
-bool cancel_rising_edge(editor_state editor) {
-    const bool keyboard = (input.q && !editor.prev_input.q);
-    const bool gamepad = (input.gp.b && !editor.prev_input.gp.b);
+bool editor_state::cancel_rising_edge() const noexcept {
+    const bool keyboard = (input.q && !prev_input.q);
+    const bool gamepad = (input.gp.b && !prev_input.gp.b);
     return keyboard || gamepad;
 }
 
 // A "pause" action (like start button)
-bool pause_rising_edge(editor_state editor) {
-    const bool keyboard = (input.escape && !editor.prev_input.escape);
-    const bool gamepad = (input.gp.start && !editor.prev_input.gp.start);
+bool editor_state::pause_rising_edge() const noexcept {
+    const bool keyboard = (input.escape && !prev_input.escape);
+    const bool gamepad = (input.gp.start && !prev_input.gp.start);
     return keyboard || gamepad;
 }
 
 // An "up" action (like dpad)
-bool up_rising_edge(editor_state editor) {
-    const bool keyboard = (input.up && !editor.prev_input.up);
-    const bool gamepad = (input.gp.up && !editor.prev_input.gp.up);
+bool editor_state::up_rising_edge() const noexcept {
+    const bool keyboard = (input.up && !prev_input.up);
+    const bool gamepad = (input.gp.up && !prev_input.gp.up);
     return keyboard || gamepad;
 }
 
 // A "down" action (like dpad)
-bool down_rising_edge(editor_state editor) {
-    const bool keyboard = (input.down && !editor.prev_input.down);
-    const bool gamepad = (input.gp.down && !editor.prev_input.gp.down);
+bool editor_state::down_rising_edge() const noexcept {
+    const bool keyboard = (input.down && !prev_input.down);
+    const bool gamepad = (input.gp.down && !prev_input.gp.down);
     return keyboard || gamepad;
 }
 
 // A "left" action (like dpad)
-bool left_rising_edge(editor_state editor) {
-    const bool keyboard = (input.left && !editor.prev_input.left);
-    const bool gamepad = (input.gp.left && !editor.prev_input.gp.left);
+bool editor_state::left_rising_edge() const noexcept {
+    const bool keyboard = (input.left && !prev_input.left);
+    const bool gamepad = (input.gp.left && !prev_input.gp.left);
     return keyboard || gamepad;
 }
 
 // A "right" action (like dpad)
-bool right_rising_edge(editor_state editor) {
-    const bool keyboard = (input.right && !editor.prev_input.right);
-    const bool gamepad = (input.gp.right && !editor.prev_input.gp.right);
+bool editor_state::right_rising_edge() const noexcept {
+    const bool keyboard = (input.right && !prev_input.right);
+    const bool gamepad = (input.gp.right && !prev_input.gp.right);
     return keyboard || gamepad;
 }
 
 // This has less of a gamepad equivalent, but is like the space key
-bool vertical_up_rising_edge(editor_state editor) {
+bool editor_state::vertical_up_rising_edge() const noexcept {
     // Sorry, this is a little confusing. The trigger's neutral position is -1,
     // with 1 being "fully pressed". So (deadzone - 1) is the neutral position
     // plus the deadzone.
     const float trigger_deadzone = (-1.0f) + deadzone;
-    const bool gamepad = (input.RT > trigger_deadzone) && !(editor.prev_input.RT > trigger_deadzone);
+    const bool gamepad = (input.RT > trigger_deadzone) && !(prev_input.RT > trigger_deadzone);
 
-    const bool keyboard = (input.space && !editor.prev_input.space);
+    const bool keyboard = (input.space && !prev_input.space);
     return keyboard || gamepad;
 }
 
 // This has less of a gamepad equivalent, but is like a shift or crouch key
-bool vertical_down_rising_edge(editor_state editor) {
+bool editor_state::vertical_down_rising_edge() const noexcept {
     const float trigger_deadzone = (-1.0f) + deadzone;
-    const bool gamepad = (input.LT > trigger_deadzone) && !(editor.prev_input.LT > trigger_deadzone);
+    const bool gamepad = (input.LT > trigger_deadzone) && !(prev_input.LT > trigger_deadzone);
 
-    const bool keyboard = (input.shift && !editor.prev_input.shift);
+    const bool keyboard = (input.shift && !prev_input.shift);
     return keyboard || gamepad;
 }
 
 // Unit direction vector of movement on the X axis ("A/D" key or LS X axis)
 // Returns -1, 0, or 1.
-s8 move_x_rising_edge(editor_state editor) {
+s8 editor_state::move_x_rising_edge() const noexcept {
     // Dividing by itself gives 1, and using absolute value preserves sign.
     // This gives us -1 for any negative value, and 1 for any positive one.
     float stick_vec = input.LS_x / fabsf(input.LS_x);
-    if (fabsf(input.LS_x) < deadzone || fabsf(editor.prev_input.LS_x) > deadzone) {
+    if (fabsf(input.LS_x) < deadzone || fabsf(prev_input.LS_x) > deadzone) {
         // If we're in the deadzone or were outside it last frame, don't count it.
         stick_vec = 0;
     }
 
-    const s8 keyboard_diff = (input.d && !editor.prev_input.d) - (input.a && !editor.prev_input.a);
+    const s8 keyboard_diff = (input.d && !prev_input.d) - (input.a && !prev_input.a);
 
     const s8 result = CLAMP(-1, keyboard_diff + stick_vec, 1);
     return result;
@@ -108,17 +108,17 @@ s8 move_x_rising_edge(editor_state editor) {
 
 // Unit direction vector of movement on the Y axis ("W/S" key or LS Y axis)
 // Returns -1, 0, or 1.
-s8 move_y_rising_edge(editor_state editor) {
+s8 editor_state::move_y_rising_edge() const noexcept {
     // Dividing by itself gives 1, and using absolute value preserves sign.
     // This gives us -1 for any negative value, and 1 for any positive one.
     float stick_vec = input.LS_y / fabsf(input.LS_y);
     stick_vec = -stick_vec; // Y axis is the opposite sign of the intuitive way
-    if (fabsf(input.LS_y) < deadzone || fabsf(editor.prev_input.LS_y) > deadzone) {
+    if (fabsf(input.LS_y) < deadzone || fabsf(prev_input.LS_y) > deadzone) {
         // If we're in the deadzone or were outside it last frame, don't count it.
         stick_vec = 0;
     }
 
-    const s8 keyboard_diff = (input.w && !editor.prev_input.w) - (input.s && !editor.prev_input.s);
+    const s8 keyboard_diff = (input.w && !prev_input.w) - (input.s && !prev_input.s);
 
     const s8 result = CLAMP(-1, keyboard_diff + stick_vec, 1);
     return result;
@@ -128,8 +128,8 @@ s8 move_y_rising_edge(editor_state editor) {
 
 // This doesn't enforce what the bound VAO is... make sure to only call it with
 // the cube VAO bound.
-void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
-    vec3s center = vehicle_find_center(editor, SEARCH_ALL);
+void editor_state::render_vehicle_bitmask(vehicle_bitmask* mask) noexcept {
+    vec3s center = vehicle_find_center(this, SEARCH_ALL);
 
     // Highest XYZ coords in the vehicle. We add 1 to include the highest
     // index, then 4 to avoid cutting off large parts with up to 4 cells radius
@@ -137,7 +137,7 @@ void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
 
     // Tranformation matrices
     mat4 pv = {0};
-    camera_proj_view(editor->cam, pv);
+    camera_proj_view(cam, pv);
 
     // Disable backface culling, it doesn't make sense for a wireframe
     GLboolean culling_was_enabled = false;
@@ -190,7 +190,7 @@ void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
                 // TODO: The iteration seems to cause a heavy CPU bottleneck,
                 // but it's probably still worth doing a single instanced
                 // draw call instead of this.
-                glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float*)&pvm);
+                glUniformMatrix4fv(u_pvm, 1, GL_FALSE, (const float*)&pvm);
                 glDrawElements(GL_TRIANGLES, cube.idx_count, GL_UNSIGNED_SHORT, NULL);
             }
         }
@@ -202,28 +202,28 @@ void render_vehicle_bitmask(editor_state* editor, vehicle_bitmask* mask) {
     }
 }
 
-void update_edit_mode(editor_state* editor) {
+void editor_state::update_edit_mode() noexcept {
     // Handle moving the selector box
-    const vec3s cam_view = camera_facing(editor->cam);
+    const vec3s cam_view = camera_facing(cam);
     // Absolute value of camera vector
     const vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
 
-    const s8 movediff_forward = move_y_rising_edge(*editor);
-    const s8 movediff_side = move_x_rising_edge(*editor);
-    s8 forward_diff = up_rising_edge(*editor) - down_rising_edge(*editor);
-    s8 side_diff = right_rising_edge(*editor) - left_rising_edge(*editor);
-    const s8 vertical_diff = vertical_up_rising_edge(*editor) - vertical_down_rising_edge(*editor);
+    const s8 movediff_forward = move_y_rising_edge();
+    const s8 movediff_side = move_x_rising_edge();
+    s8 forward_diff = up_rising_edge() - down_rising_edge();
+    s8 side_diff = right_rising_edge() - left_rising_edge();
+    const s8 vertical_diff = vertical_up_rising_edge() - vertical_down_rising_edge();
 
-    const bool gp_roll_right = input.gp.rb && !editor->prev_input.gp.rb;
-    const bool gp_roll_left = input.gp.lb && !editor->prev_input.gp.lb;
-    const s8 roll_left = (input.z && !editor->prev_input.z) + gp_roll_left;
-    const s8 roll_right = (input.c && !editor->prev_input.c) + gp_roll_right;
+    const bool gp_roll_right = input.gp.rb && !prev_input.gp.rb;
+    const bool gp_roll_left = input.gp.lb && !prev_input.gp.lb;
+    const s8 roll_left = (input.z && !prev_input.z) + gp_roll_left;
+    const s8 roll_right = (input.c && !prev_input.c) + gp_roll_right;
 
     // Combine keyboard and gamepad inputs
     const s8 roll_diff = roll_right - roll_left;
 
     const bool rotation = ((forward_diff + side_diff + roll_diff) != 0);
-    const vec3s16 sel_box_prev = editor->sel_box;
+    const vec3s16 sel_box_prev = sel_box;
 
     // Set our view direction to have a magnitude of 1 on the horizontal axis
     // we're facing the most strongly, and 0 in all other directions.
@@ -236,61 +236,60 @@ void update_edit_mode(editor_state* editor) {
 
     if (rotation) {
         if (forward_diff != 0 || side_diff != 0 || roll_diff != 0) {
-            bool needed_adjust = vehicle_rotate_selection(editor, forward_diff, side_diff, roll_diff);
+            bool needed_adjust = vehicle_rotate_selection(this, forward_diff, side_diff, roll_diff);
             // Update vacancy if the rest of the vehicle moved
             if (needed_adjust) {
-                update_vacancymask(editor);
+                update_vacancymask(this);
             }
-            update_selectionmask(editor);
+            update_selectionmask(this);
 
             // Check for overlaps and block the placement if needed
-            if (vehicle_selection_overlap(editor)) {
-                editor->sel_mode = SEL_BAD;
-            }
-            else {
-                editor->sel_mode = SEL_ACTIVE;
+            if (vehicle_selection_overlap(this)) {
+                sel_mode = SEL_BAD;
+            } else {
+                sel_mode = SEL_ACTIVE;
             }
         }
     } else {
         vec3s right_vec = {-horizontal_vec.z, 0, horizontal_vec.x};
 
         for (u8 i = 0; i < 3; i++) {
-            editor->sel_box.raw[i] += movediff_forward * horizontal_vec.raw[i];
-            editor->sel_box.raw[i] += movediff_side * right_vec.raw[i];
+            sel_box.raw[i] += movediff_forward * horizontal_vec.raw[i];
+            sel_box.raw[i] += movediff_side * right_vec.raw[i];
         }
 
         // Handle vertical movement
-        editor->sel_box.y += vertical_diff;
+        sel_box.y += vertical_diff;
     }
 
 
     // Handle moving the selection, if applicable
-    if (editor->sel_mode != SEL_NONE && !vec3s16_eq(editor->sel_box, sel_box_prev) && !rotation) {
+    if (sel_mode != SEL_NONE && !vec3s16_eq(sel_box, sel_box_prev) && !rotation) {
         vec3s16 diff = {
-            .x = editor->sel_box.x - sel_box_prev.x,
-            .y = editor->sel_box.y - sel_box_prev.y,
-            .z = editor->sel_box.z - sel_box_prev.z,
+            .x = sel_box.x - sel_box_prev.x,
+            .y = sel_box.y - sel_box_prev.y,
+            .z = sel_box.z - sel_box_prev.z,
         };
 
         // Move all selected parts
         bool needed_adjust = false;
-        part_iterator iter = part_iterator_setup(*editor, SEARCH_SELECTED);
+        part_iterator iter = part_iterator_setup(*this, SEARCH_SELECTED);
         while (!iter.done) {
             part_entry* p = part_iterator_next(&iter);
             vec3s16 adjustment = {0};
-            needed_adjust |= vehicle_move_part(editor, *p, diff, &adjustment);
+            needed_adjust |= vehicle_move_part(this, *p, diff, &adjustment);
             // Move the selection box to the part's new location, if it moved out
             // of bounds and forced the vehicle to be adjusted.
-            editor->sel_box.x -= adjustment.x;
-            editor->sel_box.y -= adjustment.y;
-            editor->sel_box.z -= adjustment.z;
+            sel_box.x -= adjustment.x;
+            sel_box.y -= adjustment.y;
+            sel_box.z -= adjustment.z;
 
             // Check for overlaps and block the placement if needed
-            if (vehicle_selection_overlap(editor)) {
-                editor->sel_mode = SEL_BAD;
+            if (vehicle_selection_overlap(this)) {
+                sel_mode = SEL_BAD;
             }
             else {
-                editor->sel_mode = SEL_ACTIVE;
+                sel_mode = SEL_ACTIVE;
             }
         }
 
@@ -298,69 +297,69 @@ void update_edit_mode(editor_state* editor) {
         // TODO: Make a separate function for moving selection that uses
         // bitshifts/memcpy() to shift the grid. Need to do testing to see if
         // that's actually any faster.
-        update_selectionmask(editor);
+        update_selectionmask(this);
 
         // If rest of the vehicle was moved, we need to update the other grid
         if (needed_adjust) {
-            update_vacancymask(editor);
+            update_vacancymask(this);
         }
     }
 
     // Find index of the part we're targeting
-    const vec3s8 pos = {editor->sel_box.x, editor->sel_box.y, editor->sel_box.z};
-    const part_entry* p = part_by_pos(editor, pos, SEARCH_ALL);
+    const vec3s8 pos = {sel_box.x, sel_box.y, sel_box.z};
+    const part_entry* p = part_by_pos(this, pos, SEARCH_ALL);
 
-    const bool select_button_pressed = confirm_rising_edge(*editor);
-    const bool unselect_button_pressed = (input.r && !editor->prev_input.r) || (input.gp.b && !editor->prev_input.gp.b);
-    const bool delete_button_pressed = (input.c && !editor->prev_input.c) || (input.gp.y && !editor->prev_input.gp.y);
-    if (editor->sel_mode != SEL_BAD && !rotation) {
-        if (editor->sel_mode == SEL_NONE) {
+    const bool select_button_pressed = confirm_rising_edge();
+    const bool unselect_button_pressed = (input.r && !prev_input.r) || (input.gp.b && !prev_input.gp.b);
+    const bool delete_button_pressed = (input.c && !prev_input.c) || (input.gp.y && !prev_input.gp.y);
+    if (sel_mode != SEL_BAD && !rotation) {
+        if (sel_mode == SEL_NONE) {
             if (unselect_button_pressed) {
-                list_add(&editor->unselected_parts, (void*)p);
-                list_remove_val(&editor->selected_parts, (void*)p);
-                update_selectionmask(editor);
-                update_vacancymask(editor);
+                list_add(&unselected_parts, (void*)p);
+                list_remove_val(&selected_parts, (void*)p);
+                update_selectionmask(this);
+                update_vacancymask(this);
             }
             else if (delete_button_pressed) {
                 // Try to delete it from both lists
-                list_remove_val(&editor->selected_parts, (void*)p);
-                list_remove_val(&editor->unselected_parts, (void*)p);
-                update_selectionmask(editor);
-                update_vacancymask(editor);
-                editor->v.part_count--;
+                list_remove_val(&selected_parts, (void*)p);
+                list_remove_val(&unselected_parts, (void*)p);
+                update_selectionmask(this);
+                update_vacancymask(this);
+                v.part_count--;
             }
         }
         if (select_button_pressed) {
             // Handle user trying to select a part, unless the selection has overlaps
-            if (editor->sel_mode == SEL_ACTIVE) {
+            if (sel_mode == SEL_ACTIVE) {
                 // User pressed the button while moving parts, which means
                 // we should put them down.
-                list_merge(&editor->unselected_parts, editor->selected_parts);
-                list_clear(&editor->selected_parts);
-                update_selectionmask(editor); // This will boil down to just clearing the grid
-                update_vacancymask(editor); // Need to add those parts to vacancy grid
-                editor->sel_mode = SEL_NONE; // Now you can start moving the parts
+                list_merge(&unselected_parts, selected_parts);
+                list_clear(&selected_parts);
+                update_selectionmask(this); // This will boil down to just clearing the grid
+                update_vacancymask(this); // Need to add those parts to vacancy grid
+                sel_mode = SEL_NONE; // Now you can start moving the parts
             } else if (p->id != 0) {
-                if (cell_is_selected(editor, p->pos)) {
+                if (cell_is_selected(this, p->pos)) {
                     // User pressed the button while selecting parts on an
                     // already-selected part, which means they want to start moving
                     // them. No change to the vacancy/selection grids.
-                    editor->sel_mode = SEL_ACTIVE;
+                    sel_mode = SEL_ACTIVE;
 
                     // Set cursor to the selection center
-                    const vec3s center = vehicle_find_center(editor, SEARCH_SELECTED);
-                    editor->sel_box = (vec3s16){
+                    const vec3s center = vehicle_find_center(this, SEARCH_SELECTED);
+                    sel_box = (vec3s16){
                         floorf(center.x),
                         floorf(center.y),
                         floorf(center.z),
                     };
                 } else {
                     // Select the part
-                    list_add(&editor->selected_parts, (void*)p);
-                    list_remove_val(&editor->unselected_parts, (void*)p);
-                    update_selectionmask(editor);
-                    update_vacancymask(editor);
-                    editor->sel_mode = SEL_NONE;
+                    list_add(&selected_parts, (void*)p);
+                    list_remove_val(&unselected_parts, (void*)p);
+                    update_selectionmask(this);
+                    update_vacancymask(this);
+                    sel_mode = SEL_NONE;
                 }
             }
         }
@@ -393,19 +392,19 @@ void editor_save_to_file(editor_state editor, const char* output_path) {
 }
 
 // Update the GUI state according to new user input.
-bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
+bool editor_state::editor_update_with_input() noexcept {
     const double time_start = glfwGetTime();
     static bool cursor_lock = false;
     update_mods(window); // Update input.shift, input.ctrl, etc.
     gamepad_update();
 
-    bool change_camstyle = (input.click_middle && !editor->prev_input.click_middle);
-    change_camstyle |= (input.gp.r3 && !editor->prev_input.gp.r3);
+    bool change_camstyle = (input.click_middle && !prev_input.click_middle);
+    change_camstyle |= (input.gp.r3 && !prev_input.gp.r3);
     if (change_camstyle) {
         // Cycle through camera modes
-        camera_mode mode = (camera_mode)((editor->cam.mode + 1) % CAMERA_MODE_ENUM_MAX);
+        camera_mode mode = (camera_mode)((cam.mode + 1) % CAMERA_MODE_ENUM_MAX);
         // This function handles the special camera settings per mode
-        camera_set_mode(&editor->cam, mode);
+        camera_set_mode(&cam, mode);
     }
 
     // Allow infinite cursor movement when clicking to pan the camera
@@ -427,121 +426,118 @@ bool editor_update_with_input(editor_state* editor, GLFWwindow* window) {
         cursor_lock = false;
     }
 
-    if (input.v && !editor->prev_input.v) {
+    if (input.v && !prev_input.v) {
         // Toggle vsync
-        editor->vsync = !editor->vsync;
-        set_vsync(editor->vsync);
+        vsync = !vsync;
+        set_vsync(vsync);
     }
-    if (input.control && input.s && !editor->prev_input.s) {
-        editor_save_to_file(*editor, "vehicle.bin");
+    if (input.control && input.s && !prev_input.s) {
+        editor_save_to_file(*this, "vehicle.bin");
     }
 
     // Cycle if Tab or X are pressed
-    bool cycle_mode = (input.tab && !editor->prev_input.tab) || (input.gp.x && !editor->prev_input.gp.x);
-    if (cycle_mode && editor->mode != MODE_MENU) {
+    bool cycle_mode = (input.tab && !prev_input.tab) || (input.gp.x && !prev_input.gp.x);
+    if (cycle_mode && mode != MODE_MENU) {
         // Cycle through modes. Ctrl-Tab goes backwards.
-        editor->mode = (editor_mode)((editor->mode + (input.control ? -1 : 1)) % 2);
+        mode = (editor_mode)((mode + (input.control ? -1 : 1)) % 2);
     }
-    if (pause_rising_edge(*editor)) {
-        if (editor->mode == MODE_MENU) {
-            editor->mode = MODE_MOVCAM;
+    if (pause_rising_edge()) {
+        if (mode == MODE_MENU) {
+            mode = MODE_MOVCAM;
         } else {
-            editor->mode = MODE_MENU;
+            mode = MODE_MENU;
         }
     }
 
-    if (editor->mode == MODE_EDIT) {
-        update_edit_mode(editor);
-        editor->cam.move_speed = 0;
+    if (mode == MODE_EDIT) {
+        update_edit_mode();
+        cam.move_speed = 0;
     }
 
     // Only allow the camera to move in certain modes
-    switch (editor->mode) {
+    switch (mode) {
     case MODE_MOVCAM:
-        editor->cam.move_speed = camera_default().move_speed;
-            editor->cam.mouse_sens = camera_default().mouse_sens;
+        cam.move_speed = camera_default().move_speed;
+        cam.mouse_sens = camera_default().mouse_sens;
         break;
     case MODE_MENU:
-        editor->cam.move_speed = 0;
-            editor->cam.mouse_sens = 0;
+        cam.move_speed = 0;
+        cam.mouse_sens = 0;
         break;
     default:
-        editor->cam.move_speed = 0;
-            editor->cam.mouse_sens = camera_default().mouse_sens;
+        cam.move_speed = 0;
+        cam.mouse_sens = camera_default().mouse_sens;
     }
 
     DBG_ASSERT_PERF(time_start, 1);
     return true;
 }
 
-editor_state editor_init(const char* vehicle_path, GLFWwindow* window) {
+bool editor_state::init(const char* vehicle_path, GLFWwindow* window) noexcept {
     const double time_start = glfwGetTime();
-    editor_state editor = {
-        .cam = camera_default(),
-        .vacancy_mask = (vehicle_bitmask*)calloc(1, sizeof(vehicle_bitmask)),
-        .selected_mask = (vehicle_bitmask*)calloc(1, sizeof(vehicle_bitmask)),
-        .init_result = false, // Default to failure, this will only be set to success if all checks pass
-        .window = window,
-    };
-    if (editor.vacancy_mask == NULL || editor.selected_mask == NULL) {
+    vacancy_mask = (vehicle_bitmask*)calloc(1, sizeof(vehicle_bitmask));
+    selected_mask = (vehicle_bitmask*)calloc(1, sizeof(vehicle_bitmask));
+    this->window = window;
+
+    if (!vacancy_mask || !selected_mask) {
         LOG_MSG(error, "Failed to alloc a vehicle bitmask\n");
-        return editor;
+        return false;
     }
 
-    vehicle* v = vehicle_load(vehicle_path);
-    if (v == NULL) {
+    vehicle* vehicle = vehicle_load(vehicle_path);
+    if (!vehicle) {
         LOG_MSG(error, "Failed to load vehicle from \"%s\"\n", vehicle_path);
-        return editor;
+        return false;
     }
 
     // Init vehicle header & dynamic lists
-    editor.v = v->head;
+    this->v = vehicle->head;
     // Start with enough memory to select all parts without resizing
-    editor.selected_parts = list_create(sizeof(part_entry) * v->head.part_count, sizeof(part_entry));
-    editor.unselected_parts = list_create(sizeof(part_entry) * v->head.part_count, sizeof(part_entry));
-    if (editor.selected_parts.buf.data == 0 || editor.unselected_parts.buf.data == 0) {
+    selected_parts = list_create(sizeof(part_entry) * vehicle->head.part_count, sizeof(part_entry));
+    unselected_parts = list_create(sizeof(part_entry) * vehicle->head.part_count, sizeof(part_entry));
+    if (selected_parts.buf.data == 0 || unselected_parts.buf.data == 0) {
         LOG_MSG(error, "Failed to allocate for dynamic lists\n");
-        return editor;
+        return false;
     }
 
 
     // Copy part data into the dynamic list and free the raw vehicle data
-    memcpy((void*)editor.unselected_parts.buf.data, v->parts, sizeof(*v->parts) * v->head.part_count);
-    editor.unselected_parts.end_idx = v->head.part_count;
-    free(v);
+    memcpy((void*)unselected_parts.buf.data, vehicle->parts, sizeof(*vehicle->parts) * vehicle->head.part_count);
+    unselected_parts.end_idx = vehicle->head.part_count;
+    free(vehicle);
 
     // Initialize part grids
-    update_vacancymask(&editor);
-    update_selectionmask(&editor);
+    update_vacancymask(this);
+    update_selectionmask(this);
 
     u8* vert = physfs_load_file("/src/editor/shader/vcolor.vert");
     u8* frag = physfs_load_file("/src/editor/shader/vcolor.frag");
-    if (vert == NULL || frag == NULL) {
+    if (!vert || !frag) {
         LOG_MSG(error, "Failed to load one or both of the vertex color shader files\n");
-        return editor;
+        return false;
     }
-    editor.vcolor_shader = program_compile_src((char*)vert, (char*)frag);
+    vcolor_shader = program_compile_src((char*)vert, (char*)frag);
     free(vert);
     free(frag);
-    if (!shader_link_check(editor.vcolor_shader)) {
+    if (!shader_link_check(vcolor_shader)) {
         LOG_MSG(error, "Shader linker error\n");
-        return editor;
+        return false;
     }
 
     // Get our uniform locations
-    editor.u_pvm = glGetUniformLocation(editor.vcolor_shader, "pvm");
-    editor.u_paint = glGetUniformLocation(editor.vcolor_shader, "paint");
+    u_pvm = glGetUniformLocation(vcolor_shader, "pvm");
+    u_paint = glGetUniformLocation(vcolor_shader, "paint");
 
     model_upload(&quad);
     model_upload(&cube);
 
-    editor.init_result = true;
+    init_result = true;
     DBG_ASSERT_PERF(time_start, 1);
-    return editor;
+    return true;
 }
 
-void editor_teardown(editor_state* editor) {
-    glDeleteProgram(editor->vcolor_shader);
+void editor_state::destroy() noexcept {
+    glDeleteProgram(vcolor_shader);
     glDeleteVertexArrays(1, &quad.vao);
     glDeleteBuffers(1, &quad.vbuf);
     glDeleteBuffers(1, &quad.ibuf);
@@ -549,9 +545,9 @@ void editor_teardown(editor_state* editor) {
     glDeleteVertexArrays(1, &cube.vao);
     glDeleteBuffers(1, &cube.vbuf);
     glDeleteBuffers(1, &cube.ibuf);
-    list_destroy(&editor->selected_parts);
-    list_destroy(&editor->unselected_parts);
-    free(editor->vacancy_mask);
-    free(editor->selected_mask);
+    list_destroy(&selected_parts);
+    list_destroy(&unselected_parts);
+    free(vacancy_mask);
+    free(selected_mask);
 }
 
