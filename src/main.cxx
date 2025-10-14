@@ -40,7 +40,6 @@ int main(int argc, char** argv) {
     const char* vehicle_path = argv[1]; // Give our first argument a convenient name
 
     gui_app app;
-    app.layers.reserve(5);
     app.layers.emplace_back(std::make_unique<editor_state>(vehicle_path));
     editor_state* editor = dynamic_cast<editor_state*>(app.layers[0].get());
 
