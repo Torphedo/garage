@@ -6,9 +6,9 @@
 // just for those.
 
 struct layer_debug : gui_layer {
-    const editor_state* editor = nullptr;
+    const editor_state& editor;
 
-    explicit layer_debug(const editor_state* editor) noexcept : editor(editor) {
+    explicit layer_debug(const editor_state& editor) noexcept : editor(editor) {
 
     }
     void render(GLFWwindow* window) noexcept override;

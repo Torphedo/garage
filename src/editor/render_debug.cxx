@@ -5,26 +5,26 @@
 
 void layer_debug::render(GLFWwindow* window) noexcept {
     // Bind our shader & buffers
-    glUseProgram(editor->vcolor_shader);
+    glUseProgram(editor.vcolor_shader);
     glBindVertexArray(cube.vao);
     // Draw in wireframe mode
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
     vec4s color = {.b = 1.0f, .a = 1.0f};
-    glUniform4fv(editor->u_paint, 1, (const float*)&color);
+    glUniform4fv(editor.u_paint, 1, (const float*)&color);
 
-    editor->render_vehicle_bitmask(editor->vacancy_mask);
+    editor.render_vehicle_bitmask(editor.vacancy_mask);
 
     // Draw green/red boxes around all selected parts as appropriate
     // Set selection box color
-    if (editor->sel_mode == SEL_BAD) {
+    if (editor.sel_mode == SEL_BAD) {
         color.r = 1.0f;
     } else {
         color.g = 1.0f;
     }
     color.b = 0.0f;
-    glUniform4fv(editor->u_paint, 1, (const float*)&color);
-    editor->render_vehicle_bitmask(editor->selected_mask);
+    glUniform4fv(editor.u_paint, 1, (const float*)&color);
+    editor.render_vehicle_bitmask(editor.selected_mask);
 
     // Reset state
     glBindVertexArray(0);

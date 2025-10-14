@@ -41,11 +41,11 @@ int main(int argc, char** argv) {
 
     gui_app app;
     app.layers.emplace_back(std::make_unique<editor_state>(vehicle_path));
-    editor_state* editor = dynamic_cast<editor_state*>(app.layers[0].get());
+    editor_state& editor = *dynamic_cast<editor_state*>(app.layers[0].get());
 
     app.layers.emplace_back(std::make_unique<garage_state>(editor));
     app.layers.emplace_back(std::make_unique<layer_debug>(editor));
-    app.layers.emplace_back(std::make_unique<editor_ui>(*editor));
+    app.layers.emplace_back(std::make_unique<editor_ui>(editor));
 
     app.run("Garage Opener");
 

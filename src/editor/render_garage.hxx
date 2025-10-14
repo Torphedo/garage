@@ -15,9 +15,9 @@ typedef struct {
 // State for rendering the garage "floor" and all of the vehicle parts.
 struct garage_state : gui_layer {
     part_model models[NUM_PARTS + 1] = {};
-    editor_state* editor = nullptr;
+    editor_state& editor;
 
-    explicit garage_state(editor_state* state) noexcept : editor(state) {
+    explicit garage_state(editor_state& state) noexcept : editor(state) {
 
     }
     void init(GLFWwindow* window) noexcept override;

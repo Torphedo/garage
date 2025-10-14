@@ -63,7 +63,7 @@ void garage_state::init(GLFWwindow* window) noexcept {
         .m = cube
     };
 
-    part_iterator iter(*editor, SEARCH_ALL);
+    part_iterator iter(editor, SEARCH_ALL);
     while (!iter.done) {
         const part_entry* p = iter.next();
         get_or_load_model(this, (part_id)p->id);
@@ -74,30 +74,30 @@ void garage_state::init(GLFWwindow* window) noexcept {
 
 void garage_state::render(GLFWwindow* window) noexcept {
     // We need to bind the shader program before uploading uniforms
-    glUseProgram(editor->vcolor_shader);
+    glUseProgram(editor.vcolor_shader);
 
     // All our matrices for rendering, only PVM is uploaded to GPU
     mat4 pvm = {0};
     mat4 pv = {0};
-    editor->cam.proj_view(pv);
+    editor.cam.proj_view(pv);
 
     mat4 mdl = {0};
     glm_mat4_identity(mdl);
 
     glm_mat4_mul(pv, mdl, pvm); // Compute pvm
-    glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float*)&pvm);
+    glUniformMatrix4fv(editor.u_pvm, 1, GL_FALSE, (const float*)&pvm);
 
     // "Paint" the floor orange
     vec4 quad_paint = {1.0f, 0.5f, 0.2f, 1.0f};
-    glUniform4fv(editor->u_paint, 1, (const float*)&quad_paint);
+    glUniform4fv(editor.u_paint, 1, (const float*)&quad_paint);
 
     // Draw the floor
     glBindVertexArray(quad.vao);
     glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
 
     // Draw all our parts
-    const vec3s center = vehicle_find_center(editor, SEARCH_ALL);
-    part_iterator iter(*editor, SEARCH_ALL);
+    const vec3s center = vehicle_find_center(&editor, SEARCH_ALL);
+    part_iterator iter(editor, SEARCH_ALL);
     while (!iter.done) {
         part_entry* p = iter.next();
 
@@ -109,7 +109,7 @@ void garage_state::render(GLFWwindow* window) noexcept {
         // Upload paint color & draw
         vec4s paint_col = vec4_from_rgba8(p->color);
         const part_entry temp = *p;
-        if (contains(editor->selected_parts, *p)) {
+        if (contains(editor.selected_parts, *p)) {
             paint_col.a /= 3;
         }
 
@@ -132,10 +132,10 @@ void garage_state::render(GLFWwindow* window) noexcept {
         glm_rotate_y(model, p->rot[1], model);
         glm_rotate_z(model, p->rot[2], model);
         glm_mat4_mul(pv, model, pvm); // Compute pvm
-        glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float *) &pvm);
+        glUniformMatrix4fv(editor.u_pvm, 1, GL_FALSE, (const float *) &pvm);
 
         // Upload paint color & draw
-        glUniform4fv(editor->u_paint, 1, (const float *) &paint_col);
+        glUniform4fv(editor.u_paint, 1, (const float *) &paint_col);
         glDrawElements(GL_TRIANGLES, m.idx_count, GL_UNSIGNED_SHORT, NULL);
     }
 
@@ -148,7 +148,7 @@ void garage_state::render(GLFWwindow* window) noexcept {
 
 
     // Get cursor position
-    vec3s pos = vec3_from_vec3s16(editor->sel_box, PART_POS_SCALE);
+    vec3s pos = vec3_from_vec3s16(editor.sel_box, PART_POS_SCALE);
     pos.x -= (center.x * PART_POS_SCALE); // Align onto part grid
     pos.z -= (center.z * PART_POS_SCALE);
 
@@ -161,17 +161,17 @@ void garage_state::render(GLFWwindow* window) noexcept {
         glm_translate(model, (float*)&pos);
         glm_scale_uni(model, 1.2f); // Draw the box a little larger than the part cubes
         glm_mat4_mul(pv, model, pvm); // Compute pvm
-        glUniformMatrix4fv(editor->u_pvm, 1, GL_FALSE, (const float *) &pvm);
+        glUniformMatrix4fv(editor.u_pvm, 1, GL_FALSE, (const float *) &pvm);
 
         // Upload paint color & draw
         const vec4s color = {.a = 1.0f};
-        glUniform4fv(editor->u_paint, 1, (const float *) &color);
+        glUniform4fv(editor.u_paint, 1, (const float *) &color);
         glDrawElements(GL_TRIANGLES, cube.idx_count, GL_UNSIGNED_SHORT, NULL);
     }
 
     // Lock camera onto selection box during editing
-    if (editor->mode == MODE_EDIT) {
-        editor->cam.target = pos;
+    if (editor.mode == MODE_EDIT) {
+        editor.cam.target = pos;
     }
 
     // Reset state
