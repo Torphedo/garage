@@ -148,9 +148,11 @@ void layer_garage::render(GLFWwindow* window) noexcept {
 
 
     // Get cursor position
-    vec3s pos = vec3_from_vec3s16(editor.sel_box, PART_POS_SCALE);
-    pos.x -= (center.x * PART_POS_SCALE); // Align onto part grid
-    pos.z -= (center.z * PART_POS_SCALE);
+    const vec3s8 temp = editor.sel_box;
+    vec3s pos = {temp.x, temp.y, temp.z};
+    pos.x -= (center.x); // Align onto part grid
+    pos.z -= (center.z);
+    pos = glms_vec3_scale(pos, PART_POS_SCALE);
 
     {
         // Render cursor box

@@ -223,17 +223,17 @@ bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_dif
         glm_quat_rotatev(quaternion, offset, rotated_offset);
 
         // Part position after rotation
-        vec3s16 new_pos = {
+        vec3s8 new_pos = {
             roundf(editor->sel_box.x + rotated_offset[0]),
             roundf(editor->sel_box.y + rotated_offset[1]),
             roundf(editor->sel_box.z + rotated_offset[2]),
         };
-        vec3s16 diff = {
+        vec3s8 diff = {
             new_pos.x - p->pos.x,
             new_pos.y - p->pos.y,
             new_pos.z - p->pos.z,
         };
-        vec3s16 adjustment = {0};
+        vec3s8 adjustment = {0};
         needed_adjust |= vehicle_move_part(*editor, *p, diff, &adjustment);
         // If we tried to cross the edge and parts were adjusted, we need to
         // adjust the centerpoint. (will be zero if no adjustment was needed)
@@ -374,7 +374,7 @@ part_entry* part_by_pos(editor_state& editor, vec3s8 target, partsearch_type sea
     return &empty_part;
 }
 
-bool vehicle_move_part(editor_state& editor, part_entry part, vec3s16 diff, vec3s16* adjust_out) {
+bool vehicle_move_part(editor_state& editor, part_entry part, vec3s8 diff, vec3s8* adjust_out) {
     auto&& found_part = find_pod(editor.selected_parts, part);
     if (found_part == editor.selected_parts.end()) {
         // If for some reason we're moving an unselected part, handle that
@@ -388,7 +388,7 @@ bool vehicle_move_part(editor_state& editor, part_entry part, vec3s16 diff, vec3
     // We loop over the 3 axes here
     for (u8 i = 0; i < 3; i++) {
         // Find position of this axis after the move
-        const s16 new_pos = (s16)p.pos.raw[i] + diff.raw[i];
+        const s8 new_pos = p.pos.raw[i] + diff.raw[i];
         if (new_pos >= VEH_MAX_DIM - 1) {
             // This part is at the border, there's nothing we can do.
             continue;
@@ -403,7 +403,7 @@ bool vehicle_move_part(editor_state& editor, part_entry part, vec3s16 diff, vec3
         // Make this the new 0, update the output adjustment vector, and adjust
         // the rest of the parts
         p.pos.raw[i] = 0;
-        if (adjust_out != NULL) {
+        if (adjust_out) {
             adjust_out->raw[i] = new_pos;
         }
 

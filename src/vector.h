@@ -25,26 +25,6 @@ bool vec3s8_eq(vec3s8 a, vec3s8 b);
 /// Convert an 8-bit 3D vector to a floating point one
 vec3s vec3_from_vec3s8(vec3s8 vu8, float scale);
 
-/// 3D integer vector (signed 16-bit)
-typedef union {
-    struct {
-        s16 x;
-        s16 y; // Height
-        s16 z;
-    };
-    s16 raw[3];
-}vec3s16;
-
-/// Convert an 8-bit 3D vector to a 16-bit one
-// TODO: These are both signed, why is is it named "vec3u8"?
-bool vec3u8_eq_vec3s16(vec3s8 a, vec3s16 b);
-
-/// Compare 2 16-bit 3D integer vectors
-bool vec3s16_eq(vec3s16 a, vec3s16 b);
-
-/// Convert a 16-bit 3D vector to a floating point one
-vec3s vec3_from_vec3s16(vec3s16 vs16, float scale);
-
 /// 8-bit RGBA color
 typedef struct {
     u8 r;

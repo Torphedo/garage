@@ -271,10 +271,10 @@ void layer_hud::update(GLFWwindow* window) noexcept {
     const double time_start = glfwGetTime();
 
     // Invalid cursor position forces the text to update on the first frame
-    static vec3s16 last_selbox = {-1, -1, -1};
+    static vec3s8 last_selbox = {-1, -1, -1};
 
     // We can skip updating the part name if the cursor hasn't moved
-    if (!vec3s16_eq(last_selbox, editor.sel_box)) {
+    if (!vec3s8_eq(last_selbox, editor.sel_box)) {
         const vec3s8 pos = {s8(editor.sel_box.x), s8(editor.sel_box.y), s8(editor.sel_box.z)};
         const part_entry* part = part_by_pos(editor, pos, SEARCH_ALL);
         const part_info cur_part = part_get_info((part_id)part->id);

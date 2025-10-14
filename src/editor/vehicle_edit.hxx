@@ -85,4 +85,4 @@ part_entry* part_by_pos(editor_state& editor, vec3s8 target, partsearch_type sea
 ///                   adjusted to keep all coordinates positive. May be NULL.
 /// @return Whether the other parts had to be adjusted to keep all the part
 ///         coordinates positive.
-bool vehicle_move_part(editor_state& editor, part_entry part, vec3s16 diff, vec3s16* adjust_out);
+bool vehicle_move_part(editor_state& editor, part_entry part, vec3s8 diff, vec3s8* adjust_out);

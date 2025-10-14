@@ -224,7 +224,7 @@ void editor_state::update_edit_mode() noexcept {
     const s8 roll_diff = roll_right - roll_left;
 
     const bool rotation = ((forward_diff + side_diff + roll_diff) != 0);
-    const vec3s16 sel_box_prev = sel_box;
+    const vec3s8 sel_box_prev = sel_box;
 
     // Set our view direction to have a magnitude of 1 on the horizontal axis
     // we're facing the most strongly, and 0 in all other directions.
@@ -265,8 +265,8 @@ void editor_state::update_edit_mode() noexcept {
 
 
     // Handle moving the selection, if applicable
-    if (sel_mode != SEL_NONE && !vec3s16_eq(sel_box, sel_box_prev) && !rotation) {
-        vec3s16 diff = {
+    if (sel_mode != SEL_NONE && !vec3s8_eq(sel_box, sel_box_prev) && !rotation) {
+        const vec3s8 diff = {
             .x = sel_box.x - sel_box_prev.x,
             .y = sel_box.y - sel_box_prev.y,
             .z = sel_box.z - sel_box_prev.z,
@@ -277,7 +277,7 @@ void editor_state::update_edit_mode() noexcept {
         part_iterator iter(*this, SEARCH_SELECTED);
         while (!iter.done) {
             part_entry* p = iter.next();
-            vec3s16 adjustment = {0};
+            vec3s8 adjustment = {0};
             needed_adjust |= vehicle_move_part(*this, *p, diff, &adjustment);
             // Adjust the selection box if needed
             sel_box.x -= adjustment.x;
@@ -348,7 +348,7 @@ void editor_state::update_edit_mode() noexcept {
 
                     // Set cursor to the selection center
                     const vec3s center = vehicle_find_center(this, SEARCH_SELECTED);
-                    sel_box = (vec3s16){
+                    sel_box = (vec3s8){
                         floorf(center.x),
                         floorf(center.y),
                         floorf(center.z),

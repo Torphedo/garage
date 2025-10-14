@@ -57,7 +57,7 @@ struct editor_state : gui_layer {
     vehicle_bitmask* selected_mask = nullptr;
 
     // Editor state data
-    vec3s16 sel_box = {}; // Selection box position
+    vec3s8 sel_box = {}; // Selection box position
     editor_mode mode = MODE_MOVCAM;
     selection_state sel_mode = SEL_NONE;
 
