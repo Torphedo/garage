@@ -126,7 +126,7 @@ struct editor_state : gui_layer {
 
     void update_edit_mode() noexcept;
 
-    void render_vehicle_bitmask(vehicle_bitmask* mask) const noexcept;
+    void render_vehicle_bitmask(const vehicle_bitmask* mask) const noexcept;
 
     explicit editor_state(const char* vehicle_path) noexcept;
 
