@@ -240,12 +240,12 @@ void editor_state::update_edit_mode() noexcept {
             bool needed_adjust = vehicle_rotate_selection(this, forward_diff, side_diff, roll_diff);
             // Update vacancy if the rest of the vehicle moved
             if (needed_adjust) {
-                update_vacancymask(this);
+                update_vacancymask(*this);
             }
-            update_selectionmask(this);
+            update_selectionmask(*this);
 
             // Check for overlaps and block the placement if needed
-            if (vehicle_selection_overlap(this)) {
+            if (vehicle_selection_overlap(*this)) {
                 sel_mode = SEL_BAD;
             } else {
                 sel_mode = SEL_ACTIVE;
@@ -274,9 +274,9 @@ void editor_state::update_edit_mode() noexcept {
 
         // Move all selected parts
         bool needed_adjust = false;
-        part_iterator iter = part_iterator_setup(*this, SEARCH_SELECTED);
+        part_iterator iter(*this, SEARCH_SELECTED);
         while (!iter.done) {
-            part_entry* p = part_iterator_next(&iter);
+            part_entry* p = iter.next();
             vec3s16 adjustment = {0};
             needed_adjust |= vehicle_move_part(this, *p, diff, &adjustment);
             // Move the selection box to the part's new location, if it moved out
@@ -286,7 +286,7 @@ void editor_state::update_edit_mode() noexcept {
             sel_box.z -= adjustment.z;
 
             // Check for overlaps and block the placement if needed
-            if (vehicle_selection_overlap(this)) {
+            if (vehicle_selection_overlap(*this)) {
                 sel_mode = SEL_BAD;
             }
             else {
@@ -298,11 +298,11 @@ void editor_state::update_edit_mode() noexcept {
         // TODO: Make a separate function for moving selection that uses
         // bitshifts/memcpy() to shift the grid. Need to do testing to see if
         // that's actually any faster.
-        update_selectionmask(this);
+        update_selectionmask(*this);
 
         // If rest of the vehicle was moved, we need to update the other grid
         if (needed_adjust) {
-            update_vacancymask(this);
+            update_vacancymask(*this);
         }
     }
 
@@ -319,15 +319,15 @@ void editor_state::update_edit_mode() noexcept {
                 unselected_parts.push_back(*p);
 
                 find_erase_pod(selected_parts, *p);
-                update_selectionmask(this);
-                update_vacancymask(this);
+                update_selectionmask(*this);
+                update_vacancymask(*this);
             }
             else if (delete_button_pressed) {
                 // Try to delete it from both lists
                 find_erase_pod(selected_parts, *p);
                 find_erase_pod(unselected_parts, *p);
-                update_selectionmask(this);
-                update_vacancymask(this);
+                update_selectionmask(*this);
+                update_vacancymask(*this);
                 v.part_count--;
             }
         }
@@ -338,8 +338,8 @@ void editor_state::update_edit_mode() noexcept {
                 // we should put them down.
                 concat(unselected_parts, selected_parts);
                 selected_parts.clear();
-                update_selectionmask(this); // This will boil down to just clearing the grid
-                update_vacancymask(this); // Need to add those parts to vacancy grid
+                update_selectionmask(*this); // This will boil down to just clearing the grid
+                update_vacancymask(*this); // Need to add those parts to vacancy grid
                 sel_mode = SEL_NONE; // Now you can start moving the parts
             } else if (p->id != 0) {
                 if (cell_is_selected(this, p->pos)) {
@@ -359,8 +359,8 @@ void editor_state::update_edit_mode() noexcept {
                     // Select the part
                     selected_parts.push_back(*p);
                     find_erase_pod(unselected_parts, *p);
-                    update_selectionmask(this);
-                    update_vacancymask(this);
+                    update_selectionmask(*this);
+                    update_vacancymask(*this);
                     sel_mode = SEL_NONE;
                 }
             }
@@ -378,9 +378,9 @@ void editor_save_to_file(editor_state editor, const char* output_path) {
     fwrite(&editor.v, sizeof(editor.v), 1, f);
 
     // Save each part
-    part_iterator iter = part_iterator_setup(editor, SEARCH_ALL);
+    part_iterator iter(editor, SEARCH_ALL);
     while (!iter.done) {
-        part_entry part = *part_iterator_next(&iter);
+        part_entry part = *iter.next();
         part_byteswap(&part); // This is a copy, byteswapping is OK
         fwrite(&part, sizeof(part), 1, f);
     }
@@ -524,8 +524,8 @@ void editor_state::init(GLFWwindow* window) noexcept {
     }
 
     // Initialize part grids
-    update_vacancymask(this);
-    update_selectionmask(this);
+    update_vacancymask(*this);
+    update_selectionmask(*this);
 
     u8* vert = physfs_load_file("/src/editor/shader/vcolor.vert");
     u8* frag = physfs_load_file("/src/editor/shader/vcolor.frag");

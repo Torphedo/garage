@@ -50,9 +50,9 @@ bool cell_is_selected(editor_state* editor, vec3s8 cell) {
     return found_part;
 }
 
-bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry* p) {
+bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry p) {
     bool result = false;
-    part_cell_iterator iter(*p);
+    part_cell_iterator iter(p);
     while (!iter.done) {
         // Get the final coordinate by adding the rotated point to origin
         const vec3s8 cell = iter.next();
@@ -64,49 +64,49 @@ bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry* p) {
     return result;
 }
 
-bool vehicle_selection_overlap(editor_state* editor) {
-    part_iterator iter = part_iterator_setup(*editor, SEARCH_SELECTED);
+bool vehicle_selection_overlap(editor_state& editor) {
+    part_iterator iter(editor, SEARCH_SELECTED);
     while (!iter.done) {
-        part_entry* p = part_iterator_next(&iter);
-        if (vehicle_part_conflict(editor->vacancy_mask, p)) {
+        const part_entry p = *iter.next();
+        if (vehicle_part_conflict(editor.vacancy_mask, p)) {
             return true;
         }
     }
     return false;
 }
 
-void update_vacancymask(editor_state* editor) {
+void update_vacancymask(editor_state& editor) {
     // Clear the selection grid
-    memset(editor->vacancy_mask, 0x00, sizeof(vehicle_bitmask));
+    memset(editor.vacancy_mask, 0x00, sizeof(vehicle_bitmask));
 
-    part_iterator iter = part_iterator_setup(*editor, SEARCH_UNSELECTED);
+    part_iterator iter(editor, SEARCH_UNSELECTED);
     while (!iter.done) {
-        const part_entry* p = part_iterator_next(&iter);
+        const part_entry p = *iter.next();
 
-        part_cell_iterator cell_iter(*p);
+        part_cell_iterator cell_iter(p);
         while (!cell_iter.done) {
             // Get the next cell of this part
             const vec3s8 cell = cell_iter.next();
 
-            vehiclemask_set_3d(editor->vacancy_mask, cell, true);
+            vehiclemask_set_3d(editor.vacancy_mask, cell, true);
         }
     }
 }
 
-void update_selectionmask(editor_state* editor) {
+void update_selectionmask(editor_state& editor) {
     // Clear the selection grid
-    memset(editor->selected_mask, 0x00, sizeof(vehicle_bitmask));
+    memset(editor.selected_mask, 0x00, sizeof(vehicle_bitmask));
 
-    part_iterator iter = part_iterator_setup(*editor, SEARCH_SELECTED);
+    part_iterator iter(editor, SEARCH_SELECTED);
     while (!iter.done) {
-        const part_entry* p = part_iterator_next(&iter);
+        const part_entry* p = iter.next();
 
         part_cell_iterator cell_iter(*p);
         while (!cell_iter.done) {
             // Get the next cell of this part
             const vec3s8 cell = cell_iter.next();
 
-            vehiclemask_set_3d(editor->selected_mask, cell, true);
+            vehiclemask_set_3d(editor.selected_mask, cell, true);
         }
     }
 }
@@ -205,9 +205,9 @@ bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_dif
     glm_rotate(rot_matrix, glm_rad(90) * roll_diff, *(vec3*)&forward_vec);
 
     bool needed_adjust = false;
-    part_iterator iter = part_iterator_setup(*editor, SEARCH_SELECTED);
+    part_iterator iter(*editor, SEARCH_SELECTED);
     while (!iter.done) {
-        part_entry* p = part_iterator_next(&iter);
+        part_entry* p = iter.next();
 
         // Get rotation matrix for the part rotation
         mat4 part_rotation = {0};
@@ -282,21 +282,19 @@ vec3s8 part_cell_iterator::next() {
     return cell;
 }
 
-part_iterator part_iterator_setup(editor_state& editor, partsearch_type search_type) {
-    part_iterator output = {
-        .partlists = {&editor.selected_parts, &editor.unselected_parts},
-        .search_type = search_type,
-    };
+part_iterator::part_iterator(editor_state& editor, partsearch_type search_type) noexcept : search_type(search_type) {
+    partlists[0] = &editor.selected_parts;
+    partlists[1] = &editor.unselected_parts;
 
     switch (search_type) {
         case SEARCH_SELECTED:
             // No special action needed, but make both entries the selected
             // list just in case
-            output.partlists[1] = &editor.selected_parts;
+            partlists[1] = &editor.selected_parts;
             break;
         case SEARCH_UNSELECTED:
             // Make both entries the unselected list
-            output.partlists[0] = &editor.unselected_parts;
+            partlists[0] = &editor.unselected_parts;
             break;
         case SEARCH_ALL:
             // No special action needed
@@ -304,39 +302,37 @@ part_iterator part_iterator_setup(editor_state& editor, partsearch_type search_t
     }
 
     // Skip empty lists
-    auto& cur_list = output.partlists[output.partlist_idx];
+    auto& cur_list = partlists[partlist_idx];
     if (cur_list->empty()) {
-        output.partlist_idx++;
-        cur_list = output.partlists[output.partlist_idx];
+        partlist_idx++;
+        cur_list = partlists[partlist_idx];
         if (cur_list->empty()) {
-            output.partlist_idx++;
+            partlist_idx++;
         }
     }
 
     // Mark as done on creation if there's nothing left
-    const u8 max_partlist_idx = output.search_type == SEARCH_ALL;
-    if (output.partlist_idx > max_partlist_idx || cur_list->empty()) {
-        output.done = true;
+    const u8 max_partlist_idx = search_type == SEARCH_ALL;
+    if (partlist_idx > max_partlist_idx || cur_list->empty()) {
+        done = true;
     }
-
-    return output;
 }
 
-part_entry* part_iterator_next(part_iterator* ctx) {
-    auto& cur_list = ctx->partlists[ctx->partlist_idx];
-    part_entry* part = &cur_list->operator[](ctx->part_idx);
-    ctx->part_idx++;
+part_entry* part_iterator::next() noexcept {
+    auto& cur_list = partlists[partlist_idx];
+    part_entry* part = &cur_list->operator[](part_idx);
+    part_idx++;
 
     // Move on to the next list if needed
-    if (ctx->part_idx >= cur_list->size()) {
-        ctx->part_idx = 0;
-        ctx->partlist_idx++;
-        cur_list = ctx->partlists[ctx->partlist_idx];
+    if (part_idx >= cur_list->size()) {
+        part_idx = 0;
+        partlist_idx++;
+        cur_list = partlists[partlist_idx];
     }
 
-    const u8 max_partlist_idx = ctx->search_type == SEARCH_ALL;
-    if (ctx->partlist_idx > max_partlist_idx || cur_list->empty()) {
-        ctx->done = true;
+    const u8 max_partlist_idx = search_type == SEARCH_ALL;
+    if (partlist_idx > max_partlist_idx || cur_list->empty()) {
+        done = true;
     }
 
     return part;
@@ -354,9 +350,9 @@ part_entry* part_by_pos(editor_state* editor, vec3s8 target, partsearch_type sea
     }
 
     // Linearly search for the part
-    part_iterator iter = part_iterator_setup(*editor, search_hint);
+    part_iterator iter(*editor, search_hint);
     while (!iter.done) {
-        part_entry* part = part_iterator_next(&iter);
+        part_entry* part = iter.next();
 
         // A part's max width is 8, so anything further away can't be a match
         if (abs(part->pos.x - target.x) > 8 || 
@@ -416,11 +412,11 @@ bool vehicle_move_part(editor_state* editor, part_entry part, vec3s16 diff, vec3
             adjust_out->raw[i] = new_pos;
         }
 
-        part_iterator iter = part_iterator_setup(*editor, SEARCH_ALL);
+        part_iterator iter(*editor, SEARCH_ALL);
         while (!iter.done) {
             
             // The part to be moved
-            part_entry* other_part = part_iterator_next(&iter);
+            part_entry* other_part = iter.next();
 
             if (memcmp(&p, other_part, sizeof(part_entry)) == 0) {
                 // This is the part we just made the new 0, skip.

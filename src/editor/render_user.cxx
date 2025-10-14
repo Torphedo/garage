@@ -102,7 +102,7 @@ void editor_ui::partsearch_update(editor_state* editor) {
             // Add the part
             editor->selected_parts.push_back(new_part);
             editor->v.part_count++;
-            update_selectionmask(editor);
+            update_selectionmask(*editor);
         }
     }
 

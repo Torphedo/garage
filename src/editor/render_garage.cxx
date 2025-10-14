@@ -63,9 +63,9 @@ void garage_state::init(GLFWwindow* window) noexcept {
         .m = cube
     };
 
-    part_iterator iter = part_iterator_setup(*editor, SEARCH_ALL);
+    part_iterator iter(*editor, SEARCH_ALL);
     while (!iter.done) {
-        const part_entry* p = part_iterator_next(&iter);
+        const part_entry* p = iter.next();
         get_or_load_model(this, (part_id)p->id);
     }
 
@@ -97,9 +97,9 @@ void garage_state::render(GLFWwindow* window) noexcept {
 
     // Draw all our parts
     const vec3s center = vehicle_find_center(editor, SEARCH_ALL);
-    part_iterator iter = part_iterator_setup(*editor, SEARCH_ALL);
+    part_iterator iter(*editor, SEARCH_ALL);
     while (!iter.done) {
-        part_entry* p = part_iterator_next(&iter);
+        part_entry* p = iter.next();
 
         // Move the part
         vec3s pos = vec3_from_vec3s8(p->pos, PART_POS_SCALE);

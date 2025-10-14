@@ -21,8 +21,8 @@ typedef enum {
 }partsearch_type;
 
 struct part_cell_iterator {
-    part_info info;
-    part_entry part;
+    part_info info = {};
+    part_entry part = {};
     bool done = false;
     u32 cell_idx = 0;
 
@@ -34,13 +34,17 @@ struct part_cell_iterator {
     vec3s8 next();
 };
 
-typedef struct {
+struct part_iterator {
     std::vector<part_entry>* partlists[2];
-    partsearch_type search_type;
-    u8 partlist_idx; // Current index into the list array
-    u32 part_idx; // Current index into the current list
-    bool done;
-}part_iterator;
+    partsearch_type search_type = SEARCH_SELECTED;
+    u8 partlist_idx = 0; // Current index into the list array
+    u32 part_idx = 0; // Current index into the current list
+    bool done = false;
+
+    part_iterator(editor_state& editor, partsearch_type search_type) noexcept;
+
+    part_entry* next() noexcept;
+};
 
 // Safely get & set values from vehicle bitmask (with bounds checking)
 bool vehiclemask_get_3d(vehicle_bitmask* mask, vec3s8 cell);
@@ -58,14 +62,11 @@ vec3s vehicle_find_center(const editor_state* editor, partsearch_type search_typ
 bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_diff, s8 roll_diff);
 
 // Check if the selected parts overlap with the rest of the vehicle
-bool vehicle_selection_overlap(editor_state* editor);
+bool vehicle_selection_overlap(editor_state& editor);
 
 // Wipe & reconstruct individual 3d grids from scratch
-void update_selectionmask(editor_state* editor);
-void update_vacancymask(editor_state* editor);
-
-part_iterator part_iterator_setup(editor_state& editor, partsearch_type search_type);
-part_entry* part_iterator_next(part_iterator* ctx);
+void update_selectionmask(editor_state& editor);
+void update_vacancymask(editor_state& editor);
 
 // Look up a part by position.
 // Use the enum to search only one list, or tell it to search both. 
