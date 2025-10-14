@@ -1,5 +1,4 @@
 #pragma once
-#include <layer.hxx>
 #include "editor.hxx"
 
 // This file was originally for debug rendering, but the collision and

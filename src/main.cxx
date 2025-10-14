@@ -1,7 +1,4 @@
 #include <cstring>
-#include <cstdio>
-
-#include <glad/glad.h>
 
 #include <common/int.h>
 #include <common/logging.h>
@@ -11,16 +8,12 @@
 #include "editor/render_text.hxx"
 #include "editor/render_garage.hxx"
 #include "editor/render_user.hxx"
-#include "editor/vehicle_edit.hxx"
 #include "editor/render_debug.hxx"
 
 extern "C" {
 #include <common/gl/gl_setup.h>
 #include <common/gl/input.h>
 
-#include "editor/camera.hxx"
-#include "vehicle.h"
-#include "parts.h"
 #include "physfs_bundling.h"
 }
 
@@ -56,24 +49,6 @@ int main(int argc, char** argv) {
     app.layers.emplace_back(std::make_unique<editor_ui>(editor));
 
     app.run("Garage Opener");
-
-    /*
-    // Print vehicle details (mostly a leftover from old versions of this program)
-    LOG_MSG(info, "\"");
-    print_c16s(editor.v.name); // We need a special function to portably print UTF-16
-    printf("\" has %d parts & weighs %f\n", editor.v.part_count, editor.v.weight);
-
-    part_iterator iter = part_iterator_setup(editor, SEARCH_ALL);
-    u32 i = 0;
-    while (!iter.done) {
-        i++;
-        part_entry* p = part_iterator_next(&iter);
-        LOG_MSG(info, "Part %d: 0x%x [%s] ", i, p->id, part_get_info((part_id)p->id).name);
-        printf("@ (%d, %d, %d) ", p->pos.x, p->pos.y, p->pos.z);
-        printf("painted #%x%x%x", p->color.r, p->color.g, p->color.b);
-        printf(", modifier 0x%02hx\n", p->modifier);
-    }
-     */
 
     return 0;
 }

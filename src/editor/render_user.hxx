@@ -1,6 +1,5 @@
 #pragma once
 
-#include <layer.hxx>
 #include "editor.hxx"
 
 enum {

@@ -5,7 +5,7 @@ extern "C" {
 #include <parts.h>
 }
 
-#include "layer.hxx"
+#include "editor.hxx"
 
 typedef struct {
     part_id id;
