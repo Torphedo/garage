@@ -18,8 +18,8 @@ struct editor_ui : gui_layer {
     editor_state* editor = nullptr;
 
     char fps_text[32] = "FPS: 0 [0.00ms]";
-    text_state fps_display = text_render_prep(fps_text, sizeof(fps_text), 0.03f, (vec2){-1, 1});
-    float frame_times[10] = {0}; // For averaging frame times
+    text_state fps_display = {};
+    float frame_times[10] = {}; // For averaging frame times
 
     // State for the part search menu
     text_state textbox = {}; // User input search box

@@ -47,8 +47,8 @@ static_assert(sizeof(vehicle_bitmask) == 0x40000, "vehicle_bitmask size is wrong
 struct editor_state : gui_layer {
     // Vehicle/part data
     vehicle_header v = {};
-    list selected_parts;
-    list unselected_parts;
+    list selected_parts = {};
+    list unselected_parts = {};
     camera cam;
     // Bitmask for whether a space is occupied by a part, at 1 bit per cell.
     vehicle_bitmask* vacancy_mask = nullptr;
@@ -56,22 +56,24 @@ struct editor_state : gui_layer {
     vehicle_bitmask* selected_mask = nullptr;
 
     // Editor state data
-    vec3s16 sel_box; // Selection box position
-    editor_mode mode;
-    selection_state sel_mode;
+    vec3s16 sel_box = {}; // Selection box position
+    editor_mode mode = MODE_MOVCAM;
+    selection_state sel_mode = SEL_NONE;
 
     // Extra state that doesn't affect what the user sees
-    double delta_time; // Measured in seconds
-    input_internal prev_input; // Input from last frame
-    bool vsync;
+    double one_frame_ago = 0.0;
+    double two_frames_ago = 0.0;
+    double delta_time = 0.0; // Measured in seconds
+    input_internal prev_input = {}; // Input from last frame
+    bool vsync = true;
     bool init_result = false; // Only used during init to communicate failure
     // TODO: Can't we just pass the window pointer to the UI init function?
 
     // Rendering state that everyone can re-use
-    gl_obj vcolor_shader; // Shader for drawing objects with vertex colors
+    gl_obj vcolor_shader = 0; // Shader for drawing objects with vertex colors
     // Uniforms for the shader
-    gl_obj u_pvm; // PVM matrix uniform
-    gl_obj u_paint; // Vertex color multiplier
+    gl_obj u_pvm = 0; // PVM matrix uniform
+    gl_obj u_paint = 0; // Vertex color multiplier
 
     // This collection of functions lets us check for a user intent like "forward",
     // instead of separately checking for the W key, gamepad stick thresholds,

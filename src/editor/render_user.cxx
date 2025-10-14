@@ -251,6 +251,8 @@ void editor_ui::init(GLFWwindow* window) noexcept {
     editing_mode = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.85f});
     camera_mode_text = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.75f});
     textbox = text_render_prep(textbox_buf, sizeof(textbox_buf), text_default_scale, (vec2){-0.5f, 0.55f});
+    fps_display = text_render_prep(fps_text, sizeof(fps_text), 0.03f, (vec2){-1, 1});
+
     for (u32 i = 0; i < ARRAY_SIZE(partsearch_results); i++) {
         // Y coord is set on the fly, we init to 0
         text_state* result = &partsearch_results[i];
