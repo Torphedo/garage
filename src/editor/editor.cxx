@@ -128,7 +128,7 @@ s8 editor_state::move_y_rising_edge() const noexcept {
 
 // This doesn't enforce what the bound VAO is... make sure to only call it with
 // the cube VAO bound.
-void editor_state::render_vehicle_bitmask(vehicle_bitmask* mask) noexcept {
+void editor_state::render_vehicle_bitmask(vehicle_bitmask* mask) const noexcept {
     vec3s center = vehicle_find_center(this, SEARCH_ALL);
 
     // Highest XYZ coords in the vehicle. We add 1 to include the highest

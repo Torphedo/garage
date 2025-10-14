@@ -124,7 +124,7 @@ typedef struct {
 
     void update_edit_mode() noexcept;
 
-    void render_vehicle_bitmask(vehicle_bitmask* mask) noexcept;
+    void render_vehicle_bitmask(vehicle_bitmask* mask) const noexcept;
 
     // Update our state according to new user input.
     bool update() noexcept;

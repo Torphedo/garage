@@ -71,6 +71,8 @@ int main(int argc, char** argv) {
     garage_state garage(&editor);
     garage.init(window);
 
+    layer_debug debug(&editor);
+
     char fps_text[32] = "FPS: 0 [0.00ms]";
     text_state fps_display = text_render_prep(fps_text, sizeof(fps_text), 0.03f, (vec2){-1, 1});
 
@@ -104,7 +106,7 @@ int main(int argc, char** argv) {
         // Render
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         garage.render(window);
-        debug_render(&editor);
+        debug.render(window);
         hud.render(window);
 
         // Update FPS counter 4 times a second

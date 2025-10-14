@@ -3,7 +3,7 @@
 #include <primitives.h>
 #include "render_debug.hxx"
 
-void debug_render(editor_state* editor) {
+void layer_debug::render(GLFWwindow* window) noexcept {
     // Bind our shader & buffers
     glUseProgram(editor->vcolor_shader);
     glBindVertexArray(cube.vao);
