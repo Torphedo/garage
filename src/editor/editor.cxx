@@ -16,6 +16,7 @@ extern "C" {
 }
 
 #include "editor.hxx"
+#include "utils.hxx"
 #include "vehicle_edit.hxx"
 
 
@@ -315,15 +316,16 @@ void editor_state::update_edit_mode() noexcept {
     if (sel_mode != SEL_BAD && !rotation) {
         if (sel_mode == SEL_NONE) {
             if (unselect_button_pressed) {
-                list_add(&unselected_parts, (void*)p);
-                list_remove_val(&selected_parts, (void*)p);
+                unselected_parts.push_back(*p);
+
+                find_erase_pod(selected_parts, *p);
                 update_selectionmask(this);
                 update_vacancymask(this);
             }
             else if (delete_button_pressed) {
                 // Try to delete it from both lists
-                list_remove_val(&selected_parts, (void*)p);
-                list_remove_val(&unselected_parts, (void*)p);
+                find_erase_pod(selected_parts, *p);
+                find_erase_pod(unselected_parts, *p);
                 update_selectionmask(this);
                 update_vacancymask(this);
                 v.part_count--;
@@ -334,8 +336,8 @@ void editor_state::update_edit_mode() noexcept {
             if (sel_mode == SEL_ACTIVE) {
                 // User pressed the button while moving parts, which means
                 // we should put them down.
-                list_merge(&unselected_parts, selected_parts);
-                list_clear(&selected_parts);
+                concat(unselected_parts, selected_parts);
+                selected_parts.clear();
                 update_selectionmask(this); // This will boil down to just clearing the grid
                 update_vacancymask(this); // Need to add those parts to vacancy grid
                 sel_mode = SEL_NONE; // Now you can start moving the parts
@@ -355,8 +357,8 @@ void editor_state::update_edit_mode() noexcept {
                     };
                 } else {
                     // Select the part
-                    list_add(&selected_parts, (void*)p);
-                    list_remove_val(&unselected_parts, (void*)p);
+                    selected_parts.push_back(*p);
+                    find_erase_pod(unselected_parts, *p);
                     update_selectionmask(this);
                     update_vacancymask(this);
                     sel_mode = SEL_NONE;
@@ -492,16 +494,13 @@ editor_state::editor_state(const char* vehicle_path) noexcept {
     this->v = vehicle->head;
 
     // Start with enough memory to select all parts without resizing
-    selected_parts = list_create(sizeof(part_entry) * vehicle->head.part_count, sizeof(part_entry));
-    unselected_parts = list_create(sizeof(part_entry) * vehicle->head.part_count, sizeof(part_entry));
-    if (!selected_parts.buf.data || !unselected_parts.buf.data) {
-        LOG_MSG(error, "Failed to allocate for dynamic lists\n");
-        return;
-    }
+    selected_parts.reserve(v.part_count);
+
+    // Reserve and set size, so we can safely memcpy
+    unselected_parts.resize(v.part_count);
 
     // Copy part data into the dynamic list and free the raw vehicle data
-    memcpy((void*)unselected_parts.buf.data, vehicle->parts, sizeof(*vehicle->parts) * vehicle->head.part_count);
-    unselected_parts.end_idx = vehicle->head.part_count;
+    memcpy((void*)unselected_parts.data(), vehicle->parts, sizeof(*vehicle->parts) * vehicle->head.part_count);
     free(vehicle);
 }
 
@@ -562,8 +561,6 @@ void editor_state::destroy() noexcept {
     glDeleteVertexArrays(1, &cube.vao);
     glDeleteBuffers(1, &cube.vbuf);
     glDeleteBuffers(1, &cube.ibuf);
-    list_destroy(&selected_parts);
-    list_destroy(&unselected_parts);
     free(vacancy_mask);
     free(selected_mask);
 }

@@ -1,6 +1,5 @@
 #include <cstddef>
 #include <cstdlib>
-#include <cstring>
 
 #include <glad/glad.h>
 #include <cglm/cglm.h>
@@ -15,6 +14,7 @@ extern "C" {
 }
 
 #include "editor.hxx"
+#include "utils.hxx"
 #include "vehicle_edit.hxx"
 #include "render_garage.hxx"
 
@@ -99,7 +99,7 @@ void garage_state::render(GLFWwindow* window) noexcept {
     const vec3s center = vehicle_find_center(editor, SEARCH_ALL);
     part_iterator iter = part_iterator_setup(*editor, SEARCH_ALL);
     while (!iter.done) {
-        const part_entry* p = part_iterator_next(&iter);
+        part_entry* p = part_iterator_next(&iter);
 
         // Move the part
         vec3s pos = vec3_from_vec3s8(p->pos, PART_POS_SCALE);
@@ -108,7 +108,8 @@ void garage_state::render(GLFWwindow* window) noexcept {
 
         // Upload paint color & draw
         vec4s paint_col = vec4_from_rgba8(p->color);
-        if (list_contains(editor->selected_parts, (void*)p)) {
+        const part_entry temp = *p;
+        if (contains(editor->selected_parts, *p)) {
             paint_col.a /= 3;
         }
 
@@ -197,6 +198,6 @@ void garage_state::destroy() noexcept {
         free((void*)part.m.vertices);
 
         // Clear the pointers & OpenGL object values
-        memset(&part.m, 0, sizeof(part.m));
+        part.m = {};
     }
 }

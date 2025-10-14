@@ -28,7 +28,7 @@ typedef struct {
 }part_cell_iterator;
 
 typedef struct {
-    list partlists[2];
+    std::vector<part_entry>* partlists[2];
     partsearch_type search_type;
     u8 partlist_idx; // Current index into the list array
     u32 part_idx; // Current index into the current list
@@ -64,7 +64,7 @@ part_cell_iterator part_cell_iterator_setup(part_entry p);
 // Get the next item and advance.
 vec3s8 part_cell_iterator_next(part_cell_iterator* ctx);
 
-part_iterator part_iterator_setup(editor_state editor, partsearch_type search_type);
+part_iterator part_iterator_setup(editor_state& editor, partsearch_type search_type);
 part_entry* part_iterator_next(part_iterator* ctx);
 
 // Look up a part by position.

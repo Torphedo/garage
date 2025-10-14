@@ -3,6 +3,7 @@
 
 #include <common/int.h>
 #include <common/list.h>
+#include <algorithm>
 
 extern "C" {
 #include <vector.h>
@@ -11,6 +12,7 @@ extern "C" {
 
 #include "vehicle_edit.hxx"
 #include "editor.hxx"
+#include "utils.hxx"
 
 bool vehiclemask_get_3d(vehicle_bitmask* mask, vec3s8 cell) {
     u8* mask_addr = (u8*)&(*mask)[cell.x][cell.y]; // Target byte
@@ -113,24 +115,50 @@ vec3s vehicle_find_center(const editor_state* editor, partsearch_type search_typ
     vec3s8 max = {0}; // Highest position in the selection
     vec3s8 min = {127, 127, 127}; // Smallest position in the selection
 
-    part_iterator iter = part_iterator_setup(*editor, search_type);
-    while (!iter.done) {
-        const part_entry* p = part_iterator_next(&iter);
-        part_cell_iterator cell_iter = part_cell_iterator_setup(*p);
-        while (!cell_iter.done) {
-            const vec3s8 pos = part_cell_iterator_next(&cell_iter);
-            // Update the min/max positions
-            min = (vec3s8) {
-                MIN(min.x, pos.x),
-                MIN(min.y, pos.y),
-                MIN(min.z, pos.z),
-            };
-            max = (vec3s8) {
-                MAX(max.x, pos.x),
-                MAX(max.y, pos.y),
-                MAX(max.z, pos.z),
-            };
+    switch (search_type) {
+    case SEARCH_ALL:
+    case SEARCH_SELECTED:
+        for (const part_entry& p : editor->selected_parts) {
+            part_cell_iterator cell_iter = part_cell_iterator_setup(p);
+            while (!cell_iter.done) {
+                const vec3s8 pos = part_cell_iterator_next(&cell_iter);
+                // Update the min/max positions
+                min = (vec3s8) {
+                    MIN(min.x, pos.x),
+                    MIN(min.y, pos.y),
+                    MIN(min.z, pos.z),
+                };
+                max = (vec3s8) {
+                    MAX(max.x, pos.x),
+                    MAX(max.y, pos.y),
+                    MAX(max.z, pos.z),
+                };
+            }
         }
+        if (search_type == SEARCH_SELECTED) {
+            break;
+        }
+        fallthrough;
+
+    case SEARCH_UNSELECTED:
+        for (const part_entry& p : editor->unselected_parts) {
+            part_cell_iterator cell_iter = part_cell_iterator_setup(p);
+            while (!cell_iter.done) {
+                const vec3s8 pos = part_cell_iterator_next(&cell_iter);
+                // Update the min/max positions
+                min = (vec3s8) {
+                    MIN(min.x, pos.x),
+                    MIN(min.y, pos.y),
+                    MIN(min.z, pos.z),
+                };
+                max = (vec3s8) {
+                    MAX(max.x, pos.x),
+                    MAX(max.y, pos.y),
+                    MAX(max.z, pos.z),
+                };
+            }
+        }
+        break;
     }
 
     vec3s center = {
@@ -270,9 +298,9 @@ vec3s8 part_cell_iterator_next(part_cell_iterator* ctx) {
     return cell;
 }
 
-part_iterator part_iterator_setup(editor_state editor, partsearch_type search_type) {
+part_iterator part_iterator_setup(editor_state& editor, partsearch_type search_type) {
     part_iterator output = {
-        .partlists = {editor.selected_parts, editor.unselected_parts},
+        .partlists = {&editor.selected_parts, &editor.unselected_parts},
         .search_type = search_type,
     };
 
@@ -280,11 +308,11 @@ part_iterator part_iterator_setup(editor_state editor, partsearch_type search_ty
         case SEARCH_SELECTED:
             // No special action needed, but make both entries the selected
             // list just in case
-            output.partlists[1] = editor.selected_parts;
+            output.partlists[1] = &editor.selected_parts;
             break;
         case SEARCH_UNSELECTED:
             // Make both entries the unselected list
-            output.partlists[0] = editor.unselected_parts;
+            output.partlists[0] = &editor.unselected_parts;
             break;
         case SEARCH_ALL:
             // No special action needed
@@ -292,18 +320,18 @@ part_iterator part_iterator_setup(editor_state editor, partsearch_type search_ty
     }
 
     // Skip empty lists
-    list cur_list = output.partlists[output.partlist_idx];
-    if (list_empty(cur_list)) {
+    auto& cur_list = output.partlists[output.partlist_idx];
+    if (cur_list->empty()) {
         output.partlist_idx++;
         cur_list = output.partlists[output.partlist_idx];
-        if (list_empty(cur_list)) {
+        if (cur_list->empty()) {
             output.partlist_idx++;
         }
     }
 
     // Mark as done on creation if there's nothing left
     const u8 max_partlist_idx = output.search_type == SEARCH_ALL;
-    if (output.partlist_idx > max_partlist_idx || list_empty(cur_list)) {
+    if (output.partlist_idx > max_partlist_idx || cur_list->empty()) {
         output.done = true;
     }
 
@@ -311,19 +339,19 @@ part_iterator part_iterator_setup(editor_state editor, partsearch_type search_ty
 }
 
 part_entry* part_iterator_next(part_iterator* ctx) {
-    list cur_list = ctx->partlists[ctx->partlist_idx];
-    part_entry* part = (part_entry*)list_get_element(cur_list, ctx->part_idx);
+    auto& cur_list = ctx->partlists[ctx->partlist_idx];
+    part_entry* part = &cur_list->operator[](ctx->part_idx);
     ctx->part_idx++;
 
     // Move on to the next list if needed
-    if (ctx->part_idx >= cur_list.end_idx) {
+    if (ctx->part_idx >= cur_list->size()) {
         ctx->part_idx = 0;
         ctx->partlist_idx++;
         cur_list = ctx->partlists[ctx->partlist_idx];
     }
 
     const u8 max_partlist_idx = ctx->search_type == SEARCH_ALL;
-    if (ctx->partlist_idx > max_partlist_idx || list_empty(cur_list)) {
+    if (ctx->partlist_idx > max_partlist_idx || cur_list->empty()) {
         ctx->done = true;
     }
 
@@ -372,35 +400,34 @@ part_entry* part_by_pos(editor_state* editor, vec3s8 target, partsearch_type sea
 }
 
 bool vehicle_move_part(editor_state* editor, part_entry part, vec3s16 diff, vec3s16* adjust_out) {
-    s64 idx = list_find(editor->selected_parts, &part);
-    if (idx == -1) {
+    auto&& found_part = find_pod(editor->selected_parts, part);
+    if (found_part == editor->selected_parts.end()) {
         // If for some reason we're moving an unselected part, handle that
-        idx = list_find(editor->unselected_parts, &part);
-        if (idx == -1) {
+        if (!contains(editor->unselected_parts, part)) {
             return false;
         }
     }
-    part_entry* p = (part_entry*) list_get_element(editor->selected_parts, idx);
+    part_entry& p = *found_part;
 
     bool needed_readjustment = false;
     // We loop over the 3 axes here
     for (u8 i = 0; i < 3; i++) {
         // Find position of this axis after the move
-        const s16 new_pos = (s16)p->pos.raw[i] + diff.raw[i];
+        const s16 new_pos = (s16)p.pos.raw[i] + diff.raw[i];
         if (new_pos >= VEH_MAX_DIM - 1) {
             // This part is at the border, there's nothing we can do.
             continue;
         }
         else if (new_pos >= 0) {
             // Everything's fine, update pos and move on
-            p->pos.raw[i] += diff.raw[i];
+            p.pos.raw[i] += diff.raw[i];
             continue;
         }
 
         needed_readjustment = true;
         // Make this the new 0, update the output adjustment vector, and adjust
         // the rest of the parts
-        p->pos.raw[i] = 0;
+        p.pos.raw[i] = 0;
         if (adjust_out != NULL) {
             adjust_out->raw[i] = new_pos;
         }
@@ -411,7 +438,7 @@ bool vehicle_move_part(editor_state* editor, part_entry part, vec3s16 diff, vec3
             // The part to be moved
             part_entry* other_part = part_iterator_next(&iter);
 
-            if (memcmp(p, other_part, sizeof(part_entry)) == 0) {
+            if (memcmp(&p, other_part, sizeof(part_entry)) == 0) {
                 // This is the part we just made the new 0, skip.
                 continue;
             }
@@ -430,5 +457,3 @@ bool vehicle_move_part(editor_state* editor, part_entry part, vec3s16 diff, vec3
     // Return bool result on if the part moved out of bounds and had to be adjusted
     return needed_readjustment;
 }
-
-

@@ -100,7 +100,7 @@ void editor_ui::partsearch_update(editor_state* editor) {
         }
         if (!failure) {
             // Add the part
-            list_add(&editor->selected_parts, &new_part);
+            editor->selected_parts.push_back(new_part);
             editor->v.part_count++;
             update_selectionmask(editor);
         }
