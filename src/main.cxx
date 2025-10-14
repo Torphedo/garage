@@ -73,12 +73,8 @@ int main(int argc, char** argv) {
 
     layer_debug debug(&editor);
 
-    char fps_text[32] = "FPS: 0 [0.00ms]";
-    text_state fps_display = text_render_prep(fps_text, sizeof(fps_text), 0.03f, (vec2){-1, 1});
-
     double one_frame_ago = glfwGetTime(); // Used to calculate delta time
     double two_frames_ago = glfwGetTime();
-    float frame_times[10] = {0}; // For averaging frame times
 
     // Main loop for rendering, UI, etc.
     while (!glfwWindowShouldClose(window)) {
@@ -86,10 +82,6 @@ int main(int argc, char** argv) {
         editor.delta_time = one_frame_ago - two_frames_ago;
         two_frames_ago = one_frame_ago;
         one_frame_ago = glfwGetTime();
-
-        // Shift all the frame times over and add the new one
-        memmove(&frame_times[1], frame_times, sizeof(frame_times) - sizeof(*frame_times));
-        frame_times[0] = editor.delta_time;
 
         // Poll for input
         glfwPollEvents();
@@ -104,29 +96,12 @@ int main(int argc, char** argv) {
         debug.render(window);
         hud.render(window);
 
-        // Update FPS counter 4 times a second
-        if (fmod(one_frame_ago, 0.25) < 0.01) {
-            text_update_transforms(&fps_display);
-        }
-        text_render(fps_display);
-
         // If VSync is on, this will wait for the next screen refresh.
         glfwSwapBuffers(window);
 
         // Update the last frame's input to this frame's input
         editor.prev_input = input;
 
-        // Calculate framerate from average frame time
-        float avg_time = 0.0f;
-        for (u8 i = 0; i < ARRAY_SIZE(frame_times); i++) {
-            avg_time += frame_times[i];
-        }
-        avg_time /= ARRAY_SIZE(frame_times);
-        const float framerate = 1.0f / avg_time;
-        const float time_ms = avg_time * 1000;
-
-        // Update FPS text (to be rendered next frame)
-        snprintf(fps_text, sizeof(fps_text), "FPS: %.0f [%.2fms]", framerate, time_ms);
         // End frame
     }
 
@@ -151,7 +126,6 @@ int main(int argc, char** argv) {
     }
 
     // Cleanup
-    text_free(fps_display);
     garage.destroy();
     hud.destroy();
 

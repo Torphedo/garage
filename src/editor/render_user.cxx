@@ -341,6 +341,27 @@ void editor_ui::update(GLFWwindow* window) noexcept {
         partsearch_update(editor);
     }
 
+    // Shift all the frame times over and add the new one
+    memmove(&frame_times[1], frame_times, sizeof(frame_times) - sizeof(*frame_times));
+    frame_times[0] = editor->delta_time;
+
+    // Calculate framerate from average frame time
+    float avg_time = 0.0f;
+    for (u8 i = 0; i < ARRAY_SIZE(frame_times); i++) {
+        avg_time += frame_times[i];
+    }
+    avg_time /= ARRAY_SIZE(frame_times);
+    const float framerate = 1.0f / avg_time;
+    const float time_ms = avg_time * 1000;
+
+    // Update FPS text
+    snprintf(fps_text, sizeof(fps_text), "FPS: %.0f [%.2fms]", framerate, time_ms);
+
+    // Update FPS counter 4 times a second
+    if (fmod(glfwGetTime(), 0.25) < 0.01) {
+        text_update_transforms(&fps_display);
+    }
+
     DBG_ASSERT_PERF(time_start, 1.2);
 }
 
@@ -358,6 +379,7 @@ void editor_ui::render(GLFWwindow* window) noexcept {
 
     text_render(editing_mode);
     text_render(camera_mode_text);
+    text_render(fps_display);
 
     // Reset state
     glBindVertexArray(0);
@@ -370,6 +392,7 @@ void editor_ui::destroy() noexcept {
     text_free(editing_mode);
     text_free(camera_mode_text);
     text_free(textbox);
+    text_free(fps_display);
 
     for (u32 i = 0; i < ARRAY_SIZE(partsearch_results); i++) {
         text_free(partsearch_results[i]);
