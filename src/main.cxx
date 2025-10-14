@@ -53,6 +53,7 @@ int main(int argc, char** argv) {
     const char* vehicle_path = argv[1]; // Give our first argument a convenient name
     editor_state editor;
     editor.init(vehicle_path, window);
+
     // This is a generic failure flag for any problems with startup
     if (!editor.init_result) {
         LOG_MSG(error, "Editor init failure\n");
@@ -63,6 +64,8 @@ int main(int argc, char** argv) {
         LOG_MSG(error, "Text renderer init failure\n");
         return EXIT_FAILURE;
     }
+
+    editor_ui hud(window);
 
     garage_state garage;
     garage.init(&editor);
@@ -100,7 +103,7 @@ int main(int argc, char** argv) {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         garage.render();
         debug_render(&editor);
-        ui_update_render(&editor);
+        hud.update_render(&editor);
 
         // Update FPS counter 4 times a second
         if (fmod(one_frame_ago, 0.25) < 0.01) {
@@ -151,7 +154,7 @@ int main(int argc, char** argv) {
     // Cleanup
     text_free(fps_display);
     garage.destroy();
-    ui_teardown(&editor);
+    hud.teardown();
 
     text_renderer_cleanup();
     editor.destroy();

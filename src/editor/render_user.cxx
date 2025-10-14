@@ -26,6 +26,7 @@ const char* strcasestr(const char* a, const char* b) {
 #include <cglm/cglm.h>
 #include "render_text.hxx"
 #include "vehicle_edit.hxx"
+#include "render_user.hxx"
 
 extern "C" {
 #include <common/utf8.h>
@@ -71,7 +72,7 @@ void draw_rect_panel(editor_state* editor, const mat4 quad_transform, const vec4
     glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
 }
 
-void partsearch_update(editor_state* editor) {
+void editor_ui::partsearch_update(editor_state* editor) {
     const double start_time = glfwGetTime();
     if ((input.enter && !editor->prev_input.enter) || (input.gp.a && !editor->prev_input.gp.a)) {
         editor->mode = MODE_EDIT;
@@ -88,7 +89,7 @@ void partsearch_update(editor_state* editor) {
         bool failure = true;
         for (u32 i = 0; i < NUM_PARTS; i++) {
             const part_info info = partdata[i];
-            const char* selected_item = editor->partsearch_results[editor->partsearch_selected_item].text;
+            const char* selected_item = partsearch_results[partsearch_selected_item].text;
             if (selected_item == NULL) {
                 break;
             }
@@ -123,34 +124,34 @@ void partsearch_update(editor_state* editor) {
         diff = 0;
     }
 
-    editor->partsearch_selected_item += diff;
+    partsearch_selected_item += diff;
 
     // Whether we needed to fake scroll this frame
     bool scrolled = false;
-    if (editor->partsearch_selected_item == editor->partsearch_filled_slots || editor->partsearch_selected_item < 0) {
+    if (partsearch_selected_item == partsearch_filled_slots || partsearch_selected_item < 0) {
         // We're out of bounds, do fake scrolling and correct position
-        editor->partsearch_startoffset += diff;
-        editor->partsearch_selected_item -= diff;
+        partsearch_startoffset += diff;
+        partsearch_selected_item -= diff;
         // Clamp to prevent going out of bounds
-        editor->partsearch_startoffset = CLAMP(0, editor->partsearch_startoffset, NUM_PARTS);
+        partsearch_startoffset = CLAMP(0, partsearch_startoffset, NUM_PARTS);
         scrolled = true;
     }
 
     // Clamp so it doesn't go over the number of filled slots
-    editor->partsearch_selected_item = CLAMP(0, editor->partsearch_selected_item, editor->partsearch_filled_slots - 1);
+    partsearch_selected_item = CLAMP(0, partsearch_selected_item, partsearch_filled_slots - 1);
 
     // Update search results when the contents of the search box change
     const float partsearch_startheight = 0.4f;
     if (searchbuf_updated) {
         // Reset our position & fake scrolling when search buffer changes
-        editor->partsearch_startoffset = 0;
-        editor->partsearch_selected_item = 0;
+        partsearch_startoffset = 0;
+        partsearch_selected_item = 0;
     }
 
     // Redo our search
     if (searchbuf_updated || scrolled) {
         // Update textbox display
-        text_update_transforms(&editor->textbox);
+        text_update_transforms(&textbox);
         u32 menupos = 0; // Current offset in array of results
         u32 hit_count = 0; // How many matches we've gotten.
         for (u32 i = 0; i < NUM_PARTS; i++) {
@@ -166,12 +167,12 @@ void partsearch_update(editor_state* editor) {
             }
             if (strcasestr(cur_part_name, textbox_buf) != NULL) {
                 hit_count++;
-                if (hit_count <= editor->partsearch_startoffset) {
+                if (hit_count <= partsearch_startoffset) {
                     // This match should be scrolled out of sight, skip it.
                     continue;
                 }
 
-                text_state* result = &editor->partsearch_results[menupos++];
+                text_state* result = &partsearch_results[menupos++];
                 result->text = cur_part_name;
                 const float lineheight = text_get_lineheight(*result);
                 // Subtract here because down is -Y
@@ -179,11 +180,11 @@ void partsearch_update(editor_state* editor) {
                 text_update_transforms(result);
             }
         }
-        editor->partsearch_filled_slots = menupos; // Save how many slots we filled
+        partsearch_filled_slots = menupos; // Save how many slots we filled
 
         // Make any remaining menu "slots" empty
         for (u32 i = menupos; i < PARTSEARCH_MENUSIZE; i++) {
-            text_state* result = &editor->partsearch_results[i];
+            text_state* result = &partsearch_results[i];
             result->text = "";
             text_update_transforms(result);
         }
@@ -193,7 +194,7 @@ void partsearch_update(editor_state* editor) {
     DBG_ASSERT_PERF(start_time, 1.2);
 }
 
-void partsearch_render(editor_state* editor) {
+void editor_ui::partsearch_render(editor_state* editor) {
     const double start_time = glfwGetTime();
     const float partsearch_startheight = 0.4f;
     // Setup quad transform
@@ -214,7 +215,7 @@ void partsearch_render(editor_state* editor) {
         // We should make it just take a scale value.
         const float lineheight = text_get_lineheight((text_state){.scale = text_default_scale});
         // Subtract here because down is -Y
-        const float ypos = partsearch_startheight - (lineheight * (editor->partsearch_selected_item + 1));
+        const float ypos = partsearch_startheight - (lineheight * (partsearch_selected_item + 1));
 
         // Setup transform for highlight box
         // Sorry for all the magic numbers, they just come from trial & error.
@@ -239,30 +240,32 @@ void partsearch_render(editor_state* editor) {
 
     // Render search results
     for (u32 i = 0; i < PARTSEARCH_MENUSIZE; i++) {
-        text_render(editor->partsearch_results[i]);
+        text_render(partsearch_results[i]);
     }
 
     DBG_ASSERT_PERF(start_time, 1.2);
 }
 
-void ui_update_render(editor_state* editor) {
-    const double time_start = glfwGetTime();
-    // Setup on first run
-    static bool initialized = false;
-    if (!initialized) {
-        editor->part_name = text_render_prep(editor->partname_buf, sizeof(editor->partname_buf), text_default_scale, (vec2){-1.0f, -0.7f});
-        editor->editing_mode = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.85f});
-        editor->camera_mode_text = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.75f});
-        editor->textbox = text_render_prep(textbox_buf, sizeof(textbox_buf), text_default_scale, (vec2){-0.5f, 0.55f});
-        for (u32 i = 0; i < ARRAY_SIZE(editor->partsearch_results); i++) {
-            // Y coord is set on the fly, we init to 0
-            text_state* result = &editor->partsearch_results[i];
-            *result = text_render_prep(NULL, 32, text_default_scale, (vec2){-0.5f, 0});
-        }
-        glfwSetCharCallback(editor->window, character_callback);
-        initialized = true;
-        searchbuf_updated = true;
+editor_ui::editor_ui(GLFWwindow* window) noexcept {
+    part_name = text_render_prep(partname_buf, sizeof(partname_buf), text_default_scale, (vec2){-1.0f, -0.7f});
+    editing_mode = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.85f});
+    camera_mode_text = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.75f});
+    textbox = text_render_prep(textbox_buf, sizeof(textbox_buf), text_default_scale, (vec2){-0.5f, 0.55f});
+    for (u32 i = 0; i < ARRAY_SIZE(partsearch_results); i++) {
+        // Y coord is set on the fly, we init to 0
+        text_state* result = &partsearch_results[i];
+        *result = text_render_prep(NULL, 32, text_default_scale, (vec2){-0.5f, 0});
     }
+    glfwSetCharCallback(window, character_callback);
+    initialized = true;
+    searchbuf_updated = true;
+}
+
+void editor_ui::update_render(editor_state* editor) noexcept {
+    if (!initialized) {
+        return;
+    }
+    const double time_start = glfwGetTime();
 
     // Invalid cursor position forces the text to update on the first frame
     static vec3s16 last_selbox = {-1, -1, -1};
@@ -272,9 +275,9 @@ void ui_update_render(editor_state* editor) {
         const vec3s8 pos = {s8(editor->sel_box.x), s8(editor->sel_box.y), s8(editor->sel_box.z)};
         const part_entry* part = part_by_pos(editor, pos, SEARCH_ALL);
         const part_info cur_part = part_get_info((part_id)part->id);
-        strncpy(editor->partname_buf, cur_part.name, sizeof(editor->partname_buf));
+        strncpy(partname_buf, cur_part.name, sizeof(partname_buf));
         // Update part name & selection box
-        text_update_transforms(&editor->part_name);
+        text_update_transforms(&part_name);
         last_selbox = editor->sel_box;
     }
 
@@ -282,69 +285,69 @@ void ui_update_render(editor_state* editor) {
     if (last_edit_mode != editor->mode) {
         switch (editor->mode) {
         case MODE_EDIT:
-            editor->editing_mode.text = "[Editing]";
+            editing_mode.text = "[Editing]";
             break;
         case MODE_MOVCAM:
-            editor->editing_mode.text = "[Freecam]";
+            editing_mode.text = "[Freecam]";
             break;
         case MODE_MENU:
-            editor->editing_mode.text = "[Menu] (controls locked)";
+            editing_mode.text = "[Menu] (controls locked)";
             enable_textinput = true;
             break;
         default:
-            editor->editing_mode.text = "Unknown editor mode";
+            editing_mode.text = "Unknown editor mode";
         }
         if (last_edit_mode == MODE_MENU) {
             // Disable when leaving menu mode
             enable_textinput = false;
             memset(textbox_buf, 0x00, sizeof(textbox_buf)); // Clear buffer
-            text_update_transforms(&editor->textbox);
+            text_update_transforms(&textbox);
 
             // Also clear part search menu
             searchbuf_updated = true;
         }
 
-        text_update_transforms(&editor->editing_mode);
+        text_update_transforms(&editing_mode);
         last_edit_mode = editor->mode;
     }
     static camera_mode last_cam_mode = CAMERA_MODE_ENUM_MAX;
     if (last_cam_mode != editor->cam.mode) {
         switch (editor->cam.mode) {
         case CAMERA_ORBIT:
-            editor->camera_mode_text.text = "CAMSTYLE: Orbit";
+            camera_mode_text.text = "CAMSTYLE: Orbit";
             break;
         case CAMERA_POV:
-            editor->camera_mode_text.text = "CAMSTYLE: Minecraft";
+            camera_mode_text.text = "CAMSTYLE: Minecraft";
             break;
         case CAMERA_FLY:
-            editor->camera_mode_text.text = "CAMSTYLE: Flying";
+            camera_mode_text.text = "CAMSTYLE: Flying";
             break;
         default:
-            editor->camera_mode_text.text = "CAMSTYLE: Unknown";
+            camera_mode_text.text = "CAMSTYLE: Unknown";
         }
 
-        text_update_transforms(&editor->camera_mode_text);
+        text_update_transforms(&camera_mode_text);
         last_cam_mode = editor->cam.mode;
     }
 
     // Handle backspace character because it's not sent to character callback
     if (input.backspace && !editor->prev_input.backspace) {
         textbox_buf[strlen(textbox_buf) - 1] = 0;
-        text_update_transforms(&editor->textbox);
+        text_update_transforms(&textbox);
         searchbuf_updated = true;
     }
 
     if (editor->mode == MODE_MENU) {
         partsearch_update(editor);
         partsearch_render(editor);
-        text_render(editor->textbox);
+        text_render(textbox);
     }
     else {
-        text_render(editor->part_name);
+        text_render(part_name);
     }
 
-    text_render(editor->editing_mode);
-    text_render(editor->camera_mode_text);
+    text_render(editing_mode);
+    text_render(camera_mode_text);
 
     // Reset state
     glBindVertexArray(0);
@@ -353,13 +356,13 @@ void ui_update_render(editor_state* editor) {
     DBG_ASSERT_PERF(time_start, 1.2);
 }
 
-void ui_teardown(editor_state* editor) {
-    text_free(editor->part_name);
-    text_free(editor->editing_mode);
-    text_free(editor->camera_mode_text);
-    text_free(editor->textbox);
+void editor_ui::teardown() noexcept {
+    text_free(part_name);
+    text_free(editing_mode);
+    text_free(camera_mode_text);
+    text_free(textbox);
 
-    for (u32 i = 0; i < ARRAY_SIZE(editor->partsearch_results); i++) {
-        text_free(editor->partsearch_results[i]);
+    for (u32 i = 0; i < ARRAY_SIZE(partsearch_results); i++) {
+        text_free(partsearch_results[i]);
     }
 }
