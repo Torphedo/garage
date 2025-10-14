@@ -247,6 +247,7 @@ void editor_ui::partsearch_render(editor_state* editor) {
 }
 
 void editor_ui::init(GLFWwindow* window) noexcept {
+    text_renderer_setup("bin/ProFontIIx.ttf");
     part_name = text_render_prep(partname_buf, sizeof(partname_buf), text_default_scale, (vec2){-1.0f, -0.7f});
     editing_mode = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.85f});
     camera_mode_text = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.75f});
@@ -399,4 +400,6 @@ void editor_ui::destroy() noexcept {
     for (u32 i = 0; i < ARRAY_SIZE(partsearch_results); i++) {
         text_free(partsearch_results[i]);
     }
+
+    text_renderer_cleanup();
 }

@@ -394,6 +394,12 @@ void editor_save_to_file(editor_state editor, const char* output_path) {
 // Update the GUI state according to new user input.
 void editor_state::update(GLFWwindow* window) noexcept {
     const double time_start = glfwGetTime();
+
+    // Update delta time and our last 2 frame times
+    delta_time = one_frame_ago - two_frames_ago;
+    two_frames_ago = one_frame_ago;
+    one_frame_ago = glfwGetTime();
+
     static bool cursor_lock = false;
     update_mods(window); // Update input.shift, input.ctrl, etc.
     gamepad_update();
@@ -471,6 +477,7 @@ void editor_state::update(GLFWwindow* window) noexcept {
     }
     cam.update(delta_time);
 
+    prev_input = input;
     DBG_ASSERT_PERF(time_start, 1);
 }
 
@@ -500,6 +507,14 @@ editor_state::editor_state(const char* vehicle_path) noexcept {
 
 void editor_state::init(GLFWwindow* window) noexcept {
     const double time_start = glfwGetTime();
+    // Start tracking input state & using virtual cursor positions.
+    glfwSetKeyCallback(window, input_update);
+    glfwSetCursorPosCallback(window, cursor_update);
+    glfwSetScrollCallback(window, scroll_update);
+    glfwSetMouseButtonCallback(window, mouse_button_update);
+
+    one_frame_ago = glfwGetTime();
+    two_frames_ago = glfwGetTime();
 
     vacancy_mask = (vehicle_bitmask*)calloc(1, sizeof(vehicle_bitmask));
     selected_mask = (vehicle_bitmask*)calloc(1, sizeof(vehicle_bitmask));

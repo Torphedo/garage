@@ -5,6 +5,7 @@
 
 #include <common/int.h>
 #include <common/logging.h>
+#include <gui_bootstrap.hxx>
 
 #include "editor/editor.hxx"
 #include "editor/render_text.hxx"
@@ -43,72 +44,20 @@ int main(int argc, char** argv) {
     if (!setup_physfs(argv[0])) {
         return EXIT_FAILURE;
     }
-
-    GLFWwindow* window = setup_opengl(680, 480, "Garage Opener", ENABLE_DEBUG, GLFW_CURSOR_NORMAL, true);
-    if (window == NULL) {
-        LOG_MSG(error, "GLFW / OpenGL init error\n");
-        return EXIT_FAILURE;
-    }
-
     const char* vehicle_path = argv[1]; // Give our first argument a convenient name
-    editor_state editor(vehicle_path);
-    editor.init(window);
 
-    // This is a generic failure flag for any problems with startup
-    if (!editor.init_result) {
-        LOG_MSG(error, "Editor init failure\n");
-        return EXIT_FAILURE;
-    }
+    gui_app app;
+    app.layers.reserve(5);
+    app.layers.emplace_back(std::make_unique<editor_state>(vehicle_path));
+    editor_state* editor = dynamic_cast<editor_state*>(app.layers[0].get());
 
-    if (!text_renderer_setup("bin/ProFontIIx.ttf")) {
-        LOG_MSG(error, "Text renderer init failure\n");
-        return EXIT_FAILURE;
-    }
+    app.layers.emplace_back(std::make_unique<garage_state>(editor));
+    app.layers.emplace_back(std::make_unique<layer_debug>(editor));
+    app.layers.emplace_back(std::make_unique<editor_ui>(editor));
 
-    editor_ui hud(&editor);
-    hud.init(window);
+    app.run("Garage Opener");
 
-    garage_state garage(&editor);
-    garage.init(window);
-
-    layer_debug debug(&editor);
-
-    double one_frame_ago = glfwGetTime(); // Used to calculate delta time
-    double two_frames_ago = glfwGetTime();
-
-    // Main loop for rendering, UI, etc.
-    while (!glfwWindowShouldClose(window)) {
-        // Update delta time and our last 2 frame times
-        editor.delta_time = one_frame_ago - two_frames_ago;
-        two_frames_ago = one_frame_ago;
-        one_frame_ago = glfwGetTime();
-
-        // Poll for input
-        glfwPollEvents();
-
-        // All UI/navigation/keybinds are implemented here
-        editor.update(window);
-        hud.update(window);
-
-        // Render
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        garage.render(window);
-        debug.render(window);
-        hud.render(window);
-
-        // If VSync is on, this will wait for the next screen refresh.
-        glfwSwapBuffers(window);
-
-        // Update the last frame's input to this frame's input
-        editor.prev_input = input;
-
-        // End frame
-    }
-
-    // When we get here we're on the way to shutdown, close the window to make
-    // the program feel more responsive
-    glfwDestroyWindow(window);
-
+    /*
     // Print vehicle details (mostly a leftover from old versions of this program)
     LOG_MSG(info, "\"");
     print_c16s(editor.v.name); // We need a special function to portably print UTF-16
@@ -124,14 +73,7 @@ int main(int argc, char** argv) {
         printf("painted #%x%x%x", p->color.r, p->color.g, p->color.b);
         printf(", modifier 0x%02hx\n", p->modifier);
     }
-
-    // Cleanup
-    garage.destroy();
-    hud.destroy();
-
-    text_renderer_cleanup();
-    editor.destroy();
-    glfwTerminate();
+     */
 
     return 0;
 }

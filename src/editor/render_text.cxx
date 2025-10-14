@@ -197,6 +197,7 @@ bool text_renderer_setup(const char* ttf_path) {
     glEnableVertexAttribArray(1);
 
     // Unbind our buffers to avoid messing our state up
+    glUseProgram(0); // Needed to set uniforms
     glBindVertexArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -383,6 +384,7 @@ void text_render(text_state ctx) {
     glDrawElementsInstanced(GL_TRIANGLES, tex_quad.idx_count, GL_UNSIGNED_SHORT, NULL, ctx.num_chars);
 
     // Reset state
+    glUseProgram(0);
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
