@@ -20,12 +20,19 @@ typedef enum {
     SEARCH_ALL,
 }partsearch_type;
 
-typedef struct {
+struct part_cell_iterator {
     part_info info;
     part_entry part;
-    bool done;
-    u32 cell_idx;
-}part_cell_iterator;
+    bool done = false;
+    u32 cell_idx = 0;
+
+    explicit part_cell_iterator(part_entry p) : part(p), info(part_get_info((part_id)p.id)) {
+
+    }
+
+    // Get the next item and advance.
+    vec3s8 next();
+};
 
 typedef struct {
     std::vector<part_entry>* partlists[2];
@@ -56,13 +63,6 @@ bool vehicle_selection_overlap(editor_state* editor);
 // Wipe & reconstruct individual 3d grids from scratch
 void update_selectionmask(editor_state* editor);
 void update_vacancymask(editor_state* editor);
-
-// Setup an iterator from a part entry. Returns an iteration context.
-// There's no need to free the iteration context.
-part_cell_iterator part_cell_iterator_setup(part_entry p);
-
-// Get the next item and advance.
-vec3s8 part_cell_iterator_next(part_cell_iterator* ctx);
 
 part_iterator part_iterator_setup(editor_state& editor, partsearch_type search_type);
 part_entry* part_iterator_next(part_iterator* ctx);

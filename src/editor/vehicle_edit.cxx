@@ -52,12 +52,12 @@ bool cell_is_selected(editor_state* editor, vec3s8 cell) {
 
 bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry* p) {
     bool result = false;
-    part_cell_iterator iter = part_cell_iterator_setup(*p);
+    part_cell_iterator iter(*p);
     while (!iter.done) {
         // Get the final coordinate by adding the rotated point to origin
-        vec3s8 cell = part_cell_iterator_next(&iter);
+        const vec3s8 cell = iter.next();
 
-        bool cell_occupied = vehiclemask_get_3d(vacancy, cell);
+        const bool cell_occupied = vehiclemask_get_3d(vacancy, cell);
         result |= cell_occupied;
 
     }
@@ -81,12 +81,12 @@ void update_vacancymask(editor_state* editor) {
 
     part_iterator iter = part_iterator_setup(*editor, SEARCH_UNSELECTED);
     while (!iter.done) {
-        part_entry* p = part_iterator_next(&iter);
+        const part_entry* p = part_iterator_next(&iter);
 
-        part_cell_iterator cell_iter = part_cell_iterator_setup(*p);
+        part_cell_iterator cell_iter(*p);
         while (!cell_iter.done) {
             // Get the next cell of this part
-            vec3s8 cell = part_cell_iterator_next(&cell_iter);
+            const vec3s8 cell = cell_iter.next();
 
             vehiclemask_set_3d(editor->vacancy_mask, cell, true);
         }
@@ -99,12 +99,12 @@ void update_selectionmask(editor_state* editor) {
 
     part_iterator iter = part_iterator_setup(*editor, SEARCH_SELECTED);
     while (!iter.done) {
-        part_entry* p = part_iterator_next(&iter);
+        const part_entry* p = part_iterator_next(&iter);
 
-        part_cell_iterator cell_iter = part_cell_iterator_setup(*p);
+        part_cell_iterator cell_iter(*p);
         while (!cell_iter.done) {
             // Get the next cell of this part
-            vec3s8 cell = part_cell_iterator_next(&cell_iter);
+            const vec3s8 cell = cell_iter.next();
 
             vehiclemask_set_3d(editor->selected_mask, cell, true);
         }
@@ -119,20 +119,17 @@ vec3s vehicle_find_center(const editor_state* editor, partsearch_type search_typ
     case SEARCH_ALL:
     case SEARCH_SELECTED:
         for (const part_entry& p : editor->selected_parts) {
-            part_cell_iterator cell_iter = part_cell_iterator_setup(p);
+            part_cell_iterator cell_iter(p);
             while (!cell_iter.done) {
-                const vec3s8 pos = part_cell_iterator_next(&cell_iter);
+                const vec3s8 pos = cell_iter.next();
                 // Update the min/max positions
-                min = (vec3s8) {
-                    MIN(min.x, pos.x),
-                    MIN(min.y, pos.y),
-                    MIN(min.z, pos.z),
-                };
-                max = (vec3s8) {
-                    MAX(max.x, pos.x),
-                    MAX(max.y, pos.y),
-                    MAX(max.z, pos.z),
-                };
+                min.x = MIN(min.x, pos.x);
+                min.y = MIN(min.y, pos.y);
+                min.z = MIN(min.z, pos.z);
+
+                max.x = MAX(max.x, pos.x);
+                max.y = MAX(max.y, pos.y);
+                max.z = MAX(max.z, pos.z);
             }
         }
         if (search_type == SEARCH_SELECTED) {
@@ -142,26 +139,23 @@ vec3s vehicle_find_center(const editor_state* editor, partsearch_type search_typ
 
     case SEARCH_UNSELECTED:
         for (const part_entry& p : editor->unselected_parts) {
-            part_cell_iterator cell_iter = part_cell_iterator_setup(p);
+            part_cell_iterator cell_iter(p);
             while (!cell_iter.done) {
-                const vec3s8 pos = part_cell_iterator_next(&cell_iter);
+                const vec3s8 pos = cell_iter.next();
                 // Update the min/max positions
-                min = (vec3s8) {
-                    MIN(min.x, pos.x),
-                    MIN(min.y, pos.y),
-                    MIN(min.z, pos.z),
-                };
-                max = (vec3s8) {
-                    MAX(max.x, pos.x),
-                    MAX(max.y, pos.y),
-                    MAX(max.z, pos.z),
-                };
+                min.x = MIN(min.x, pos.x);
+                min.y = MIN(min.y, pos.y);
+                min.z = MIN(min.z, pos.z);
+
+                max.x = MAX(max.x, pos.x);
+                max.y = MAX(max.y, pos.y);
+                max.z = MAX(max.z, pos.z);
             }
         }
         break;
     }
 
-    vec3s center = {
+    const vec3s center = {
         (float)(max.x + min.x) / 2,
         (float)(max.y + min.y) / 2,
         (float)(max.z + min.z) / 2,
@@ -256,25 +250,15 @@ bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_dif
     return needed_adjust;
 }
 
-// Setup an iterator from a part entry. Returns an iteration context.
-part_cell_iterator part_cell_iterator_setup(part_entry p) {
-    part_cell_iterator out = {
-        .info = part_get_info((part_id)p.id),
-        .part = p,
-        .done = false,
-    };
-    return out;
-}
-
-// Get the next item and advance.
-vec3s8 part_cell_iterator_next(part_cell_iterator* ctx) {
+vec3s8 part_cell_iterator::next() {
+    // part_cell_iterator* ctx = this;
     // Get the origin and current relative cell we're working with
-    const vec3s relative_cell = vec3_from_vec3s8(ctx->info.relative_occupation[ctx->cell_idx], 1.0f);
-    const vec3s8 origin = ctx->part.pos;
+    const vec3s relative_cell = vec3_from_vec3s8(info.relative_occupation[cell_idx], 1.0f);
+    const vec3s8 origin = part.pos;
 
     // Get quaternion of part rotation
     // Sorry for the ugly cast, this is just making it treat a vec3 as vec3s because they're the same
-    const versors quaternion = glms_euler_xyz_quat(*(vec3s*)&ctx->part.rot);
+    const versors quaternion = glms_euler_xyz_quat(*(vec3s*)&part.rot);
 
     // Rotate the relative point about the part origin
     const vec3s rotated_point = glms_quat_rotatev(quaternion, relative_cell);
@@ -288,11 +272,11 @@ vec3s8 part_cell_iterator_next(part_cell_iterator* ctx) {
 
     // Array ends with an all-zero entry, so if we just hit that, we're done
     // TODO: We can also do a bounds check against max volume here
-    ctx->done = glms_vec3_eqv(relative_cell, (vec3s){0});
+    done = glms_vec3_eqv(relative_cell, vec3s{});
 
     // Increment the current position if needed
-    if (!ctx->done) {
-        ctx->cell_idx++;
+    if (!done) {
+        cell_idx++;
     }
 
     return cell;
@@ -382,10 +366,10 @@ part_entry* part_by_pos(editor_state* editor, vec3s8 target, partsearch_type sea
         }
 
         // Loop over every cell this part occupies
-        part_cell_iterator cell_iter = part_cell_iterator_setup(*part);
+        part_cell_iterator cell_iter(*part);
         while (!cell_iter.done) {
             // Get the next coordinate
-            vec3s8 cell = part_cell_iterator_next(&cell_iter);
+            const vec3s8 cell = cell_iter.next();
 
             if (vec3s8_eq(cell, target)) {
                 // Found it!
