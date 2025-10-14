@@ -54,8 +54,7 @@ model get_or_load_model(garage_state* state, part_id id) {
     return state->models[0].m;
 }
 
-void garage_state::init(editor_state* state) noexcept {
-    this->editor = state;
+void garage_state::init(GLFWwindow* window) noexcept {
     const double time_start = glfwGetTime();
 
     // ID 0 will just render a cube
@@ -73,7 +72,7 @@ void garage_state::init(editor_state* state) noexcept {
     DBG_ASSERT_PERF(time_start, 3);
 }
 
-void garage_state::render() noexcept {
+void garage_state::render(GLFWwindow* window) noexcept {
     // We need to bind the shader program before uploading uniforms
     glUseProgram(editor->vcolor_shader);
 

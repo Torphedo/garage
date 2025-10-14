@@ -68,8 +68,8 @@ int main(int argc, char** argv) {
     editor_ui hud(&editor);
     hud.init(window);
 
-    garage_state garage;
-    garage.init(&editor);
+    garage_state garage(&editor);
+    garage.init(window);
 
     char fps_text[32] = "FPS: 0 [0.00ms]";
     text_state fps_display = text_render_prep(fps_text, sizeof(fps_text), 0.03f, (vec2){-1, 1});
@@ -103,7 +103,7 @@ int main(int argc, char** argv) {
 
         // Render
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        garage.render();
+        garage.render(window);
         debug_render(&editor);
         hud.render(window);
 
