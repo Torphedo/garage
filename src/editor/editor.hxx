@@ -4,6 +4,7 @@
 #include <common/int.h>
 #include <common/list.h>
 
+#include <layer.hxx>
 extern "C" {
 #include <vector.h>
 #include <model.h>
@@ -42,18 +43,17 @@ static_assert(sizeof(vehicle_bitmask) == 0x40000, "vehicle_bitmask size is wrong
 // this and just loop through each part and every cell it occupies. It's
 // probably not a major performance hit, and would keep the code much simpler.
 
-// Current state of the vehicle editor & GUI in general. In a hypothetical C++
-// rewrite, this would do well as a class.
-typedef struct {
+// Current state of the vehicle editor & GUI in general.
+struct editor_state : gui_layer {
     // Vehicle/part data
-    vehicle_header v;
+    vehicle_header v = {};
     list selected_parts;
     list unselected_parts;
     camera cam;
     // Bitmask for whether a space is occupied by a part, at 1 bit per cell.
-    vehicle_bitmask* vacancy_mask;
+    vehicle_bitmask* vacancy_mask = nullptr;
     // Bitmask for whether a cell is selected
-    vehicle_bitmask* selected_mask;
+    vehicle_bitmask* selected_mask = nullptr;
 
     // Editor state data
     vec3s16 sel_box; // Selection box position
@@ -66,7 +66,6 @@ typedef struct {
     bool vsync;
     bool init_result = false; // Only used during init to communicate failure
     // TODO: Can't we just pass the window pointer to the UI init function?
-    GLFWwindow* window; // Used to register keyboard callbacks
 
     // Rendering state that everyone can re-use
     gl_obj vcolor_shader; // Shader for drawing objects with vertex colors
@@ -126,13 +125,15 @@ typedef struct {
 
     void render_vehicle_bitmask(vehicle_bitmask* mask) const noexcept;
 
-    // Update our state according to new user input.
-    bool update() noexcept;
+    explicit editor_state(const char* vehicle_path) noexcept;
 
     // Compile the common vertex color-based shader, upload buffers for primitives,
     // setup uniforms & camera, load vehicle data
-    bool init(const char* vehicle_path, GLFWwindow* window) noexcept;
+    void init(GLFWwindow* window) noexcept override;
+
+    // Update our state according to new user input.
+    void update(GLFWwindow* window) noexcept override;
 
     // Delete resources created in init().
-    void destroy() noexcept;
-}editor_state;
+    void destroy() noexcept override;
+};

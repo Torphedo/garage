@@ -392,7 +392,7 @@ void editor_save_to_file(editor_state editor, const char* output_path) {
 }
 
 // Update the GUI state according to new user input.
-bool editor_state::update() noexcept {
+void editor_state::update(GLFWwindow* window) noexcept {
     const double time_start = glfwGetTime();
     static bool cursor_lock = false;
     update_mods(window); // Update input.shift, input.ctrl, etc.
@@ -469,43 +469,45 @@ bool editor_state::update() noexcept {
         cam.move_speed = 0;
         cam.mouse_sens = camera_default.mouse_sens;
     }
+    cam.update(delta_time);
 
     DBG_ASSERT_PERF(time_start, 1);
-    return true;
 }
 
-bool editor_state::init(const char* vehicle_path, GLFWwindow* window) noexcept {
-    const double time_start = glfwGetTime();
-    vacancy_mask = (vehicle_bitmask*)calloc(1, sizeof(vehicle_bitmask));
-    selected_mask = (vehicle_bitmask*)calloc(1, sizeof(vehicle_bitmask));
-    this->window = window;
-
-    if (!vacancy_mask || !selected_mask) {
-        LOG_MSG(error, "Failed to alloc a vehicle bitmask\n");
-        return false;
-    }
-
+editor_state::editor_state(const char* vehicle_path) noexcept {
     vehicle* vehicle = vehicle_load(vehicle_path);
     if (!vehicle) {
         LOG_MSG(error, "Failed to load vehicle from \"%s\"\n", vehicle_path);
-        return false;
+        return;
     }
 
     // Init vehicle header & dynamic lists
     this->v = vehicle->head;
+
     // Start with enough memory to select all parts without resizing
     selected_parts = list_create(sizeof(part_entry) * vehicle->head.part_count, sizeof(part_entry));
     unselected_parts = list_create(sizeof(part_entry) * vehicle->head.part_count, sizeof(part_entry));
-    if (selected_parts.buf.data == 0 || unselected_parts.buf.data == 0) {
+    if (!selected_parts.buf.data || !unselected_parts.buf.data) {
         LOG_MSG(error, "Failed to allocate for dynamic lists\n");
-        return false;
+        return;
     }
-
 
     // Copy part data into the dynamic list and free the raw vehicle data
     memcpy((void*)unselected_parts.buf.data, vehicle->parts, sizeof(*vehicle->parts) * vehicle->head.part_count);
     unselected_parts.end_idx = vehicle->head.part_count;
     free(vehicle);
+}
+
+void editor_state::init(GLFWwindow* window) noexcept {
+    const double time_start = glfwGetTime();
+
+    vacancy_mask = (vehicle_bitmask*)calloc(1, sizeof(vehicle_bitmask));
+    selected_mask = (vehicle_bitmask*)calloc(1, sizeof(vehicle_bitmask));
+
+    if (!vacancy_mask || !selected_mask) {
+        LOG_MSG(error, "Failed to alloc a vehicle bitmask\n");
+        return;
+    }
 
     // Initialize part grids
     update_vacancymask(this);
@@ -515,14 +517,14 @@ bool editor_state::init(const char* vehicle_path, GLFWwindow* window) noexcept {
     u8* frag = physfs_load_file("/src/editor/shader/vcolor.frag");
     if (!vert || !frag) {
         LOG_MSG(error, "Failed to load one or both of the vertex color shader files\n");
-        return false;
+        return;
     }
     vcolor_shader = program_compile_src((char*)vert, (char*)frag);
     free(vert);
     free(frag);
     if (!shader_link_check(vcolor_shader)) {
         LOG_MSG(error, "Shader linker error\n");
-        return false;
+        return;
     }
 
     // Get our uniform locations
@@ -534,7 +536,6 @@ bool editor_state::init(const char* vehicle_path, GLFWwindow* window) noexcept {
 
     init_result = true;
     DBG_ASSERT_PERF(time_start, 1);
-    return true;
 }
 
 void editor_state::destroy() noexcept {

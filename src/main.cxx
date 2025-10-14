@@ -39,20 +39,20 @@ int main(int argc, char** argv) {
         return EXIT_SUCCESS;
     }
 
+    // Setup PhysicsFS
+    if (!setup_physfs(argv[0])) {
+        return EXIT_FAILURE;
+    }
+
     GLFWwindow* window = setup_opengl(680, 480, "Garage Opener", ENABLE_DEBUG, GLFW_CURSOR_NORMAL, true);
     if (window == NULL) {
         LOG_MSG(error, "GLFW / OpenGL init error\n");
         return EXIT_FAILURE;
     }
 
-    // Setup PhysicsFS
-    if (!setup_physfs(argv[0])) {
-        return EXIT_FAILURE;
-    }
-
     const char* vehicle_path = argv[1]; // Give our first argument a convenient name
-    editor_state editor;
-    editor.init(vehicle_path, window);
+    editor_state editor(vehicle_path);
+    editor.init(window);
 
     // This is a generic failure flag for any problems with startup
     if (!editor.init_result) {
@@ -95,12 +95,7 @@ int main(int argc, char** argv) {
         glfwPollEvents();
 
         // All UI/navigation/keybinds are implemented here
-        if (!editor.update()) {
-            // Returns false when the program should exit (for quit keybind)
-            break;
-        }
-
-        editor.cam.update(editor.delta_time);
+        editor.update(window);
         hud.update(window);
 
         // Render
@@ -137,7 +132,7 @@ int main(int argc, char** argv) {
 
     // When we get here we're on the way to shutdown, close the window to make
     // the program feel more responsive
-    glfwDestroyWindow(editor.window);
+    glfwDestroyWindow(window);
 
     // Print vehicle details (mostly a leftover from old versions of this program)
     LOG_MSG(info, "\"");
