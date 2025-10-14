@@ -65,7 +65,8 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
 
-    editor_ui hud(window);
+    editor_ui hud(&editor);
+    hud.init(window);
 
     garage_state garage;
     garage.init(&editor);
@@ -98,12 +99,13 @@ int main(int argc, char** argv) {
         }
 
         editor.cam.update(editor.delta_time);
+        hud.update(window);
 
         // Render
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         garage.render();
         debug_render(&editor);
-        hud.update_render(&editor);
+        hud.render(window);
 
         // Update FPS counter 4 times a second
         if (fmod(one_frame_ago, 0.25) < 0.01) {
@@ -154,7 +156,7 @@ int main(int argc, char** argv) {
     // Cleanup
     text_free(fps_display);
     garage.destroy();
-    hud.teardown();
+    hud.destroy();
 
     text_renderer_cleanup();
     editor.destroy();

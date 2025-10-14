@@ -1,5 +1,6 @@
 #pragma once
 
+#include <layer.hxx>
 #include "editor.hxx"
 
 enum {
@@ -8,12 +9,13 @@ enum {
 };
 
 // This file is for rendering the user interface
-struct editor_ui {
+struct editor_ui : gui_layer {
     text_state part_name = {};
     char partname_buf[32] = {}; // Backing text buffer, enough for longest part name
     text_state editing_mode = {};
     text_state camera_mode_text = {};
     bool initialized = false;
+    editor_state* editor = nullptr;
 
     // State for the part search menu
     text_state textbox = {}; // User input search box
@@ -24,9 +26,14 @@ struct editor_ui {
     s8 partsearch_selected_item = {}; // Index of selected search result
     u32 partsearch_filled_slots = {}; // Number of non-empty search result slots
 
-    explicit editor_ui(GLFWwindow* window) noexcept;
-    void update_render(editor_state* editor) noexcept;
-    void teardown() noexcept;
+    explicit editor_ui(editor_state* editor) noexcept : editor(editor) {
+
+    }
+
+    void init(GLFWwindow* window) noexcept override;
+    void update(GLFWwindow* window) noexcept override;
+    void render(GLFWwindow* window) noexcept override;
+    void destroy() noexcept override;
 
     void partsearch_update(editor_state* editor);
     void partsearch_render(editor_state* editor);

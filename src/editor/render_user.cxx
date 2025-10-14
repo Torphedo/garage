@@ -246,7 +246,7 @@ void editor_ui::partsearch_render(editor_state* editor) {
     DBG_ASSERT_PERF(start_time, 1.2);
 }
 
-editor_ui::editor_ui(GLFWwindow* window) noexcept {
+void editor_ui::init(GLFWwindow* window) noexcept {
     part_name = text_render_prep(partname_buf, sizeof(partname_buf), text_default_scale, (vec2){-1.0f, -0.7f});
     editing_mode = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.85f});
     camera_mode_text = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.75f});
@@ -261,7 +261,7 @@ editor_ui::editor_ui(GLFWwindow* window) noexcept {
     searchbuf_updated = true;
 }
 
-void editor_ui::update_render(editor_state* editor) noexcept {
+void editor_ui::update(GLFWwindow* window) noexcept {
     if (!initialized) {
         return;
     }
@@ -339,10 +339,20 @@ void editor_ui::update_render(editor_state* editor) noexcept {
 
     if (editor->mode == MODE_MENU) {
         partsearch_update(editor);
+    }
+
+    DBG_ASSERT_PERF(time_start, 1.2);
+}
+
+void editor_ui::render(GLFWwindow* window) noexcept {
+    if (!initialized) {
+        return;
+    }
+
+    if (editor->mode == MODE_MENU) {
         partsearch_render(editor);
         text_render(textbox);
-    }
-    else {
+    } else {
         text_render(part_name);
     }
 
@@ -353,10 +363,9 @@ void editor_ui::update_render(editor_state* editor) noexcept {
     glBindVertexArray(0);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 
-    DBG_ASSERT_PERF(time_start, 1.2);
 }
 
-void editor_ui::teardown() noexcept {
+void editor_ui::destroy() noexcept {
     text_free(part_name);
     text_free(editing_mode);
     text_free(camera_mode_text);
