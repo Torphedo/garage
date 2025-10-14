@@ -14,7 +14,7 @@ struct editor_ui : gui_layer {
     text_state editing_mode = {};
     text_state camera_mode_text = {};
     bool initialized = false;
-    editor_state* editor = nullptr;
+    editor_state& editor;
 
     char fps_text[32] = "FPS: 0 [0.00ms]";
     text_state fps_display = {};
@@ -29,7 +29,7 @@ struct editor_ui : gui_layer {
     s8 partsearch_selected_item = {}; // Index of selected search result
     u32 partsearch_filled_slots = {}; // Number of non-empty search result slots
 
-    explicit editor_ui(editor_state* editor) noexcept : editor(editor) {
+    explicit editor_ui(editor_state& editor) noexcept : editor(editor) {
 
     }
 

@@ -14,7 +14,7 @@ extern "C" {
 #include "editor.hxx"
 #include "utils.hxx"
 
-bool vehiclemask_get_3d(vehicle_bitmask* mask, vec3s8 cell) {
+bool vehiclemask_get_3d(const vehicle_bitmask* mask, vec3s8 cell) {
     u8* mask_addr = (u8*)&(*mask)[cell.x][cell.y]; // Target byte
 
     // Only try to access mask bits if the address is in bounds.
@@ -40,14 +40,9 @@ void vehiclemask_set_3d(vehicle_bitmask* mask, vec3s8 cell, u8 val) {
     // Oh well.
 }
 
-bool cell_is_selected(editor_state* editor, vec3s8 cell) {
+bool cell_is_selected(const editor_state& editor, vec3s8 cell) {
     // Try to find a part from the selected list at this position
-    const part_entry* p = part_by_pos(editor, cell, SEARCH_SELECTED);
-
-    // An id of 0 indicates placeholder, meaning nothing was found
-    const bool found_part = (p->id != 0);
-
-    return found_part;
+    return vehiclemask_get_3d(editor.selected_mask, cell);
 }
 
 bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry p) {
@@ -239,7 +234,7 @@ bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_dif
             new_pos.z - p->pos.z,
         };
         vec3s16 adjustment = {0};
-        needed_adjust |= vehicle_move_part(editor, *p, diff, &adjustment);
+        needed_adjust |= vehicle_move_part(*editor, *p, diff, &adjustment);
         // If we tried to cross the edge and parts were adjusted, we need to
         // adjust the centerpoint. (will be zero if no adjustment was needed)
         editor->sel_box.x -= adjustment.x;
@@ -340,9 +335,9 @@ part_entry* part_iterator::next() noexcept {
 
 static part_entry empty_part = {0};
 
-part_entry* part_by_pos(editor_state* editor, vec3s8 target, partsearch_type search_hint) {
-    const bool vacancy_result = vehiclemask_get_3d(editor->vacancy_mask, target);
-    const bool selection_result = vehiclemask_get_3d(editor->selected_mask, target);
+part_entry* part_by_pos(editor_state& editor, vec3s8 target, partsearch_type search_hint) {
+    const bool vacancy_result = vehiclemask_get_3d(editor.vacancy_mask, target);
+    const bool selection_result = vehiclemask_get_3d(editor.selected_mask, target);
     if (!vacancy_result && !selection_result) {
         // This cell isn't in the selection or vacancy grid, so there's no part here.
         empty_part = (part_entry){0};
@@ -350,7 +345,7 @@ part_entry* part_by_pos(editor_state* editor, vec3s8 target, partsearch_type sea
     }
 
     // Linearly search for the part
-    part_iterator iter(*editor, search_hint);
+    part_iterator iter(editor, search_hint);
     while (!iter.done) {
         part_entry* part = iter.next();
 
@@ -379,11 +374,11 @@ part_entry* part_by_pos(editor_state* editor, vec3s8 target, partsearch_type sea
     return &empty_part;
 }
 
-bool vehicle_move_part(editor_state* editor, part_entry part, vec3s16 diff, vec3s16* adjust_out) {
-    auto&& found_part = find_pod(editor->selected_parts, part);
-    if (found_part == editor->selected_parts.end()) {
+bool vehicle_move_part(editor_state& editor, part_entry part, vec3s16 diff, vec3s16* adjust_out) {
+    auto&& found_part = find_pod(editor.selected_parts, part);
+    if (found_part == editor.selected_parts.end()) {
         // If for some reason we're moving an unselected part, handle that
-        if (!contains(editor->unselected_parts, part)) {
+        if (!contains(editor.unselected_parts, part)) {
             return false;
         }
     }
@@ -412,7 +407,7 @@ bool vehicle_move_part(editor_state* editor, part_entry part, vec3s16 diff, vec3
             adjust_out->raw[i] = new_pos;
         }
 
-        part_iterator iter(*editor, SEARCH_ALL);
+        part_iterator iter(editor, SEARCH_ALL);
         while (!iter.done) {
             
             // The part to be moved

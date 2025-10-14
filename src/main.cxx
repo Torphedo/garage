@@ -45,7 +45,7 @@ int main(int argc, char** argv) {
 
     app.layers.emplace_back(std::make_unique<garage_state>(editor));
     app.layers.emplace_back(std::make_unique<layer_debug>(editor));
-    app.layers.emplace_back(std::make_unique<editor_ui>(editor));
+    app.layers.emplace_back(std::make_unique<editor_ui>(*editor));
 
     app.run("Garage Opener");
 

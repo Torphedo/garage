@@ -274,19 +274,19 @@ void editor_ui::update(GLFWwindow* window) noexcept {
     static vec3s16 last_selbox = {-1, -1, -1};
 
     // We can skip updating the part name if the cursor hasn't moved
-    if (!vec3s16_eq(last_selbox, editor->sel_box)) {
-        const vec3s8 pos = {s8(editor->sel_box.x), s8(editor->sel_box.y), s8(editor->sel_box.z)};
+    if (!vec3s16_eq(last_selbox, editor.sel_box)) {
+        const vec3s8 pos = {s8(editor.sel_box.x), s8(editor.sel_box.y), s8(editor.sel_box.z)};
         const part_entry* part = part_by_pos(editor, pos, SEARCH_ALL);
         const part_info cur_part = part_get_info((part_id)part->id);
         strncpy(partname_buf, cur_part.name, sizeof(partname_buf));
         // Update part name & selection box
         text_update_transforms(&part_name);
-        last_selbox = editor->sel_box;
+        last_selbox = editor.sel_box;
     }
 
     static u8 last_edit_mode = MODE_ENUM_MAX;
-    if (last_edit_mode != editor->mode) {
-        switch (editor->mode) {
+    if (last_edit_mode != editor.mode) {
+        switch (editor.mode) {
         case MODE_EDIT:
             editing_mode.text = "[Editing]";
             break;
@@ -311,11 +311,11 @@ void editor_ui::update(GLFWwindow* window) noexcept {
         }
 
         text_update_transforms(&editing_mode);
-        last_edit_mode = editor->mode;
+        last_edit_mode = editor.mode;
     }
     static camera_mode last_cam_mode = CAMERA_MODE_ENUM_MAX;
-    if (last_cam_mode != editor->cam.mode) {
-        switch (editor->cam.mode) {
+    if (last_cam_mode != editor.cam.mode) {
+        switch (editor.cam.mode) {
         case CAMERA_ORBIT:
             camera_mode_text.text = "CAMSTYLE: Orbit";
             break;
@@ -330,23 +330,23 @@ void editor_ui::update(GLFWwindow* window) noexcept {
         }
 
         text_update_transforms(&camera_mode_text);
-        last_cam_mode = editor->cam.mode;
+        last_cam_mode = editor.cam.mode;
     }
 
     // Handle backspace character because it's not sent to character callback
-    if (input.backspace && !editor->prev_input.backspace) {
+    if (input.backspace && !editor.prev_input.backspace) {
         textbox_buf[strlen(textbox_buf) - 1] = 0;
         text_update_transforms(&textbox);
         searchbuf_updated = true;
     }
 
-    if (editor->mode == MODE_MENU) {
-        partsearch_update(editor);
+    if (editor.mode == MODE_MENU) {
+        partsearch_update(&editor);
     }
 
     // Shift all the frame times over and add the new one
     memmove(&frame_times[1], frame_times, sizeof(frame_times) - sizeof(*frame_times));
-    frame_times[0] = editor->delta_time;
+    frame_times[0] = editor.delta_time;
 
     // Calculate framerate from average frame time
     float avg_time = 0.0f;
@@ -373,8 +373,8 @@ void editor_ui::render(GLFWwindow* window) noexcept {
         return;
     }
 
-    if (editor->mode == MODE_MENU) {
-        partsearch_render(editor);
+    if (editor.mode == MODE_MENU) {
+        partsearch_render(&editor);
         text_render(textbox);
     } else {
         text_render(part_name);

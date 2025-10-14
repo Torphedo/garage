@@ -278,9 +278,8 @@ void editor_state::update_edit_mode() noexcept {
         while (!iter.done) {
             part_entry* p = iter.next();
             vec3s16 adjustment = {0};
-            needed_adjust |= vehicle_move_part(this, *p, diff, &adjustment);
-            // Move the selection box to the part's new location, if it moved out
-            // of bounds and forced the vehicle to be adjusted.
+            needed_adjust |= vehicle_move_part(*this, *p, diff, &adjustment);
+            // Adjust the selection box if needed
             sel_box.x -= adjustment.x;
             sel_box.y -= adjustment.y;
             sel_box.z -= adjustment.z;
@@ -288,8 +287,7 @@ void editor_state::update_edit_mode() noexcept {
             // Check for overlaps and block the placement if needed
             if (vehicle_selection_overlap(*this)) {
                 sel_mode = SEL_BAD;
-            }
-            else {
+            } else {
                 sel_mode = SEL_ACTIVE;
             }
         }
@@ -308,7 +306,7 @@ void editor_state::update_edit_mode() noexcept {
 
     // Find index of the part we're targeting
     const vec3s8 pos = {sel_box.x, sel_box.y, sel_box.z};
-    const part_entry* p = part_by_pos(this, pos, SEARCH_ALL);
+    const part_entry* p = part_by_pos(*this, pos, SEARCH_ALL);
 
     const bool select_button_pressed = confirm_rising_edge();
     const bool unselect_button_pressed = (input.r && !prev_input.r) || (input.gp.b && !prev_input.gp.b);
@@ -342,7 +340,7 @@ void editor_state::update_edit_mode() noexcept {
                 update_vacancymask(*this); // Need to add those parts to vacancy grid
                 sel_mode = SEL_NONE; // Now you can start moving the parts
             } else if (p->id != 0) {
-                if (cell_is_selected(this, p->pos)) {
+                if (cell_is_selected(*this, p->pos)) {
                     // User pressed the button while selecting parts on an
                     // already-selected part, which means they want to start moving
                     // them. No change to the vacancy/selection grids.
