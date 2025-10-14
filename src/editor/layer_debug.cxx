@@ -1,7 +1,7 @@
 #include <glad/glad.h>
 
 #include <primitives.h>
-#include "render_debug.hxx"
+#include "layer_debug.hxx"
 
 void layer_debug::render(GLFWwindow* window) noexcept {
     // Bind our shader & buffers

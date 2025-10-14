@@ -11,7 +11,7 @@ extern "C" {
 }
 
 #include "vehicle_edit.hxx"
-#include "editor.hxx"
+#include "layer_editor.hxx"
 #include "utils.hxx"
 
 bool vehiclemask_get_3d(const vehicle_bitmask* mask, vec3s8 cell) {

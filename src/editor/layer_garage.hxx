@@ -5,7 +5,7 @@ extern "C" {
 #include <parts.h>
 }
 
-#include "editor.hxx"
+#include "layer_editor.hxx"
 
 typedef struct {
     part_id id;
@@ -13,11 +13,11 @@ typedef struct {
 }part_model;
 
 // State for rendering the garage "floor" and all of the vehicle parts.
-struct garage_state : gui_layer {
+struct layer_garage : gui_layer {
     part_model models[NUM_PARTS + 1] = {};
     editor_state& editor;
 
-    explicit garage_state(editor_state& state) noexcept : editor(state) {
+    explicit layer_garage(editor_state& state) noexcept : editor(state) {
 
     }
     void init(GLFWwindow* window) noexcept override;

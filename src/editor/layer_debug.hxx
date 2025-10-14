@@ -1,5 +1,5 @@
 #pragma once
-#include "editor.hxx"
+#include "layer_editor.hxx"
 
 // This file was originally for debug rendering, but the collision and
 // selection boxes ended up becoming part of the user-facing UI. So now it's

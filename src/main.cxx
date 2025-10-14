@@ -4,11 +4,11 @@
 #include <common/logging.h>
 #include <gui_bootstrap.hxx>
 
-#include "editor/editor.hxx"
+#include "editor/layer_editor.hxx"
 #include "editor/render_text.hxx"
-#include "editor/render_garage.hxx"
-#include "editor/render_user.hxx"
-#include "editor/render_debug.hxx"
+#include "editor/layer_garage.hxx"
+#include "editor/layer_hud.hxx"
+#include "editor/layer_debug.hxx"
 
 extern "C" {
 #include <common/gl/gl_setup.h>
@@ -43,9 +43,9 @@ int main(int argc, char** argv) {
     app.layers.emplace_back(std::make_unique<editor_state>(vehicle_path));
     editor_state& editor = *dynamic_cast<editor_state*>(app.layers[0].get());
 
-    app.layers.emplace_back(std::make_unique<garage_state>(editor));
+    app.layers.emplace_back(std::make_unique<layer_garage>(editor));
     app.layers.emplace_back(std::make_unique<layer_debug>(editor));
-    app.layers.emplace_back(std::make_unique<editor_ui>(editor));
+    app.layers.emplace_back(std::make_unique<layer_hud>(editor));
 
     app.run("Garage Opener");
 

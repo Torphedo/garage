@@ -38,11 +38,11 @@ add_subdirectory(ext/coregui)
 
 add_executable(garage
     src/editor/camera.cxx
-    src/editor/render_garage.cxx
-    src/editor/render_debug.cxx
+    src/editor/layer_garage.cxx
+    src/editor/layer_debug.cxx
     src/editor/render_text.cxx
-    src/editor/render_user.cxx
-    src/editor/editor.cxx
+    src/editor/layer_hud.cxx
+    src/editor/layer_editor.cxx
     src/editor/vehicle_edit.cxx
 
     # Adding this to the source lists forces the custom command to run every

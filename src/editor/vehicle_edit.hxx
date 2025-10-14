@@ -12,7 +12,7 @@ extern "C" {
 #include <parts.h>
 }
 
-#include "editor.hxx"
+#include "layer_editor.hxx"
 
 typedef enum {
     SEARCH_SELECTED,

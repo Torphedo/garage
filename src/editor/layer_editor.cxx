@@ -15,7 +15,7 @@ extern "C" {
 #include "timing_targets.h"
 }
 
-#include "editor.hxx"
+#include "layer_editor.hxx"
 #include "utils.hxx"
 #include "vehicle_edit.hxx"
 

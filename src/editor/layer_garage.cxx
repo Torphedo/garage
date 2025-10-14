@@ -13,13 +13,13 @@ extern "C" {
 #include "timing_targets.h"
 }
 
-#include "editor.hxx"
+#include "layer_editor.hxx"
 #include "utils.hxx"
 #include "vehicle_edit.hxx"
-#include "render_garage.hxx"
+#include "layer_garage.hxx"
 
 // Find/load a model to be rendered a model for a given part
-model get_or_load_model(garage_state* state, part_id id) {
+model get_or_load_model(layer_garage* state, part_id id) {
     for (u8 i = 0; i < ARRAY_SIZE(state->models); i++) {
         part_model* cur = &state->models[i];
         if (cur->id == id) {
@@ -54,7 +54,7 @@ model get_or_load_model(garage_state* state, part_id id) {
     return state->models[0].m;
 }
 
-void garage_state::init(GLFWwindow* window) noexcept {
+void layer_garage::init(GLFWwindow* window) noexcept {
     const double time_start = glfwGetTime();
 
     // ID 0 will just render a cube
@@ -72,7 +72,7 @@ void garage_state::init(GLFWwindow* window) noexcept {
     DBG_ASSERT_PERF(time_start, 3);
 }
 
-void garage_state::render(GLFWwindow* window) noexcept {
+void layer_garage::render(GLFWwindow* window) noexcept {
     // We need to bind the shader program before uploading uniforms
     glUseProgram(editor.vcolor_shader);
 
@@ -181,7 +181,7 @@ void garage_state::render(GLFWwindow* window) noexcept {
     glEnable(GL_CULL_FACE);
 }
 
-void garage_state::destroy() noexcept {
+void layer_garage::destroy() noexcept {
     // Unload all part models
     for (part_model& part : models) {
 

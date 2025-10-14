@@ -1,6 +1,6 @@
 #pragma once
 
-#include "editor.hxx"
+#include "layer_editor.hxx"
 
 enum {
     // Render this many part search results at a time
@@ -8,7 +8,7 @@ enum {
 };
 
 // This file is for rendering the user interface
-struct editor_ui : gui_layer {
+struct layer_hud : gui_layer {
     text_state part_name = {};
     char partname_buf[32] = {}; // Backing text buffer, enough for longest part name
     text_state editing_mode = {};
@@ -29,7 +29,7 @@ struct editor_ui : gui_layer {
     s8 partsearch_selected_item = {}; // Index of selected search result
     u32 partsearch_filled_slots = {}; // Number of non-empty search result slots
 
-    explicit editor_ui(editor_state& editor) noexcept : editor(editor) {
+    explicit layer_hud(editor_state& editor) noexcept : editor(editor) {
 
     }
 

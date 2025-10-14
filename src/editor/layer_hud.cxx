@@ -26,7 +26,7 @@ const char* strcasestr(const char* a, const char* b) {
 #include <cglm/cglm.h>
 #include "render_text.hxx"
 #include "vehicle_edit.hxx"
-#include "render_user.hxx"
+#include "layer_hud.hxx"
 
 extern "C" {
 #include <common/utf8.h>
@@ -72,7 +72,7 @@ void draw_rect_panel(editor_state* editor, const mat4 quad_transform, const vec4
     glDrawElements(GL_TRIANGLES, quad.idx_count, GL_UNSIGNED_SHORT, NULL);
 }
 
-void editor_ui::partsearch_update(editor_state* editor) {
+void layer_hud::partsearch_update(editor_state* editor) {
     const double start_time = glfwGetTime();
     if ((input.enter && !editor->prev_input.enter) || (input.gp.a && !editor->prev_input.gp.a)) {
         editor->mode = MODE_EDIT;
@@ -194,7 +194,7 @@ void editor_ui::partsearch_update(editor_state* editor) {
     DBG_ASSERT_PERF(start_time, 1.2);
 }
 
-void editor_ui::partsearch_render(editor_state* editor) {
+void layer_hud::partsearch_render(editor_state* editor) {
     const double start_time = glfwGetTime();
     const float partsearch_startheight = 0.4f;
     // Setup quad transform
@@ -246,7 +246,7 @@ void editor_ui::partsearch_render(editor_state* editor) {
     DBG_ASSERT_PERF(start_time, 1.2);
 }
 
-void editor_ui::init(GLFWwindow* window) noexcept {
+void layer_hud::init(GLFWwindow* window) noexcept {
     text_renderer_setup("bin/ProFontIIx.ttf");
     part_name = text_render_prep(partname_buf, sizeof(partname_buf), text_default_scale, (vec2){-1.0f, -0.7f});
     editing_mode = text_render_prep(NULL, 32, text_default_scale, (vec2){-1.0f, 0.85f});
@@ -264,7 +264,7 @@ void editor_ui::init(GLFWwindow* window) noexcept {
     searchbuf_updated = true;
 }
 
-void editor_ui::update(GLFWwindow* window) noexcept {
+void layer_hud::update(GLFWwindow* window) noexcept {
     if (!initialized) {
         return;
     }
@@ -368,7 +368,7 @@ void editor_ui::update(GLFWwindow* window) noexcept {
     DBG_ASSERT_PERF(time_start, 1.2);
 }
 
-void editor_ui::render(GLFWwindow* window) noexcept {
+void layer_hud::render(GLFWwindow* window) noexcept {
     if (!initialized) {
         return;
     }
@@ -390,7 +390,7 @@ void editor_ui::render(GLFWwindow* window) noexcept {
 
 }
 
-void editor_ui::destroy() noexcept {
+void layer_hud::destroy() noexcept {
     text_free(part_name);
     text_free(editing_mode);
     text_free(camera_mode_text);
