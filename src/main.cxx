@@ -17,7 +17,7 @@ extern "C" {
 #include <common/gl/gl_setup.h>
 #include <common/gl/input.h>
 
-#include "editor/camera.h"
+#include "editor/camera.hxx"
 #include "vehicle.h"
 #include "parts.h"
 #include "physfs_bundling.h"
@@ -89,12 +89,12 @@ int main(int argc, char** argv) {
         glfwPollEvents();
 
         // All UI/navigation/keybinds are implemented here
-        if (!editor.editor_update_with_input()) {
+        if (!editor.update()) {
             // Returns false when the program should exit (for quit keybind)
             break;
         }
 
-        camera_update(&editor.cam, editor.delta_time);
+        editor.cam.update(editor.delta_time);
 
         // Render
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

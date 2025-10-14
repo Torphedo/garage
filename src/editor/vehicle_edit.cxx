@@ -1,5 +1,5 @@
 #include <memory.h>
-#include <math.h>
+#include <cmath>
 
 #include <common/int.h>
 #include <common/list.h>
@@ -7,7 +7,6 @@
 extern "C" {
 #include <vector.h>
 #include <parts.h>
-#include "camera.h"
 }
 
 #include "vehicle_edit.hxx"
@@ -145,9 +144,9 @@ vec3s vehicle_find_center(const editor_state* editor, partsearch_type search_typ
 
 
 bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_diff, s8 roll_diff) {
-    vec3s cam_view = camera_facing(editor->cam);
+    const vec3s cam_view = editor->cam.facing();
     // Absolute value of camera vector
-    vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
+    const vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
 
     // Set our view direction to have a magnitude of 1 on the horizontal axis
     // we're facing the most strongly, and 0 in all other directions.

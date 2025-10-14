@@ -2,7 +2,7 @@
 
 #include <common/gl/input.h>
 
-#include "camera.h"
+#include "camera.hxx"
 
 // Restrict a number to a certain range
 float clampf(float x, float min, float max) {
@@ -70,12 +70,12 @@ void update_roll(float delta_time, float angle_diff) {
     camera_up = glms_vec3_rotate(camera_up, roll, axis_forward);
 }
 
-void camera_update(camera* cam, double delta_time) {
+void camera::update(double delta_time) noexcept {
     static vec2s last_scroll = {0};
 
     const vec2s scroll = {input.scroll_x, input.scroll_y};
     const vec2s cursor = {input.cursor_x, input.cursor_y};
-    const vec2s cursor_delta = get_cursor_delta(cam, cursor);
+    const vec2s cursor_delta = get_cursor_delta(this, cursor);
 
     const vec2s scroll_delta = {
         .x = input.scroll_x - last_scroll.x,
@@ -85,8 +85,8 @@ void camera_update(camera* cam, double delta_time) {
     last_scroll = scroll;
 
 
-    const vec3s cam_dir = camera_facing(*cam);
-    const float multiplier = delta_time * cam->move_speed;
+    const vec3s cam_dir = facing();
+    const float multiplier = delta_time * move_speed;
 
     // This just sets each axis to zero if it's below the deadzone threshold
     const float LS_x = input.LS_x * (fabsf(input.LS_x) > deadzone);
@@ -100,7 +100,7 @@ void camera_update(camera* cam, double delta_time) {
     vec3s horizontal = glms_normalize((vec3s){cam_dir.x, 0, cam_dir.z});
     const vec3s cam_side = glms_vec3_rotate(horizontal, glm_rad(90), camera_up);
     // Make forward/back move along camera vector in fly mode
-    if (cam->mode == CAMERA_FLY) {
+    if (mode == CAMERA_FLY) {
         horizontal = cam_dir;
         vertical = 0; // Ignore the normal vertical movement keys
     }
@@ -111,68 +111,68 @@ void camera_update(camera* cam, double delta_time) {
     pos_delta.y += vertical;
 
     // Update angles & zoom from mouse input
-    cam->orbit_angles = glms_vec2_add(cam->orbit_angles, cursor_delta);
-    cam->radius -= scroll_delta.y;
-    cam->radius = clampf(cam->radius, 0.05f, 256.0f); // Don't allow <= 0 or really high zoom
+    orbit_angles = glms_vec2_add(orbit_angles, cursor_delta);
+    radius -= scroll_delta.y;
+    radius = clampf(radius, 0.05f, 256.0f); // Don't allow <= 0 or really high zoom
 
     // Update target pos using delta from user input
-    cam->target = glms_vec3_add(cam->target, pos_delta);
+    target = glms_vec3_add(target, pos_delta);
 
     // Rendering breaks @ exactly 90 with Euler rotations, and we don't want to
     // be upside-down.
-    cam->orbit_angles.y = clampf(cam->orbit_angles.y, glm_rad(-89.999f), glm_rad(89.999f));
+    orbit_angles.y = clampf(orbit_angles.y, glm_rad(-89.999f), glm_rad(89.999f));
 
     // Add target position to relative orbit position to get final position
-    cam->pos = glms_vec3_add(cam->target, orbit_pos_by_angles(*cam));
+    pos = glms_vec3_add(target, orbit_pos_by_angles(*this));
 }
 
-vec3s camera_facing(camera cam) {
+vec3s camera::facing() const noexcept {
     // In fly mode, the target & camera are swapped
-    const vec3s target = (cam.mode == CAMERA_ORBIT) ? cam.target : cam.pos;
-    const vec3s pos = (cam.mode == CAMERA_ORBIT) ? cam.pos : cam.target;
-    return glms_normalize(glms_vec3_sub(target, pos));
+    const vec3s new_target = (mode == CAMERA_ORBIT) ? target : pos;
+    const vec3s new_pos = (mode == CAMERA_ORBIT) ? pos : target;
+    return glms_normalize(glms_vec3_sub(new_target, new_pos));
 }
 
-void camera_set_mode(camera* cam, camera_mode new_mode) {
-    if (new_mode == cam->mode) {
+void camera::set_mode(camera_mode new_mode) noexcept {
+    if (new_mode == mode) {
         return; // Nothing to do.
     }
 
     switch (new_mode) {
         case CAMERA_ORBIT:
-            cam->invert_mouse_x = true; 
-            cam->invert_mouse_y = false;
-            cam->mouse_sens = 0.015f;
+            invert_mouse_x = true;
+            invert_mouse_y = false;
+            mouse_sens = 0.015f;
             break;
         default:
         case CAMERA_FLY:
-            cam->invert_mouse_x = true; 
-            cam->invert_mouse_y = true;
-            cam->mouse_sens = 0.005f;
+            invert_mouse_x = true;
+            invert_mouse_y = true;
+            mouse_sens = 0.005f;
             break;
     }
     // If entering or leaving orbit mode, the target will be swapped with the
     // camera. We need to face the opposite direction to correct for the change
-    bool needs_view_flip = (cam->mode == CAMERA_ORBIT || new_mode == CAMERA_ORBIT);
+    bool needs_view_flip = (mode == CAMERA_ORBIT || new_mode == CAMERA_ORBIT);
     if (needs_view_flip) {
-        cam->orbit_angles.x = fmodf(cam->orbit_angles.x + glm_rad(180), 360);
-        cam->orbit_angles.y = -cam->orbit_angles.y;
+        orbit_angles.x = fmodf(orbit_angles.x + glm_rad(180), 360);
+        orbit_angles.y = -orbit_angles.y;
     }
     
     // Set mode
-    cam->mode = new_mode;
+    mode = new_mode;
 }
 
-void camera_view_matrix(camera cam, mat4 view_out) {
-    if (cam.mode == CAMERA_ORBIT) {
-        glm_lookat((float*)&cam.pos, (float*)&cam.target, (float*)&camera_up, view_out);
+void camera::view_matrix(mat4 view_out) const noexcept {
+    if (mode == CAMERA_ORBIT) {
+        glm_lookat((float*)&pos, (float*)&target, (float*)&camera_up, view_out);
     } else {
         // In fly mode, the target & camera are swapped
-        glm_lookat((float*)&cam.target, (float*)&cam.pos, (float*)&camera_up, view_out);
+        glm_lookat((float*)&target, (float*)&pos, (float*)&camera_up, view_out);
     }
 }
 
-void camera_proj_view(camera cam, mat4 out) {
+void camera::proj_view(mat4 out) const noexcept {
     // Pre-multiply the projection & view components of the PVM matrix
 
     // Projection matrix
@@ -183,7 +183,7 @@ void camera_proj_view(camera cam, mat4 out) {
 
     // Camera matrix
     mat4 view = {0};
-    camera_view_matrix(cam, view);
+    view_matrix(view);
     glm_mat4_mul(projection, view, (vec4*)out);
 }
 

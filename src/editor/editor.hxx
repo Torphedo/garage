@@ -9,10 +9,10 @@ extern "C" {
 #include <model.h>
 
 #include <vehicle.h>
-#include "camera.h"
 #include <common/gl/input.h>
 }
 
+#include "camera.hxx"
 #include "render_text.hxx"
 
 typedef enum : u8 {
@@ -52,7 +52,7 @@ typedef struct {
     vehicle_header v;
     list selected_parts;
     list unselected_parts;
-    camera cam = camera_default();
+    camera cam;
     // Bitmask for whether a space is occupied by a part, at 1 bit per cell.
     vehicle_bitmask* vacancy_mask;
     // Bitmask for whether a cell is selected
@@ -146,7 +146,7 @@ typedef struct {
     void render_vehicle_bitmask(vehicle_bitmask* mask) noexcept;
 
     // Update our state according to new user input.
-    bool editor_update_with_input() noexcept;
+    bool update() noexcept;
 
     // Compile the common vertex color-based shader, upload buffers for primitives,
     // setup uniforms & camera, load vehicle data

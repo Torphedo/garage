@@ -137,7 +137,7 @@ void editor_state::render_vehicle_bitmask(vehicle_bitmask* mask) noexcept {
 
     // Tranformation matrices
     mat4 pv = {0};
-    camera_proj_view(cam, pv);
+    cam.proj_view(pv);
 
     // Disable backface culling, it doesn't make sense for a wireframe
     GLboolean culling_was_enabled = false;
@@ -204,7 +204,7 @@ void editor_state::render_vehicle_bitmask(vehicle_bitmask* mask) noexcept {
 
 void editor_state::update_edit_mode() noexcept {
     // Handle moving the selector box
-    const vec3s cam_view = camera_facing(cam);
+    const vec3s cam_view = cam.facing();
     // Absolute value of camera vector
     const vec3s cam_abs = {fabsf(cam_view.x), fabsf(cam_view.y), fabsf(cam_view.z)};
 
@@ -392,7 +392,7 @@ void editor_save_to_file(editor_state editor, const char* output_path) {
 }
 
 // Update the GUI state according to new user input.
-bool editor_state::editor_update_with_input() noexcept {
+bool editor_state::update() noexcept {
     const double time_start = glfwGetTime();
     static bool cursor_lock = false;
     update_mods(window); // Update input.shift, input.ctrl, etc.
@@ -404,7 +404,7 @@ bool editor_state::editor_update_with_input() noexcept {
         // Cycle through camera modes
         camera_mode mode = (camera_mode)((cam.mode + 1) % CAMERA_MODE_ENUM_MAX);
         // This function handles the special camera settings per mode
-        camera_set_mode(&cam, mode);
+        cam.set_mode(mode);
     }
 
     // Allow infinite cursor movement when clicking to pan the camera
@@ -455,10 +455,11 @@ bool editor_state::editor_update_with_input() noexcept {
     }
 
     // Only allow the camera to move in certain modes
+    camera camera_default;
     switch (mode) {
     case MODE_MOVCAM:
-        cam.move_speed = camera_default().move_speed;
-        cam.mouse_sens = camera_default().mouse_sens;
+        cam.move_speed = camera_default.move_speed;
+        cam.mouse_sens = camera_default.mouse_sens;
         break;
     case MODE_MENU:
         cam.move_speed = 0;
@@ -466,7 +467,7 @@ bool editor_state::editor_update_with_input() noexcept {
         break;
     default:
         cam.move_speed = 0;
-        cam.mouse_sens = camera_default().mouse_sens;
+        cam.mouse_sens = camera_default.mouse_sens;
     }
 
     DBG_ASSERT_PERF(time_start, 1);

@@ -11,7 +11,6 @@ extern "C" {
 #include <primitives.h>
 #include <physfs_bundling.h>
 
-#include "camera.h"
 #include "timing_targets.h"
 }
 
@@ -81,7 +80,7 @@ void garage_state::render() noexcept {
     // All our matrices for rendering, only PVM is uploaded to GPU
     mat4 pvm = {0};
     mat4 pv = {0};
-    camera_proj_view(editor->cam, pv);
+    editor->cam.proj_view(pv);
 
     mat4 mdl = {0};
     glm_mat4_identity(mdl);
