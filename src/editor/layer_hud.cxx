@@ -36,6 +36,7 @@ extern "C" {
 #include <parts.h>
 #include "timing_targets.h"
 }
+using namespace action;
 
 // Use an atomic bool b/c I'm not sure if the callback is on the same thread.
 // We can't put any of these globals in the editor struct b/c the callback
@@ -74,7 +75,7 @@ void draw_rect_panel(editor_state* editor, const mat4 quad_transform, const vec4
 
 void layer_hud::partsearch_update(editor_state* editor) {
     const double start_time = glfwGetTime();
-    if ((input.enter && !editor->prev_input.enter) || (input.gp.a && !editor->prev_input.gp.a)) {
+    if (rising_edge(KEY_ENTER) || rising_edge(GAMEPAD_BUTTON_A)) {
         editor->mode = MODE_EDIT;
         editor->sel_mode = SEL_ACTIVE;
         part_entry new_part = {
@@ -107,8 +108,8 @@ void layer_hud::partsearch_update(editor_state* editor) {
 
     // Up and down are kind of backwards. "Up" means increasing the menu index,
     // which is visually downwards.
-    const bool up = (input.tab && !editor->prev_input.tab && !input.shift)  || editor->down_rising_edge() || (editor->move_y_rising_edge() == -1);
-    const bool down = (input.tab && !editor->prev_input.tab && input.shift) || editor->up_rising_edge() || (editor->move_y_rising_edge() == 1);
+    const bool up = (rising_edge(KEY_TAB) && !action::input.shift)  || editor->actions["down"].rising_edge() || (editor->move_y_rising_edge() == -1);
+    const bool down = (rising_edge(KEY_TAB) && action::input.shift) || editor->actions["down"].rising_edge() || (editor->move_y_rising_edge() == 1);
 
     s8 diff = 0;
     if (up) {
@@ -119,7 +120,7 @@ void layer_hud::partsearch_update(editor_state* editor) {
     }
     // We have to check for W and S here because otherwise typing them would
     // move the selected item, which is unintuitive
-    if (input.w || input.s) {
+    if (action::input.keys[KEY_W] || action::input.keys[KEY_S]) {
         diff = 0;
     }
 
@@ -333,7 +334,7 @@ void layer_hud::update(GLFWwindow* window) noexcept {
     }
 
     // Handle backspace character because it's not sent to character callback
-    if (input.backspace && !editor.prev_input.backspace) {
+    if (rising_edge(KEY_BACKSPACE)) {
         textbox_buf[strlen(textbox_buf) - 1] = 0;
         text_update_transforms(&textbox);
         searchbuf_updated = true;

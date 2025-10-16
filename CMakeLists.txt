@@ -37,6 +37,9 @@ add_subdirectory(ext/bobtail)
 add_subdirectory(ext/coregui)
 
 add_executable(garage
+    src/action/input.cxx
+    src/action/action.cxx
+
     src/editor/camera.cxx
     src/editor/layer_garage.cxx
     src/editor/layer_debug.cxx

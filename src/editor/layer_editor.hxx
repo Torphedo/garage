@@ -6,13 +6,13 @@
 #include <common/list.h>
 
 #include <layer.hxx>
+#include <action/action.hxx>
 
 extern "C" {
 #include <vector.h>
 #include <model.h>
 
 #include <vehicle.h>
-#include <common/gl/input.h>
 }
 
 #include "camera.hxx"
@@ -42,6 +42,7 @@ struct editor_state : gui_layer {
     std::vector<part_entry> selected_parts;
     std::vector<part_entry> unselected_parts;
     camera cam;
+    action::map actions;
 
     // Editor state data
     vec3s8 sel_box = {}; // Selection box position
@@ -52,10 +53,7 @@ struct editor_state : gui_layer {
     double one_frame_ago = 0.0;
     double two_frames_ago = 0.0;
     double delta_time = 0.0; // Measured in seconds
-    input_internal prev_input = {}; // Input from last frame
     bool vsync = true;
-    bool init_result = false; // Only used during init to communicate failure
-    // TODO: Can't we just pass the window pointer to the UI init function?
 
     // Rendering state that everyone can re-use
     gl_obj vcolor_shader = 0; // Shader for drawing objects with vertex colors
@@ -75,27 +73,6 @@ struct editor_state : gui_layer {
     // These are all written to roughly reflect a gamepad, check the implementation
     // to see what the keyboard mappings are. I didn't want to document those b/c
     // the comments will quickly be outdated if the keys change
-
-    // A "confirm" action (like A button)
-    bool confirm_rising_edge() const noexcept;
-
-    // A "cancel" action (like B button)
-    bool cancel_rising_edge() const noexcept;
-
-    // A "pause" action (like start button)
-    bool pause_rising_edge() const noexcept;
-
-    // An "up" action (like dpad)
-    bool up_rising_edge() const noexcept;
-
-    // A "down" action (like dpad)
-    bool down_rising_edge() const noexcept;
-
-    // A "left" action (like dpad)
-    bool left_rising_edge() const noexcept;
-
-    // A "right" action (like dpad)
-    bool right_rising_edge() const noexcept;
 
     // This has less of a gamepad equivalent, but is like the space key
     bool vertical_up_rising_edge() const noexcept;

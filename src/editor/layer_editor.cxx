@@ -5,6 +5,7 @@
 #include <cglm/cglm.h>
 
 #include <common/logging.h>
+#include <action/action.hxx>
 
 extern "C" {
 #include <common/gl/shader.h>
@@ -19,55 +20,7 @@ extern "C" {
 #include "utils.hxx"
 #include "vehicle_edit.hxx"
 
-
-// A "confirm" action (like A button)
-bool editor_state::confirm_rising_edge() const noexcept {
-    const bool keyboard = (input.e && !prev_input.e);
-    const bool gamepad = (input.gp.a && !prev_input.gp.a);
-    return keyboard || gamepad;
-}
-
-// A "cancel" action (like B button)
-bool editor_state::cancel_rising_edge() const noexcept {
-    const bool keyboard = (input.q && !prev_input.q);
-    const bool gamepad = (input.gp.b && !prev_input.gp.b);
-    return keyboard || gamepad;
-}
-
-// A "pause" action (like start button)
-bool editor_state::pause_rising_edge() const noexcept {
-    const bool keyboard = (input.escape && !prev_input.escape);
-    const bool gamepad = (input.gp.start && !prev_input.gp.start);
-    return keyboard || gamepad;
-}
-
-// An "up" action (like dpad)
-bool editor_state::up_rising_edge() const noexcept {
-    const bool keyboard = (input.up && !prev_input.up);
-    const bool gamepad = (input.gp.up && !prev_input.gp.up);
-    return keyboard || gamepad;
-}
-
-// A "down" action (like dpad)
-bool editor_state::down_rising_edge() const noexcept {
-    const bool keyboard = (input.down && !prev_input.down);
-    const bool gamepad = (input.gp.down && !prev_input.gp.down);
-    return keyboard || gamepad;
-}
-
-// A "left" action (like dpad)
-bool editor_state::left_rising_edge() const noexcept {
-    const bool keyboard = (input.left && !prev_input.left);
-    const bool gamepad = (input.gp.left && !prev_input.gp.left);
-    return keyboard || gamepad;
-}
-
-// A "right" action (like dpad)
-bool editor_state::right_rising_edge() const noexcept {
-    const bool keyboard = (input.right && !prev_input.right);
-    const bool gamepad = (input.gp.right && !prev_input.gp.right);
-    return keyboard || gamepad;
-}
+using namespace action;
 
 // This has less of a gamepad equivalent, but is like the space key
 bool editor_state::vertical_up_rising_edge() const noexcept {
@@ -77,7 +30,7 @@ bool editor_state::vertical_up_rising_edge() const noexcept {
     const float trigger_deadzone = (-1.0f) + deadzone;
     const bool gamepad = (input.RT > trigger_deadzone) && !(prev_input.RT > trigger_deadzone);
 
-    const bool keyboard = (input.space && !prev_input.space);
+    const bool keyboard = rising_edge(KEY_SPACE);
     return keyboard || gamepad;
 }
 
@@ -95,13 +48,13 @@ bool editor_state::vertical_down_rising_edge() const noexcept {
 s8 editor_state::move_x_rising_edge() const noexcept {
     // Dividing by itself gives 1, and using absolute value preserves sign.
     // This gives us -1 for any negative value, and 1 for any positive one.
-    float stick_vec = input.LS_x / fabsf(input.LS_x);
-    if (fabsf(input.LS_x) < deadzone || fabsf(prev_input.LS_x) > deadzone) {
+    float stick_vec = input.LS.x / fabsf(input.LS.x);
+    if (fabsf(input.LS.x) < deadzone || fabsf(prev_input.LS.x) > deadzone) {
         // If we're in the deadzone or were outside it last frame, don't count it.
         stick_vec = 0;
     }
 
-    const s8 keyboard_diff = (input.d && !prev_input.d) - (input.a && !prev_input.a);
+    const s8 keyboard_diff = (s8)rising_edge(KEY_D) - rising_edge(KEY_A);
 
     const s8 result = CLAMP(-1, keyboard_diff + stick_vec, 1);
     return result;
@@ -112,14 +65,14 @@ s8 editor_state::move_x_rising_edge() const noexcept {
 s8 editor_state::move_y_rising_edge() const noexcept {
     // Dividing by itself gives 1, and using absolute value preserves sign.
     // This gives us -1 for any negative value, and 1 for any positive one.
-    float stick_vec = input.LS_y / fabsf(input.LS_y);
+    float stick_vec = input.LS.y / fabsf(input.LS.y);
     stick_vec = -stick_vec; // Y axis is the opposite sign of the intuitive way
-    if (fabsf(input.LS_y) < deadzone || fabsf(prev_input.LS_y) > deadzone) {
+    if (fabsf(input.LS.y) < deadzone || fabsf(prev_input.LS.y) > deadzone) {
         // If we're in the deadzone or were outside it last frame, don't count it.
         stick_vec = 0;
     }
 
-    const s8 keyboard_diff = (input.w && !prev_input.w) - (input.s && !prev_input.s);
+    const s8 keyboard_diff = rising_edge(KEY_W) - rising_edge(KEY_S);
 
     const s8 result = CLAMP(-1, keyboard_diff + stick_vec, 1);
     return result;
@@ -133,14 +86,14 @@ void editor_state::update_edit_mode() noexcept {
 
     const s8 movediff_forward = move_y_rising_edge();
     const s8 movediff_side = move_x_rising_edge();
-    s8 forward_diff = up_rising_edge() - down_rising_edge();
-    s8 side_diff = right_rising_edge() - left_rising_edge();
+    s8 forward_diff = actions["up"].rising_edge() - actions["down"].rising_edge();
+    s8 side_diff = actions["right"].rising_edge() - actions["left"].rising_edge();
     const s8 vertical_diff = vertical_up_rising_edge() - vertical_down_rising_edge();
 
-    const bool gp_roll_right = input.gp.rb && !prev_input.gp.rb;
-    const bool gp_roll_left = input.gp.lb && !prev_input.gp.lb;
-    const s8 roll_left = (input.z && !prev_input.z) + gp_roll_left;
-    const s8 roll_right = (input.c && !prev_input.c) + gp_roll_right;
+    const bool gp_roll_right = rising_edge(GAMEPAD_BUTTON_RIGHT_BUMPER);
+    const bool gp_roll_left = rising_edge(GAMEPAD_BUTTON_LEFT_BUMPER);
+    const s8 roll_left = rising_edge(KEY_Z) + gp_roll_left;
+    const s8 roll_right = rising_edge(KEY_C) + gp_roll_right;
 
     // Combine keyboard and gamepad inputs
     const s8 roll_diff = roll_right - roll_left;
@@ -214,9 +167,9 @@ void editor_state::update_edit_mode() noexcept {
     const vec3s8 pos = {sel_box.x, sel_box.y, sel_box.z};
     const part_entry* p = part_by_pos(*this, pos, SEARCH_ALL);
 
-    const bool select_button_pressed = confirm_rising_edge();
-    const bool unselect_button_pressed = (input.r && !prev_input.r) || (input.gp.b && !prev_input.gp.b);
-    const bool delete_button_pressed = (input.c && !prev_input.c) || (input.gp.y && !prev_input.gp.y);
+    const bool select_button_pressed = actions.at("confirm").rising_edge();
+    const bool unselect_button_pressed = rising_edge(KEY_R) || rising_edge(GAMEPAD_BUTTON_B);
+    const bool delete_button_pressed = rising_edge(KEY_C) || rising_edge(GAMEPAD_BUTTON_Y);
     if (sel_mode != SEL_BAD && !rotation) {
         if (sel_mode == SEL_NONE) {
             if (unselect_button_pressed) {
@@ -291,6 +244,7 @@ void editor_save_to_file(editor_state editor, const char* output_path) {
 // Update the GUI state according to new user input.
 void editor_state::update(GLFWwindow* window) noexcept {
     const double time_start = glfwGetTime();
+    action::update_gamepad();
 
     // Update delta time and our last 2 frame times
     delta_time = one_frame_ago - two_frames_ago;
@@ -299,11 +253,9 @@ void editor_state::update(GLFWwindow* window) noexcept {
 
     static bool cursor_lock = false;
     update_mods(window); // Update input.shift, input.ctrl, etc.
-    gamepad_update();
+    update_gamepad();
 
-    bool change_camstyle = (input.click_middle && !prev_input.click_middle);
-    change_camstyle |= (input.gp.r3 && !prev_input.gp.r3);
-    if (change_camstyle) {
+    if (rising_edge(MOUSE_MIDDLE) || rising_edge(GAMEPAD_BUTTON_R3)) {
         // Cycle through camera modes
         camera_mode mode = (camera_mode)((cam.mode + 1) % CAMERA_MODE_ENUM_MAX);
         // This function handles the special camera settings per mode
@@ -311,7 +263,7 @@ void editor_state::update(GLFWwindow* window) noexcept {
     }
 
     // Allow infinite cursor movement when clicking to pan the camera
-    if (input.click_left) {
+    if (input.mouse[MOUSE_LEFT]) {
         if (!cursor_lock) {
             glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
@@ -329,22 +281,22 @@ void editor_state::update(GLFWwindow* window) noexcept {
         cursor_lock = false;
     }
 
-    if (input.v && !prev_input.v) {
+    if (rising_edge(KEY_V)) {
         // Toggle vsync
         vsync = !vsync;
         set_vsync(vsync);
     }
-    if (input.control && input.s && !prev_input.s) {
+    if (input.control && rising_edge(KEY_S)) {
         editor_save_to_file(*this, "vehicle.bin");
     }
 
     // Cycle if Tab or X are pressed
-    bool cycle_mode = (input.tab && !prev_input.tab) || (input.gp.x && !prev_input.gp.x);
+    bool cycle_mode = actions["mode_cycle"].rising_edge();
     if (cycle_mode && mode != MODE_MENU) {
         // Cycle through modes. Ctrl-Tab goes backwards.
         mode = (editor_mode)((mode + (input.control ? -1 : 1)) % 2);
     }
-    if (pause_rising_edge()) {
+    if (actions["pause"].rising_edge()) {
         if (mode == MODE_MENU) {
             mode = MODE_MOVCAM;
         } else {
@@ -374,7 +326,7 @@ void editor_state::update(GLFWwindow* window) noexcept {
     }
     cam.update(delta_time);
 
-    prev_input = input;
+    action::input_end_frame();
     DBG_ASSERT_PERF(time_start, 1);
 }
 
@@ -401,11 +353,20 @@ editor_state::editor_state(const char* vehicle_path) noexcept {
 
 void editor_state::init(GLFWwindow* window) noexcept {
     const double time_start = glfwGetTime();
+
     // Start tracking input state & using virtual cursor positions.
-    glfwSetKeyCallback(window, input_update);
-    glfwSetCursorPosCallback(window, cursor_update);
-    glfwSetScrollCallback(window, scroll_update);
-    glfwSetMouseButtonCallback(window, mouse_button_update);
+    glfwSetKeyCallback(window, action::update_key);
+    glfwSetCursorPosCallback(window, action::update_cursor);
+    glfwSetScrollCallback(window, action::update_scroll);
+    glfwSetMouseButtonCallback(window, action::update_mouse_button);
+
+    actions["confirm"] = action::bind(action::KEY_E, action::GAMEPAD_BUTTON_A);
+    actions["mode_cycle"] = action::bind(action::KEY_TAB, action::GAMEPAD_BUTTON_X);
+    actions["pause"] = action::bind(action::KEY_ESCAPE, action::GAMEPAD_BUTTON_START);
+    actions["up"] = action::bind(action::KEY_UP, action::GAMEPAD_BUTTON_DPAD_UP);
+    actions["down"] = action::bind(action::KEY_DOWN, action::GAMEPAD_BUTTON_DPAD_DOWN);
+    actions["left"] = action::bind(action::KEY_LEFT, action::GAMEPAD_BUTTON_DPAD_LEFT);
+    actions["right"] = action::bind(action::KEY_RIGHT, action::GAMEPAD_BUTTON_DPAD_RIGHT);
 
     one_frame_ago = glfwGetTime();
     two_frames_ago = glfwGetTime();
@@ -430,7 +391,6 @@ void editor_state::init(GLFWwindow* window) noexcept {
     model_upload(&quad);
     model_upload(&cube);
 
-    init_result = true;
     DBG_ASSERT_PERF(time_start, 1);
 }
 

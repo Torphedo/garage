@@ -1,8 +1,10 @@
 #include <cglm/cglm.h>
 
-#include <common/gl/input.h>
+#include <action/action.hxx>
 
 #include "camera.hxx"
+
+using namespace action;
 
 // Restrict a number to a certain range
 float clampf(float x, float min, float max) {
@@ -33,9 +35,9 @@ vec2s get_cursor_delta(camera* cam, vec2s cursor_pos) {
     static vec2s last_cursor = {0};
 
     // Nullify movement unless click is held
-    if (!input.click_left) {
-        last_cursor.x = input.cursor_x;
-        last_cursor.y = input.cursor_y;
+    if (!action::input.mouse[MOUSE_LEFT]) {
+        last_cursor.x = action::input.cursor.x;
+        last_cursor.y = action::input.cursor.y;
     }
 
     vec2s cursor_delta = {
@@ -46,9 +48,9 @@ vec2s get_cursor_delta(camera* cam, vec2s cursor_pos) {
     // Save state so we can find the delta next time we're called
     last_cursor = cursor_pos;
 
-    if (fabsf(input.RS_x) > deadzone || fabsf(input.RS_y) > deadzone) {
-        cursor_delta.x = input.RS_x * cam->mouse_sens * 5;
-        cursor_delta.y = input.RS_y * cam->mouse_sens * 5;
+    if (fabsf(action::input.RS.x) > deadzone || fabsf(action::input.RS.y) > deadzone) {
+        cursor_delta.x = action::input.RS.x * cam->mouse_sens * 5;
+        cursor_delta.y = action::input.RS.y * cam->mouse_sens * 5;
     }
 
     // Invert sign as needed.
@@ -73,13 +75,13 @@ void update_roll(float delta_time, float angle_diff) {
 void camera::update(double delta_time) noexcept {
     static vec2s last_scroll = {0};
 
-    const vec2s scroll = {input.scroll_x, input.scroll_y};
-    const vec2s cursor = {input.cursor_x, input.cursor_y};
+    const vec2s scroll = {input.scroll.x, input.scroll.y};
+    const vec2s cursor = {input.cursor.x, input.cursor.y};
     const vec2s cursor_delta = get_cursor_delta(this, cursor);
 
     const vec2s scroll_delta = {
-        .x = input.scroll_x - last_scroll.x,
-        .y = input.scroll_y - last_scroll.y
+        .x = input.scroll.x - last_scroll.x,
+        .y = input.scroll.y - last_scroll.y
     };
     // Save state so we can find the delta next time we're called
     last_scroll = scroll;
@@ -89,12 +91,12 @@ void camera::update(double delta_time) noexcept {
     const float multiplier = delta_time * move_speed;
 
     // This just sets each axis to zero if it's below the deadzone threshold
-    const float LS_x = input.LS_x * (fabsf(input.LS_x) > deadzone);
-    const float LS_y = input.LS_y * (fabsf(input.LS_y) > deadzone);
+    const float LS_x = input.LS.x * (fabsf(input.LS.x) > deadzone);
+    const float LS_y = input.LS.y * (fabsf(input.LS.y) > deadzone);
 
-    const float forward  = multiplier * ((input.w - input.s) - LS_y);
-    const float side     = multiplier * ((input.a - input.d) - LS_x);
-    float vertical = multiplier * ((input.space - input.shift) + (input.RT - input.LT));
+    const float forward  = multiplier * ((input.keys[KEY_W] - input.keys[KEY_S]) - LS_y);
+    const float side     = multiplier * ((input.keys[KEY_A] - input.keys[KEY_D]) - LS_x);
+    float vertical = multiplier * ((input.keys[KEY_SPACE] - input.shift) + (input.RT - input.LT));
 
     // Exclude vertical view component so it doesn't affect horizontal movement
     vec3s horizontal = glms_normalize((vec3s){cam_dir.x, 0, cam_dir.z});
