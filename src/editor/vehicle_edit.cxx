@@ -14,34 +14,8 @@ extern "C" {
 #include "layer_editor.hxx"
 #include "utils.hxx"
 
-bool vehiclemask_get_3d(const vehicle_bitmask* mask, vec3s8 cell) {
-    u8* mask_addr = (u8*)&(*mask)[cell.x][cell.y]; // Target byte
-
-    // Only try to access mask bits if the address is in bounds.
-    if (mask_addr >= (u8*)mask && mask_addr <= (u8*)mask[1]) {
-        // Get mask value
-        return mask_get(mask_addr, cell.z);
-    }
-
-    // Out of bounds? Zero.
-    return 0;
-}
-
-void vehiclemask_set_3d(vehicle_bitmask* mask, vec3s8 cell, u8 val) {
-    u8* mask_addr = (u8*)&(*mask)[cell.x][cell.y]; // Target byte
-    val &= 1; // Only keep the lowest bit of the value.
-
-    // Only try to set mask bits if the address is in bounds.
-    if (mask_addr >= (u8*)mask && mask_addr <= (u8*)mask[1]) {
-        // Set mask value
-        mask_set(mask_addr, cell.z, val);
-    }
-
-    // Oh well.
-}
-
-bool cell_is_selected(const editor_state& editor, vec3s8 target) {
-    const_part_iterator iter(editor, SEARCH_SELECTED);
+bool cell_matches_part(const editor_state& editor, vec3s8 target, partsearch_type type) {
+    const_part_iterator iter(editor, type);
     while (!iter.done) {
         const part_entry* part = iter.next();
         part_cell_iterator cell_iter(*part);
@@ -56,65 +30,30 @@ bool cell_is_selected(const editor_state& editor, vec3s8 target) {
     return false; // Nothin...
 }
 
-bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry p) {
-    bool result = false;
-    part_cell_iterator iter(p);
-    while (!iter.done) {
-        // Get the final coordinate by adding the rotated point to origin
-        const vec3s8 cell = iter.next();
+bool cell_is_selected(const editor_state& editor, vec3s8 target) {
+    return cell_matches_part(editor, target, SEARCH_SELECTED);
+}
 
-        const bool cell_occupied = vehiclemask_get_3d(vacancy, cell);
-        result |= cell_occupied;
-
-    }
-    return result;
+bool cell_is_occupied(const editor_state& editor, vec3s8 target) {
+    return cell_matches_part(editor, target, SEARCH_UNSELECTED);
 }
 
 bool vehicle_selection_overlap(const editor_state& editor) {
     const_part_iterator iter(editor, SEARCH_SELECTED);
     while (!iter.done) {
         const part_entry p = *iter.next();
-        if (vehicle_part_conflict(editor.vacancy_mask, p)) {
-            return true;
+        part_cell_iterator cell_iter(p);
+        while (!cell_iter.done) {
+            // Get the final coordinate by adding the rotated point to origin
+            const vec3s8 cell = cell_iter.next();
+
+            if (cell_is_occupied(editor, cell)) {
+                return true;
+            }
+
         }
     }
     return false;
-}
-
-void update_vacancymask(editor_state& editor) {
-    // Clear the selection grid
-    memset(editor.vacancy_mask, 0x00, sizeof(vehicle_bitmask));
-
-    part_iterator iter(editor, SEARCH_UNSELECTED);
-    while (!iter.done()) {
-        const part_entry p = *iter.next();
-
-        part_cell_iterator cell_iter(p);
-        while (!cell_iter.done) {
-            // Get the next cell of this part
-            const vec3s8 cell = cell_iter.next();
-
-            vehiclemask_set_3d(editor.vacancy_mask, cell, true);
-        }
-    }
-}
-
-void update_selectionmask(editor_state& editor) {
-    // Clear the selection grid
-    memset(editor.selected_mask, 0x00, sizeof(vehicle_bitmask));
-
-    part_iterator iter(editor, SEARCH_SELECTED);
-    while (!iter.done()) {
-        const part_entry* p = iter.next();
-
-        part_cell_iterator cell_iter(*p);
-        while (!cell_iter.done) {
-            // Get the next cell of this part
-            const vec3s8 cell = cell_iter.next();
-
-            vehiclemask_set_3d(editor.selected_mask, cell, true);
-        }
-    }
 }
 
 vec3s vehicle_find_center(const editor_state* editor, partsearch_type search_type) {
@@ -347,7 +286,7 @@ const part_entry* const_part_iterator::next() noexcept {
 static part_entry empty_part = {0};
 
 part_entry* part_by_pos(editor_state& editor, vec3s8 target, partsearch_type search_hint) {
-    const bool vacancy_result = vehiclemask_get_3d(editor.vacancy_mask, target);
+    const bool vacancy_result = cell_is_occupied(editor, target);
     const bool selection_result = cell_is_selected(editor, target);
     if (!vacancy_result && !selection_result) {
         // This cell isn't in the selection or vacancy grid, so there's no part here.

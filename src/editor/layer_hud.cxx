@@ -102,7 +102,6 @@ void layer_hud::partsearch_update(editor_state* editor) {
             // Add the part
             editor->selected_parts.push_back(new_part);
             editor->v.part_count++;
-            update_selectionmask(*editor);
         }
     }
 

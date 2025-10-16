@@ -6,6 +6,7 @@
 #include <common/list.h>
 
 #include <layer.hxx>
+
 extern "C" {
 #include <vector.h>
 #include <model.h>
@@ -32,17 +33,7 @@ typedef enum : u8 {
 
 enum {
     PART_POS_SCALE = 2, // Coordinate multiplier for rendering (can add spacing in the part grid)
-    VEH_MASK_BYTE_WIDTH = (VEH_MAX_DIM / 8),
 };
-
-// Used to store a compact 3D grid of parts at 1 bit per cell.
-// The editor uses 2 of these, one for storing which cells are occupied and one
-// for storing which cells are selected.
-typedef u8 vehicle_bitmask[VEH_MAX_DIM][VEH_MAX_DIM][VEH_MASK_BYTE_WIDTH];
-static_assert(sizeof(vehicle_bitmask) == 0x40000, "vehicle_bitmask size is wrong!");
-// If I could go back and undo 1 architectural decision, I'd probably remove
-// this and just loop through each part and every cell it occupies. It's
-// probably not a major performance hit, and would keep the code much simpler.
 
 // Current state of the vehicle editor & GUI in general.
 struct editor_state : gui_layer {
@@ -51,10 +42,6 @@ struct editor_state : gui_layer {
     std::vector<part_entry> selected_parts;
     std::vector<part_entry> unselected_parts;
     camera cam;
-    // Bitmask for whether a space is occupied by a part, at 1 bit per cell.
-    vehicle_bitmask* vacancy_mask = nullptr;
-    // Bitmask for whether a cell is selected
-    vehicle_bitmask* selected_mask = nullptr;
 
     // Editor state data
     vec3s8 sel_box = {}; // Selection box position

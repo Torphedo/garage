@@ -62,10 +62,6 @@ struct part_iterator {
     }
 };
 
-// Safely get & set values from vehicle bitmask (with bounds checking)
-bool vehiclemask_get_3d(const vehicle_bitmask* mask, vec3s8 cell);
-void vehiclemask_set_3d(vehicle_bitmask* mask, vec3s8 cell, u8 val);
-
 bool cell_is_selected(const editor_state& editor, vec3s8 target);
 
 // Uses part data to find the centerpoint of a vehicle.
