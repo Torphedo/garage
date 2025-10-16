@@ -1,37 +1,20 @@
-#include <cglm/cglm.h>
-
 #include <action/action.hxx>
 
 #include "camera.hxx"
 
 using namespace action;
 
-// Restrict a number to a certain range
-float clampf(float x, float min, float max) {
-    if (x > max) {
-        return max;
-    }
-    else if (x < min) {
-        return min;
-    }
-    else {
-        return x;
-    }
-}
-
-// Get the camera position relative to an orbit center-point based on the
-// rotation angles
-vec3s orbit_pos_by_angles(camera cam) {
+vec3s camera::orbit_pos_by_angles() const noexcept {
     // Get combined quaternion of rotation about Y & Z axes
-    const versors xrot = glms_quatv(cam.orbit_angles.x, (vec3s){0, 1, 0});
-    const versors yrot = glms_quatv(cam.orbit_angles.y, (vec3s){0, 0, 1});
+    const versors xrot = glms_quatv(orbit_angles.x, (vec3s){0, 1, 0});
+    const versors yrot = glms_quatv(orbit_angles.y, (vec3s){0, 0, 1});
     const versors total_rot = glms_quat_mul(xrot, yrot);
 
-    vec3s pos_difference = glms_quat_rotatev(total_rot, (vec3s){cam.radius,0,0});
-    return pos_difference;
+    // Apply rotation to unit vector scaled by radius
+    return glms_quat_rotatev(total_rot, (vec3s){radius,0,0});
 }
 
-vec2s get_cursor_delta(camera* cam, vec2s cursor_pos) {
+vec2s camera::get_cursor_delta(vec2s cursor_pos) const noexcept {
     static vec2s last_cursor = {0};
 
     // Nullify movement unless click is held
@@ -41,35 +24,27 @@ vec2s get_cursor_delta(camera* cam, vec2s cursor_pos) {
     }
 
     vec2s cursor_delta = {
-        .x = (cursor_pos.x - last_cursor.x) * cam->mouse_sens,
-        .y = (cursor_pos.y - last_cursor.y) * cam->mouse_sens
+        .x = (cursor_pos.x - last_cursor.x) * mouse_sens,
+        .y = (cursor_pos.y - last_cursor.y) * mouse_sens
     };
 
     // Save state so we can find the delta next time we're called
     last_cursor = cursor_pos;
 
     if (fabsf(action::input.RS.x) > deadzone || fabsf(action::input.RS.y) > deadzone) {
-        cursor_delta.x = action::input.RS.x * cam->mouse_sens * 5;
-        cursor_delta.y = action::input.RS.y * cam->mouse_sens * 5;
+        cursor_delta.x = action::input.RS.x * mouse_sens * 5;
+        cursor_delta.y = action::input.RS.y * mouse_sens * 5;
     }
 
     // Invert sign as needed.
-    if (cam->invert_mouse_x) {
+    if (invert_mouse_x) {
         cursor_delta.x = -cursor_delta.x;
     }
-    if (cam->invert_mouse_y) {
+    if (invert_mouse_y) {
         cursor_delta.y = -cursor_delta.y;
     }
 
     return cursor_delta;
-}
-
-// Don't use this, it kinda sucks. We'd need to rewrite how the camera works
-// for roll to work (not that we really need ot want roll).
-void update_roll(float delta_time, float angle_diff) {
-    static const vec3s axis_forward = {0.0f, 0.0f, 1.0f};
-    const float roll = angle_diff * 5.0f * delta_time;
-    camera_up = glms_vec3_rotate(camera_up, roll, axis_forward);
 }
 
 void camera::update(double delta_time) noexcept {
@@ -77,15 +52,15 @@ void camera::update(double delta_time) noexcept {
 
     const vec2s scroll = {input.scroll.x, input.scroll.y};
     const vec2s cursor = {input.cursor.x, input.cursor.y};
-    const vec2s cursor_delta = get_cursor_delta(this, cursor);
+    const vec2s cursor_delta = get_cursor_delta(cursor);
 
     const vec2s scroll_delta = {
         .x = input.scroll.x - last_scroll.x,
         .y = input.scroll.y - last_scroll.y
     };
+
     // Save state so we can find the delta next time we're called
     last_scroll = scroll;
-
 
     const vec3s cam_dir = facing();
     const float multiplier = delta_time * move_speed;
@@ -115,17 +90,17 @@ void camera::update(double delta_time) noexcept {
     // Update angles & zoom from mouse input
     orbit_angles = glms_vec2_add(orbit_angles, cursor_delta);
     radius -= scroll_delta.y;
-    radius = clampf(radius, 0.05f, 256.0f); // Don't allow <= 0 or really high zoom
+    radius = CLAMP(0.05f, radius, 256.0f); // Don't allow <= 0 or really high zoom
 
     // Update target pos using delta from user input
     target = glms_vec3_add(target, pos_delta);
 
     // Rendering breaks @ exactly 90 with Euler rotations, and we don't want to
     // be upside-down.
-    orbit_angles.y = clampf(orbit_angles.y, glm_rad(-89.999f), glm_rad(89.999f));
+    orbit_angles.y = CLAMP(glm_rad(-89.999f), orbit_angles.y, glm_rad(89.999f));
 
     // Add target position to relative orbit position to get final position
-    pos = glms_vec3_add(target, orbit_pos_by_angles(*this));
+    pos = glms_vec3_add(target, orbit_pos_by_angles());
 }
 
 vec3s camera::facing() const noexcept {
@@ -175,8 +150,6 @@ void camera::view_matrix(mat4 view_out) const noexcept {
 }
 
 void camera::proj_view(mat4 out) const noexcept {
-    // Pre-multiply the projection & view components of the PVM matrix
-
     // Projection matrix
     mat4 projection = {0};
     const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
@@ -188,4 +161,3 @@ void camera::proj_view(mat4 out) const noexcept {
     view_matrix(view);
     glm_mat4_mul(projection, view, (vec4*)out);
 }
-

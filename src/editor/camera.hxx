@@ -44,4 +44,13 @@ struct camera {
 
     // Get combined projection & view matrix for the current camera position
     void proj_view(mat4 out) const noexcept;
+
+private:
+    /// @brief Get camera position relative to the orbit center point
+    vec3s orbit_pos_by_angles() const noexcept;
+
+    /// @brief Screenspace cursor movement since last frame.
+    ///
+    /// This alos applies mouse inversion if needed, and the gamepad's right stick.
+    vec2s get_cursor_delta(vec2s cursor_pos) const noexcept;
 };
