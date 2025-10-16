@@ -275,7 +275,7 @@ void editor_state::update_edit_mode() noexcept {
         // Move all selected parts
         bool needed_adjust = false;
         part_iterator iter(*this, SEARCH_SELECTED);
-        while (!iter.done) {
+        while (!iter.done()) {
             part_entry* p = iter.next();
             vec3s8 adjustment = {0};
             needed_adjust |= vehicle_move_part(*this, *p, diff, &adjustment);
@@ -377,7 +377,7 @@ void editor_save_to_file(editor_state editor, const char* output_path) {
 
     // Save each part
     part_iterator iter(editor, SEARCH_ALL);
-    while (!iter.done) {
+    while (!iter.done()) {
         part_entry part = *iter.next();
         part_byteswap(&part); // This is a copy, byteswapping is OK
         fwrite(&part, sizeof(part), 1, f);

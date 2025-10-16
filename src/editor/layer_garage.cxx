@@ -64,7 +64,7 @@ void layer_garage::init(GLFWwindow* window) noexcept {
     };
 
     part_iterator iter(editor, SEARCH_ALL);
-    while (!iter.done) {
+    while (!iter.done()) {
         const part_entry* p = iter.next();
         get_or_load_model(this, (part_id)p->id);
     }
@@ -98,7 +98,7 @@ void layer_garage::render(GLFWwindow* window) noexcept {
     // Draw all our parts
     const vec3s center = vehicle_find_center(&editor, SEARCH_ALL);
     part_iterator iter(editor, SEARCH_ALL);
-    while (!iter.done) {
+    while (!iter.done()) {
         part_entry* p = iter.next();
 
         // Move the part

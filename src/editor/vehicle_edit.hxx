@@ -34,23 +34,39 @@ struct part_cell_iterator {
     vec3s8 next();
 };
 
-struct part_iterator {
-    std::vector<part_entry>* partlists[2];
+struct const_part_iterator {
+    const std::vector<part_entry>* partlists[2];
     partsearch_type search_type = SEARCH_SELECTED;
     u8 partlist_idx = 0; // Current index into the list array
     u32 part_idx = 0; // Current index into the current list
     bool done = false;
 
-    part_iterator(editor_state& editor, partsearch_type search_type) noexcept;
+    const_part_iterator(const editor_state& editor, partsearch_type search_type) noexcept;
 
-    part_entry* next() noexcept;
+    const part_entry* next() noexcept;
+};
+
+struct part_iterator {
+    const_part_iterator iter;
+
+    part_iterator(editor_state& editor, partsearch_type search_type) noexcept : iter(editor, search_type) {
+        return;
+    }
+
+    part_entry* next() noexcept {
+        return const_cast<part_entry*>(iter.next());
+    }
+
+    bool done() {
+        return iter.done;
+    }
 };
 
 // Safely get & set values from vehicle bitmask (with bounds checking)
 bool vehiclemask_get_3d(const vehicle_bitmask* mask, vec3s8 cell);
 void vehiclemask_set_3d(vehicle_bitmask* mask, vec3s8 cell, u8 val);
 
-bool cell_is_selected(const editor_state& editor, vec3s8 cell);
+bool cell_is_selected(const editor_state& editor, vec3s8 target);
 
 // Uses part data to find the centerpoint of a vehicle.
 // (returns float vector for convenience, since centerpoint could be a decimal)
@@ -62,7 +78,7 @@ vec3s vehicle_find_center(const editor_state* editor, partsearch_type search_typ
 bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_diff, s8 roll_diff);
 
 // Check if the selected parts overlap with the rest of the vehicle
-bool vehicle_selection_overlap(editor_state& editor);
+bool vehicle_selection_overlap(const editor_state& editor);
 
 // Wipe & reconstruct individual 3d grids from scratch
 void update_selectionmask(editor_state& editor);

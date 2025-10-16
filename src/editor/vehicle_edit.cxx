@@ -59,8 +59,8 @@ bool vehicle_part_conflict(vehicle_bitmask* vacancy, part_entry p) {
     return result;
 }
 
-bool vehicle_selection_overlap(editor_state& editor) {
-    part_iterator iter(editor, SEARCH_SELECTED);
+bool vehicle_selection_overlap(const editor_state& editor) {
+    const_part_iterator iter(editor, SEARCH_SELECTED);
     while (!iter.done) {
         const part_entry p = *iter.next();
         if (vehicle_part_conflict(editor.vacancy_mask, p)) {
@@ -75,7 +75,7 @@ void update_vacancymask(editor_state& editor) {
     memset(editor.vacancy_mask, 0x00, sizeof(vehicle_bitmask));
 
     part_iterator iter(editor, SEARCH_UNSELECTED);
-    while (!iter.done) {
+    while (!iter.done()) {
         const part_entry p = *iter.next();
 
         part_cell_iterator cell_iter(p);
@@ -93,7 +93,7 @@ void update_selectionmask(editor_state& editor) {
     memset(editor.selected_mask, 0x00, sizeof(vehicle_bitmask));
 
     part_iterator iter(editor, SEARCH_SELECTED);
-    while (!iter.done) {
+    while (!iter.done()) {
         const part_entry* p = iter.next();
 
         part_cell_iterator cell_iter(*p);
@@ -201,7 +201,7 @@ bool vehicle_rotate_selection(editor_state* editor, s8 forward_diff, s8 side_dif
 
     bool needed_adjust = false;
     part_iterator iter(*editor, SEARCH_SELECTED);
-    while (!iter.done) {
+    while (!iter.done()) {
         part_entry* p = iter.next();
 
         // Get rotation matrix for the part rotation
@@ -277,7 +277,7 @@ vec3s8 part_cell_iterator::next() {
     return cell;
 }
 
-part_iterator::part_iterator(editor_state& editor, partsearch_type search_type) noexcept : search_type(search_type) {
+const_part_iterator::const_part_iterator(const editor_state& editor, partsearch_type search_type) noexcept : search_type(search_type) {
     partlists[0] = &editor.selected_parts;
     partlists[1] = &editor.unselected_parts;
 
@@ -313,9 +313,9 @@ part_iterator::part_iterator(editor_state& editor, partsearch_type search_type) 
     }
 }
 
-part_entry* part_iterator::next() noexcept {
+const part_entry* const_part_iterator::next() noexcept {
     auto& cur_list = partlists[partlist_idx];
-    part_entry* part = &cur_list->operator[](part_idx);
+    const part_entry* part = &cur_list->operator[](part_idx);
     part_idx++;
 
     // Move on to the next list if needed
@@ -346,7 +346,7 @@ part_entry* part_by_pos(editor_state& editor, vec3s8 target, partsearch_type sea
 
     // Linearly search for the part
     part_iterator iter(editor, search_hint);
-    while (!iter.done) {
+    while (!iter.done()) {
         part_entry* part = iter.next();
 
         // A part's max width is 8, so anything further away can't be a match
@@ -408,7 +408,7 @@ bool vehicle_move_part(editor_state& editor, part_entry part, vec3s8 diff, vec3s
         }
 
         part_iterator iter(editor, SEARCH_ALL);
-        while (!iter.done) {
+        while (!iter.done()) {
             
             // The part to be moved
             part_entry* other_part = iter.next();
