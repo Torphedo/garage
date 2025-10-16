@@ -75,7 +75,7 @@ void draw_rect_panel(editor_state* editor, const mat4 quad_transform, const vec4
 
 void layer_hud::partsearch_update(editor_state* editor) {
     const double start_time = glfwGetTime();
-    if (rising_edge(KEY_ENTER) || rising_edge(GAMEPAD_BUTTON_A)) {
+    if (rising_edge(KEY_ENTER) || rising_edge(GAMEPAD_A)) {
         editor->mode = MODE_EDIT;
         editor->sel_mode = SEL_ACTIVE;
         part_entry new_part = {

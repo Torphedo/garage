@@ -87,7 +87,7 @@ void update_gamepad() {
         input.RT += gamepad.axes[GLFW_GAMEPAD_AXIS_RIGHT_TRIGGER];
 
         // Set a button "on" if any of the controllers have it pressed
-        for (u8 i = GAMEPAD_BUTTON_FIRST; i < GAMEPAD_BUTTON_LAST; i++) {
+        for (u8 i = GAMEPAD_FIRST; i < GAMEPAD_LAST; i++) {
             input.gamepad[i] |= gamepad.buttons[i];
         }
     }

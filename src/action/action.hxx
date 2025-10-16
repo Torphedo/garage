@@ -12,7 +12,7 @@ namespace action {
     struct bind {
         keyboard_key pc = KEY_UNKNOWN;
         mouse_button mouse = MOUSE_UNKNOWN;
-        gamepad_button gamepad = GAMEPAD_BUTTON_UNKNOWN;
+        gamepad_button gamepad = GAMEPAD_UNKNOWN;
         bool rising_edge(const input_t& cur_input = action::input, const input_t& last_input = action::prev_input) const noexcept;
         bool falling_edge(const input_t& cur_input = action::input, const input_t& last_input = action::prev_input) const noexcept;
 

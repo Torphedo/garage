@@ -43,7 +43,7 @@ struct input_t {
     // Gamepad right trigger
     float RT;
     // Gamepad buttons
-    bool gamepad[GAMEPAD_BUTTON_LAST];
+    bool gamepad[GAMEPAD_LAST];
 
 };
 

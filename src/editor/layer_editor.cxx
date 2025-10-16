@@ -90,8 +90,8 @@ void editor_state::update_edit_mode() noexcept {
     s8 side_diff = actions["right"].rising_edge() - actions["left"].rising_edge();
     const s8 vertical_diff = vertical_up_rising_edge() - vertical_down_rising_edge();
 
-    const bool gp_roll_right = rising_edge(GAMEPAD_BUTTON_RIGHT_BUMPER);
-    const bool gp_roll_left = rising_edge(GAMEPAD_BUTTON_LEFT_BUMPER);
+    const bool gp_roll_right = rising_edge(GAMEPAD_RIGHT_BUMPER);
+    const bool gp_roll_left = rising_edge(GAMEPAD_LEFT_BUMPER);
     const s8 roll_left = rising_edge(KEY_Z) + gp_roll_left;
     const s8 roll_right = rising_edge(KEY_C) + gp_roll_right;
 
@@ -168,8 +168,8 @@ void editor_state::update_edit_mode() noexcept {
     const part_entry* p = part_by_pos(*this, pos, SEARCH_ALL);
 
     const bool select_button_pressed = actions.at("confirm").rising_edge();
-    const bool unselect_button_pressed = rising_edge(KEY_R) || rising_edge(GAMEPAD_BUTTON_B);
-    const bool delete_button_pressed = rising_edge(KEY_C) || rising_edge(GAMEPAD_BUTTON_Y);
+    const bool unselect_button_pressed = rising_edge(KEY_R) || rising_edge(GAMEPAD_B);
+    const bool delete_button_pressed = rising_edge(KEY_C) || rising_edge(GAMEPAD_Y);
     if (sel_mode != SEL_BAD && !rotation) {
         if (sel_mode == SEL_NONE) {
             if (unselect_button_pressed) {
@@ -255,7 +255,7 @@ void editor_state::update(GLFWwindow* window) noexcept {
     update_mods(window); // Update input.shift, input.ctrl, etc.
     update_gamepad();
 
-    if (rising_edge(MOUSE_MIDDLE) || rising_edge(GAMEPAD_BUTTON_R3)) {
+    if (rising_edge(MOUSE_MIDDLE) || rising_edge(GAMEPAD_R3)) {
         // Cycle through camera modes
         camera_mode mode = (camera_mode)((cam.mode + 1) % CAMERA_MODE_ENUM_MAX);
         // This function handles the special camera settings per mode
@@ -360,13 +360,13 @@ void editor_state::init(GLFWwindow* window) noexcept {
     glfwSetScrollCallback(window, action::update_scroll);
     glfwSetMouseButtonCallback(window, action::update_mouse_button);
 
-    actions["confirm"] = action::bind(action::KEY_E, action::GAMEPAD_BUTTON_A);
-    actions["mode_cycle"] = action::bind(action::KEY_TAB, action::GAMEPAD_BUTTON_X);
-    actions["pause"] = action::bind(action::KEY_ESCAPE, action::GAMEPAD_BUTTON_START);
-    actions["up"] = action::bind(action::KEY_UP, action::GAMEPAD_BUTTON_DPAD_UP);
-    actions["down"] = action::bind(action::KEY_DOWN, action::GAMEPAD_BUTTON_DPAD_DOWN);
-    actions["left"] = action::bind(action::KEY_LEFT, action::GAMEPAD_BUTTON_DPAD_LEFT);
-    actions["right"] = action::bind(action::KEY_RIGHT, action::GAMEPAD_BUTTON_DPAD_RIGHT);
+    actions["confirm"] = action::bind(action::KEY_E, action::GAMEPAD_A);
+    actions["mode_cycle"] = action::bind(action::KEY_TAB, action::GAMEPAD_X);
+    actions["pause"] = action::bind(action::KEY_ESCAPE, action::GAMEPAD_START);
+    actions["up"] = action::bind(action::KEY_UP, action::GAMEPAD_DPAD_UP);
+    actions["down"] = action::bind(action::KEY_DOWN, action::GAMEPAD_DPAD_DOWN);
+    actions["left"] = action::bind(action::KEY_LEFT, action::GAMEPAD_DPAD_LEFT);
+    actions["right"] = action::bind(action::KEY_RIGHT, action::GAMEPAD_DPAD_RIGHT);
 
     one_frame_ago = glfwGetTime();
     two_frames_ago = glfwGetTime();

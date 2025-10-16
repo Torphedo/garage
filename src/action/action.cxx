@@ -12,7 +12,7 @@ bool bind::rising_edge(const input_t& cur_input, const input_t& last_input) cons
     // Sorry for the confusing variable names here...
     pc_pressed *= pc != KEY_UNKNOWN;
     mouse_pressed *= mouse != MOUSE_UNKNOWN;
-    gamepad_pressed *= gamepad != GAMEPAD_BUTTON_UNKNOWN;
+    gamepad_pressed *= gamepad != GAMEPAD_UNKNOWN;
 
     return pc_pressed || mouse_pressed || gamepad_pressed;
 }
